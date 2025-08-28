@@ -67,29 +67,29 @@ class ErrorEvent:
 
 
 class SecuritySanitizer:
-    \"\"\"
+    """
     STORY-CS-001: Security Hardening - Credential Exposure Prevention
     Handles sanitization of sensitive data in logs and error contexts
-    \"\"\"
+    """
     
     # Sensitive data patterns for detection and masking
     SENSITIVE_PATTERNS = {
         'password': [
-            r'password[\'\"\\s]*[:=][\'\"\\s]*([^\\s\'\"]+)',
-            r'passwd[\'\"\\s]*[:=][\'\"\\s]*([^\\s\'\"]+)',
-            r'pwd[\'\"\\s]*[:=][\'\"\\s]*([^\\s\'\"]+)'
+            r'password[\'"\\s]*[:=][\'"\\s]*([^\\s\'"]+)',
+            r'passwd[\'"\\s]*[:=][\'"\\s]*([^\\s\'"]+)',
+            r'pwd[\'"\\s]*[:=][\'"\\s]*([^\\s\'"]+)'
         ],
         'api_key': [
-            r'api[_\\-]?key[\'\"\\s]*[:=][\'\"\\s]*([a-zA-Z0-9\\-_]{16,})',
-            r'apikey[\'\"\\s]*[:=][\'\"\\s]*([a-zA-Z0-9\\-_]{16,})',
+            r'api[_\\-]?key[\'"\\s]*[:=][\'"\\s]*([a-zA-Z0-9\\-_]{16,})',
+            r'apikey[\'"\\s]*[:=][\'"\\s]*([a-zA-Z0-9\\-_]{16,})',
             r'sk-[a-zA-Z0-9]{20,}',
             r'Bearer\\s+([a-zA-Z0-9\\-._~+/]+=*)',
         ],
         'token': [
-            r'token[\'\"\\s]*[:=][\'\"\\s]*([a-zA-Z0-9\\-_]{16,})',
-            r'access[_\\-]?token[\'\"\\s]*[:=][\'\"\\s]*([a-zA-Z0-9\\-_]{16,})',
-            r'refresh[_\\-]?token[\'\"\\s]*[:=][\'\"\\s]*([a-zA-Z0-9\\-_]{16,})',
-            r'auth[_\\-]?token[\'\"\\s]*[:=][\'\"\\s]*([a-zA-Z0-9\\-_]{16,})',
+            r'token[\'"\\s]*[:=][\'"\\s]*([a-zA-Z0-9\\-_]{16,})',
+            r'access[_\\-]?token[\'"\\s]*[:=][\'"\\s]*([a-zA-Z0-9\\-_]{16,})',
+            r'refresh[_\\-]?token[\'"\\s]*[:=][\'"\\s]*([a-zA-Z0-9\\-_]{16,})',
+            r'auth[_\\-]?token[\'"\\s]*[:=][\'"\\s]*([a-zA-Z0-9\\-_]{16,})',
         ],
         'connection_string': [
             r'://[^:]+:([^@]+)@',  # Captures password in connection strings
@@ -101,8 +101,8 @@ class SecuritySanitizer:
             r'eyJ[a-zA-Z0-9\\-_]+=*\\.[a-zA-Z0-9\\-_]+=*\\.[a-zA-Z0-9\\-_]+=*',
         ],
         'secret': [
-            r'secret[\'\"\\s]*[:=][\'\"\\s]*([^\\s\'\"]+)',
-            r'private[_\\-]?key[\'\"\\s]*[:=][\'\"\\s]*([^\\s\'\"]+)',
+            r'secret[\'"\\s]*[:=][\'"\\s]*([^\\s\'"]+)',
+            r'private[_\\-]?key[\'"\\s]*[:=][\'"\\s]*([^\\s\'"]+)',
         ],
         'credit_card': [
             r'\\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|3[0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\\b',
@@ -133,7 +133,7 @@ class SecuritySanitizer:
     
     @staticmethod
     def sanitize_string(text: str, preserve_structure: bool = True) -> str:
-        \"\"\"
+        """
         Sanitize a string by masking sensitive data patterns
         
         Args:
@@ -142,7 +142,7 @@ class SecuritySanitizer:
             
         Returns:
             Sanitized string with sensitive data masked
-        \"\"\"
+        """
         if not isinstance(text, str):
             text = str(text)
             
@@ -163,7 +163,7 @@ class SecuritySanitizer:
                             else:
                                 prefix = sensitive_part[:prefix_length]
                                 mask_length = len(sensitive_part) - prefix_length
-                                return match.group(0).replace(sensitive_part, f\"{prefix}{'*' * mask_length}\")
+                                return match.group(0).replace(sensitive_part, f"{prefix}{'*' * mask_length}")
                         else:
                             # Mask entire match
                             return '*' * len(match.group(0))
@@ -171,14 +171,14 @@ class SecuritySanitizer:
                     sanitized_text = re.sub(pattern, mask_match, sanitized_text, flags=re.IGNORECASE)
                 else:
                     # Replace with generic placeholder
-                    sanitized_text = re.sub(pattern, f\"[REDACTED_{pattern_type.upper()}]\", 
+                    sanitized_text = re.sub(pattern, f"[REDACTED_{pattern_type.upper()}]", 
                                           sanitized_text, flags=re.IGNORECASE)
         
         return sanitized_text
     
     @staticmethod
     def sanitize_dict(data: Dict[str, Any], preserve_structure: bool = True) -> Dict[str, Any]:
-        \"\"\"
+        """
         Recursively sanitize dictionary data
         
         Args:
@@ -187,7 +187,7 @@ class SecuritySanitizer:
             
         Returns:
             Sanitized dictionary
-        \"\"\"
+        """
         if not isinstance(data, dict):
             return data
             
@@ -200,7 +200,7 @@ class SecuritySanitizer:
                     # Show first character + asterisks
                     sanitized_data[key] = value[0] + '*' * (len(value) - 1)
                 else:
-                    sanitized_data[key] = \"[REDACTED]\"
+                    sanitized_data[key] = "[REDACTED]"
             elif isinstance(value, dict):
                 # Recursively sanitize nested dictionaries
                 sanitized_data[key] = SecuritySanitizer.sanitize_dict(value, preserve_structure)
@@ -223,21 +223,21 @@ class SecuritySanitizer:
     
     @staticmethod
     def generate_secure_error_id() -> str:
-        \"\"\"
+        """
         Generate a cryptographically secure error ID instead of predictable timestamp-based IDs
         
         Returns:
             Secure UUID-based error ID
-        \"\"\"
+        """
         # Generate UUID4 (random) and convert to compact format
         error_uuid = uuid.uuid4()
         # Create shorter but still unique ID using hex and timestamp hash
         timestamp_hash = hashlib.sha256(str(int(time.time())).encode()).hexdigest()[:8]
-        return f\"err_{error_uuid.hex[:16]}_{timestamp_hash}\"
+        return f"err_{error_uuid.hex[:16]}_{timestamp_hash}"
     
     @staticmethod
     def sanitize_log_message(message: str) -> str:
-        \"\"\"
+        """
         Sanitize log messages to prevent log injection attacks
         
         Args:
@@ -245,7 +245,7 @@ class SecuritySanitizer:
             
         Returns:
             Sanitized log message
-        \"\"\"
+        """
         if not isinstance(message, str):
             message = str(message)
             
@@ -265,7 +265,7 @@ class SecuritySanitizer:
         # Limit message length to prevent log flooding
         max_length = 2000
         if len(sanitized_message) > max_length:
-            sanitized_message = sanitized_message[:max_length] + \"... [TRUNCATED]\"
+            sanitized_message = sanitized_message[:max_length] + "... [TRUNCATED]"
             
         return sanitized_message
 

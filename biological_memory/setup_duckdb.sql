@@ -12,29 +12,33 @@ LOAD postgres_scanner;
 LOAD fts;
 LOAD json;
 
--- Create PostgreSQL connection using postgres_scanner
--- Note: Replace connection parameters with your PostgreSQL server details
-CREATE OR REPLACE SECRET postgres_connection (
+-- Create PostgreSQL connection for codex_db using postgres_scanner
+-- Connection to PostgreSQL server at 192.168.1.104
+CREATE OR REPLACE SECRET codex_db_connection (
     TYPE POSTGRES,
-    HOST 'localhost',
+    HOST '192.168.1.104',
     PORT 5432,
-    DATABASE 'self_sensored',
-    USER 'your_postgres_user',
-    PASSWORD 'your_postgres_password'
+    DATABASE 'codex_db',
+    USER 'codex_user',
+    PASSWORD 'MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a'
 );
 
 -- Alternative: Create connection using environment variables (recommended for production)
--- CREATE OR REPLACE SECRET postgres_connection (
+-- CREATE OR REPLACE SECRET codex_db_connection (
 --     TYPE POSTGRES,
---     HOST getenv('POSTGRES_HOST'),
---     PORT getenv('POSTGRES_PORT')::INT,
---     DATABASE getenv('POSTGRES_DATABASE'),
---     USER getenv('POSTGRES_USER'),
---     PASSWORD getenv('POSTGRES_PASSWORD')
+--     HOST getenv('HOST'),
+--     PORT 5432,
+--     DATABASE getenv('DB_NAME'),
+--     USER getenv('DB_USER'),
+--     PASSWORD getenv('DB_PASS')
 -- );
 
 -- Attach PostgreSQL database for cross-database queries
-ATTACH 'postgresql://localhost:5432/self_sensored' AS source_memories (TYPE POSTGRES);
+-- This allows DuckDB to query the memories table directly from PostgreSQL
+ATTACH '' AS codex_db (TYPE POSTGRES, SECRET codex_db_connection);
+
+-- Legacy connection for backward compatibility (if self_sensored database exists)
+-- ATTACH 'postgresql://localhost:5432/self_sensored' AS source_memories (TYPE POSTGRES);
 
 -- Alternative using the secret (recommended approach)
 -- ATTACH '' AS source_memories (TYPE POSTGRES, SECRET postgres_connection);

@@ -66,9 +66,30 @@
   END
 {% endmacro %}
 
-{# Create semantic embedding placeholder - NULL SAFE #}
+{# Generate real semantic embedding using nomic-embed-text model - NULL SAFE #}
+{% macro create_real_embedding(text_content, embedding_dim) %}
+  {# Generate real embedding vector using Ollama nomic-embed-text model with null safety #}
+  COALESCE(
+    CASE 
+      WHEN COALESCE({{ text_content }}, '') != '' THEN
+        llm_generate_embedding(COALESCE({{ text_content }}, 'empty_content'), 'nomic-embed-text', {{ embedding_dim }})::FLOAT[]
+      ELSE
+        [{% for i in range(embedding_dim) %}
+          0.0{%- if not loop.last %},{% endif %}
+        {% endfor %}]::FLOAT[]
+    END,
+    [{% for i in range(embedding_dim) %}
+      0.0{%- if not loop.last %},{% endif %}
+    {% endfor %}]::FLOAT[]
+  )
+{% endmacro %}
+
+{# TEMPORARY: Create semantic embedding vector - NULL SAFE #}
+{# This macro provides temporary MD5-based embeddings until real LLM embeddings are implemented #}
 {% macro create_embedding_placeholder(text_content, embedding_dim) %}
-  {# Generate placeholder embedding vector with null safety - DuckDB compatible #}
+  {# Generate temporary embedding vector with null safety - DuckDB compatible #}
+  {# NOTE: This generates MD5-based vectors with limited semantic meaning #}
+  {# Will be replaced with real LLM embeddings in future iterations #}
   COALESCE(
     [{% for i in range(embedding_dim) %}
       {{ safe_divide('ABS(hash(COALESCE(' ~ text_content ~ ', \'empty_content\') || \'' ~ i ~ '\') % 10000)', '10000.0', '0.1') }}
@@ -104,17 +125,6 @@
   )
 {% endmacro %}
 
-{# Batch processing helper #}
-{% macro process_in_batches(source_query, batch_size, batch_column) %}
-  {# Template for batch processing large datasets #}
-  WITH batched_data AS (
-    SELECT *,
-      ROW_NUMBER() OVER (ORDER BY {{ batch_column }}) as row_num,
-      CEIL({{ safe_divide('ROW_NUMBER() OVER (ORDER BY ' ~ batch_column ~ ')', batch_size ~ '.0', '1.0') }}) as batch_id
-    FROM ({{ source_query }})
-  )
-  SELECT * FROM batched_data
-{% endmacro %}
 
 {# Time window helper for incremental models - NULL SAFE #}
 {% macro get_incremental_window(timestamp_column, window_hours) %}
@@ -142,21 +152,6 @@
   )
 {% endmacro %}
 
-{# Safe JSON array extraction #}
-{% macro safe_json_array_extract(json_col, index, default_value) %}
-  {# Safely extract from JSON array with null checking #}
-  COALESCE(
-    CASE 
-      WHEN {{ json_col }} IS NOT NULL 
-           AND JSON_VALID({{ json_col }}::TEXT)
-           AND JSON_TYPE({{ json_col }}) = 'array'
-           AND JSON_ARRAY_LENGTH({{ json_col }}) > {{ index }}
-      THEN JSON_EXTRACT_STRING({{ json_col }}, '$[{{ index }}]')
-      ELSE NULL
-    END,
-    '{{ default_value }}'
-  )
-{% endmacro %}
 
 {# Null-safe mathematical operations #}
 {% macro safe_math_operation(operation, operand1, operand2, default_value) %}

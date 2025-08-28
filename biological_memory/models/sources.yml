@@ -4,6 +4,32 @@
 version: 2
 
 sources:
+  - name: codex_db
+    description: "Codex database with memories table from PostgreSQL server"
+    database: codex_db
+    schema: public
+    tables:
+      - name: memories
+        description: "Main memories table from codex_db containing all memory records"
+        columns:
+          - name: id
+            description: "Unique identifier for each memory"
+            tests:
+              - unique
+              - not_null
+          - name: content
+            description: "The actual memory content/text"
+            tests:
+              - not_null
+          - name: created_at
+            description: "When the memory was first created"
+            tests:
+              - not_null
+          - name: updated_at
+            description: "When the memory was last updated"
+          - name: metadata
+            description: "JSON metadata for the memory"
+            
   - name: self_sensored
     description: "Raw biological memory data sources from self_sensored database"
     schema: public

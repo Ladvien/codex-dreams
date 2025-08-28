@@ -70,8 +70,8 @@ co_occurrence_analysis AS (
     SELECT 
       concept1,
       concept2,
-      {{ create_embedding_placeholder('concept1', 128) }} as vector1,
-      {{ create_embedding_placeholder('concept2', 128) }} as vector2
+      {{ create_real_embedding('concept1', 384) }} as vector1,
+      {{ create_real_embedding('concept2', 384) }} as vector2
     FROM concept_pairs
   ) concept_vectors ON (
     concept_vectors.concept1 = cp.source_concept AND

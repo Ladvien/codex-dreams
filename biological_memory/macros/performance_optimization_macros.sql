@@ -152,7 +152,7 @@
     END as utilization_status,
     CURRENT_TIMESTAMP as measured_at
   FROM (
-    SELECT 1 as dummy_connection -- Placeholder for actual connection monitoring
+    SELECT 1 as dummy_connection -- Simulated connection data for monitoring template
     FROM generate_series(1, FLOOR(RANDOM() * 100 + 20)) -- Simulate 20-120 connections
   ) connections;
   

@@ -265,6 +265,59 @@ class OllamaLLMService:
                 error=error_msg
             )
     
+    def generate_embedding(self, text: str, model_name: str = "nomic-embed-text", timeout: int = 300) -> List[float]:
+        """
+        Generate embedding vector using Ollama embedding model
+        
+        Args:
+            text: Input text to embed
+            model_name: Embedding model name (default: nomic-embed-text)
+            timeout: Request timeout in seconds
+            
+        Returns:
+            List of floats representing the embedding vector (768 dimensions for nomic-embed-text)
+        """
+        start_time = time.time()
+        
+        try:
+            payload = {
+                "model": model_name,
+                "prompt": text
+            }
+            
+            response = self.session.post(
+                f"{self.ollama_url}/api/embeddings",
+                json=payload,
+                timeout=timeout,
+                headers={"Content-Type": "application/json"}
+            )
+            response.raise_for_status()
+            
+            data = response.json()
+            embedding = data.get('embedding', [])
+            
+            if not embedding:
+                self.logger.warning(f"Empty embedding returned for text: {text[:50]}...")
+                # Return zero vector with 768 dimensions (nomic-embed-text default)
+                return [0.0] * 768
+            
+            response_time_ms = int((time.time() - start_time) * 1000)
+            self.logger.debug(f"Generated embedding in {response_time_ms}ms for text length: {len(text)}")
+            
+            return embedding
+            
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Ollama embedding API request failed: {e}"
+            self.logger.error(error_msg)
+            # Return zero vector on error
+            return [0.0] * 768
+            
+        except Exception as e:
+            error_msg = f"Embedding generation failed: {e}"
+            self.logger.error(error_msg)
+            # Return zero vector on error  
+            return [0.0] * 768
+    
     def generate_response(self, prompt: str, timeout: int = 300) -> LLMResponse:
         """
         Generate LLM response with caching and error handling
@@ -473,6 +526,44 @@ def llm_metrics() -> str:
         return json.dumps({"error": str(e)})
 
 
+def llm_generate_embedding(text: str, model: str = "nomic-embed-text", dimension: int = 768) -> List[float]:
+    """
+    DuckDB UDF function for generating embeddings
+    
+    Args:
+        text: Input text to embed
+        model: Embedding model name (default: nomic-embed-text)
+        dimension: Expected embedding dimension (default: 768 for nomic-embed-text)
+        
+    Returns:
+        List of floats representing the embedding vector
+    """
+    if not _llm_service:
+        # Try to initialize with defaults
+        initialize_llm_service()
+    
+    if not _llm_service:
+        # Return zero vector if service unavailable
+        return [0.0] * dimension
+    
+    try:
+        embedding = _llm_service.generate_embedding(text, model)
+        
+        # Ensure correct dimension (truncate or pad as needed)
+        if len(embedding) > dimension:
+            # Truncate to requested dimension (Matryoshka representation learning)
+            return embedding[:dimension]
+        elif len(embedding) < dimension:
+            # Pad with zeros if embedding is shorter
+            return embedding + [0.0] * (dimension - len(embedding))
+        else:
+            return embedding
+            
+    except Exception as e:
+        logging.error(f"Embedding UDF error: {e}")
+        return [0.0] * dimension
+
+
 # Register UDF functions with DuckDB
 def register_llm_functions(connection: duckdb.DuckDBPyConnection):
     """Register LLM UDF functions with a DuckDB connection"""
@@ -480,10 +571,11 @@ def register_llm_functions(connection: duckdb.DuckDBPyConnection):
         # Register the UDF functions
         connection.create_function("llm_generate", llm_generate)
         connection.create_function("llm_generate_json", llm_generate_json) 
+        connection.create_function("llm_generate_embedding", llm_generate_embedding)
         connection.create_function("llm_health_check", llm_health_check)
         connection.create_function("llm_metrics", llm_metrics)
         
-        logging.info("Successfully registered LLM UDF functions with DuckDB")
+        logging.info("Successfully registered LLM UDF functions with DuckDB (including embedding generation)")
         return True
         
     except Exception as e:

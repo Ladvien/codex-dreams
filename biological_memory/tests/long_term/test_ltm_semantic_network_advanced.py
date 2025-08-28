@@ -24,12 +24,10 @@ class TestLTMSemanticNetworkAdvanced:
     """Advanced test suite for Long-Term Memory Semantic Network model"""
     
     @pytest.fixture(scope="class")
-    def duckdb_connection(self):
-        """Create DuckDB connection to test database"""
-        db_path = project_root / "dbs" / "memory.duckdb"
-        conn = duckdb.connect(str(db_path))
-        yield conn
-        conn.close()
+    def duckdb_connection(self, duckdb_test_connection, ltm_semantic_network_table):
+        """Use test database connection with pre-populated ltm_semantic_network table"""
+        # ltm_semantic_network_table fixture ensures table exists
+        return duckdb_test_connection
     
     def test_cortical_minicolumn_distribution(self, duckdb_connection):
         """Test that cortical minicolumns are properly distributed"""
