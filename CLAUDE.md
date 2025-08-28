@@ -13,8 +13,6 @@ This repository is in the initial planning phase. Only the architecture document
 - Rust-based microservices (API server, memory processor, scheduler)
 - DuckDB for analytical storage with dbt transformations
 - Ollama integration for local LLM processing
-- GraphQL API for querying
-- Docker-based deployment architecture
 
 ## Architecture Components
 
