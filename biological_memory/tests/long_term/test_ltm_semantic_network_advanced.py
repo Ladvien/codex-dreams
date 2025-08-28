@@ -120,7 +120,7 @@ class TestLTMSemanticNetworkAdvanced:
             ltd_weakened_strength,
             access_count,
             memory_age,
-            EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - last_accessed_at)) / 3600.0 as hours_since_access
+            EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - last_accessed_at::TIMESTAMP)) / 3600.0 as hours_since_access
         FROM ltm_semantic_network
         WHERE ltp_enhanced_strength IS NOT NULL 
         AND ltd_weakened_strength IS NOT NULL
@@ -216,8 +216,6 @@ class TestLTMSemanticNetworkAdvanced:
         query = """
         SELECT 
             memory_fidelity,
-            stability_score,
-            retrieval_strength,
             COUNT(*) as count,
             AVG(stability_score) as avg_stability,
             AVG(retrieval_strength) as avg_retrieval
@@ -259,8 +257,8 @@ class TestLTMSemanticNetworkAdvanced:
         SELECT 
             memory_age,
             consolidation_state,
-            EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - created_at)) as age_seconds,
-            EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - last_accessed_at)) as hours_since_access,
+            EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - created_at::TIMESTAMP)) as age_seconds,
+            EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - last_accessed_at::TIMESTAMP)) as hours_since_access,
             retrieval_strength,
             stability_score
         FROM ltm_semantic_network

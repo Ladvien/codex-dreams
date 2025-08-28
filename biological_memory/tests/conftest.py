@@ -319,17 +319,19 @@ def ltm_semantic_network_table(duckdb_test_connection, mock_source_data):
       SELECT 
         sp.*,
         
-        -- Multi-factor retrieval strength
-        (sp.synaptic_efficacy * 0.30 +
-         sp.network_centrality_score * 0.25 +
-         EXP(-EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - sp.last_accessed_at::TIMESTAMP)) / 604800.0) * 0.20 +
-         LOG(GREATEST(1, sp.access_count)) / LOG(100) * 0.15 +
-         CASE 
-           WHEN sp.consolidation_state = 'schematized' THEN 1.0
-           WHEN sp.consolidation_state = 'consolidating' THEN 0.8
-           WHEN sp.consolidation_state = 'episodic' THEN 0.6
-           ELSE 0.5
-         END * 0.10) as retrieval_strength,
+        -- Multi-factor retrieval strength (bounded 0-1)
+        LEAST(1.0, GREATEST(0.0, 
+          sp.synaptic_efficacy * 0.30 +
+          sp.network_centrality_score * 0.25 +
+          EXP(-EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - sp.last_accessed_at::TIMESTAMP)) / 604800.0) * 0.20 +
+          LOG(GREATEST(1, sp.access_count)) / LOG(100) * 0.15 +
+          CASE 
+            WHEN sp.consolidation_state = 'schematized' THEN 1.0
+            WHEN sp.consolidation_state = 'consolidating' THEN 0.8
+            WHEN sp.consolidation_state = 'episodic' THEN 0.6
+            ELSE 0.5
+          END * 0.10
+        )) as retrieval_strength,
          
         -- Retrieval probability with sigmoid
         1.0 / (1.0 + EXP(-(sp.synaptic_efficacy - 0.5))) as retrieval_probability,
