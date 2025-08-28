@@ -659,6 +659,13 @@ FROM {{ ref('ltm_semantic_network') }}
 Before running the system, set these environment variables:
 
 ```bash
+# Copy the example file and configure with your values
+cp .env.example .env
+# Edit .env with your actual database and Ollama server details
+```
+
+Required environment variables:
+```bash
 # PostgreSQL connection with credentials
 export POSTGRES_DB_URL="postgresql://username:password@host:port/database"
 
@@ -666,11 +673,7 @@ export POSTGRES_DB_URL="postgresql://username:password@host:port/database"
 export OLLAMA_URL="http://ollama-host:11434"
 ```
 
-Example `.env` file:
-```bash
-POSTGRES_DB_URL="postgresql://myuser:mypass@192.168.1.104:5432/self_sensored"
-OLLAMA_URL="http://192.168.1.110:11434"
-```
+See `.env.example` for a complete configuration template.
 
 ## Getting Started
 
@@ -683,7 +686,9 @@ git clone <repository>
 cd biological_memory
 dbt deps
 
-# 3. Set environment variables (see above)
+# 3. Configure environment variables
+cp .env.example .env
+# Edit .env with your actual values
 source .env
 
 # 4. Initialize DuckDB with connections

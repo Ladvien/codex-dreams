@@ -28,24 +28,27 @@ The system is designed as a microservices architecture with these main component
 
 ## Environment Configuration
 
-The system requires these environment variables for secure operation:
+The system uses environment variables for secure configuration:
 
 ```bash
-# PostgreSQL connection with credentials
-export POSTGRES_DB_URL="postgresql://username:password@host:port/database"
-
-# Ollama server endpoint  
-export OLLAMA_URL="http://ollama-host:11434"
+# Copy and configure environment file
+cp .env.example .env
+# Edit .env with your database and server details
 ```
+
+Required variables (see `.env.example`):
+- `POSTGRES_DB_URL`: PostgreSQL connection string
+- `OLLAMA_URL`: Ollama server endpoint
 
 ## Development Setup (Planned)
 
 Based on the architecture document, the intended development setup includes:
 
 ```bash
-# Set environment variables first
-export POSTGRES_DB_URL="postgresql://user:pass@host:5432/db"
-export OLLAMA_URL="http://ollama-host:11434"
+# Configure environment variables
+cp .env.example .env
+# Edit .env with your actual values
+source .env
 
 # Install Python dependencies for dbt
 python -m venv venv
