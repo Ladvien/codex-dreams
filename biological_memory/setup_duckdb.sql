@@ -18,7 +18,7 @@ CREATE OR REPLACE SECRET postgres_connection (
     TYPE POSTGRES,
     HOST 'localhost',
     PORT 5432,
-    DATABASE 'biological_memory_source',
+    DATABASE 'self_sensored',
     USER 'your_postgres_user',
     PASSWORD 'your_postgres_password'
 );
@@ -34,7 +34,7 @@ CREATE OR REPLACE SECRET postgres_connection (
 -- );
 
 -- Attach PostgreSQL database for cross-database queries
-ATTACH 'postgresql://localhost:5432/biological_memory_source' AS source_memories (TYPE POSTGRES);
+ATTACH 'postgresql://localhost:5432/self_sensored' AS source_memories (TYPE POSTGRES);
 
 -- Alternative using the secret (recommended approach)
 -- ATTACH '' AS source_memories (TYPE POSTGRES, SECRET postgres_connection);
