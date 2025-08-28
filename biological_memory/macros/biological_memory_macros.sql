@@ -20,7 +20,7 @@
   #}
   
   {# Biological parameter validation #}
-  {% if var('hebbian_learning_rate') > 0.5 %}
+  {% if var('hebbian_learning_rate') > var('stability_threshold') %}
     {{ log("WARNING: Hebbian learning rate exceeds biological realism (>0.5): " ~ var('hebbian_learning_rate'), info=true) }}
   {% endif %}
   
@@ -99,9 +99,8 @@
   {% endif %}
   
   {# Check if required relations exist #}
-  {% set ltm_relation = ref('ltm_semantic_network') %}
-  {% if not ltm_relation %}
-    {{ log("ERROR: ltm_semantic_network relation not found - skipping homeostasis", info=true) }}
+  {% if not (execute and adapter.already_exists(schema, 'stable_memories')) %}
+    {{ log("INFO: stable_memories relation not found - skipping homeostasis", info=true) }}
     {{ return('') }}
   {% endif %}
   
@@ -111,10 +110,10 @@
       COUNT(*) as total_connections,
       AVG(retrieval_strength) as mean_strength,
       STDDEV(retrieval_strength) as std_strength,
-      PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY retrieval_strength) as median_strength,
+      PERCENTILE_CONT({{ var('homeostasis_target') }}) WITHIN GROUP (ORDER BY retrieval_strength) as median_strength,
       MAX(retrieval_strength) as max_strength,
       MIN(retrieval_strength) as min_strength
-    FROM {{ ref('ltm_semantic_network') }}
+    FROM {{ ref('stable_memories') }}
     WHERE retrieval_strength > 0
   ),
   
@@ -123,11 +122,11 @@
     SELECT 
       *,
       ns.mean_strength,
-      -- Calculate scaling factor to normalize around target (0.5)
+      -- Calculate scaling factor to normalize around target ({{ var('homeostasis_target') }})
       CASE 
         WHEN ns.mean_strength > {{ var('homeostasis_target') }} * 1.5 THEN
           {{ var('homeostasis_target') }} / NULLIF(ns.mean_strength, 0)  -- Scale down
-        WHEN ns.mean_strength < {{ var('homeostasis_target') }} * 0.5 THEN  
+        WHEN ns.mean_strength < {{ var('homeostasis_target') }} * {{ var('homeostasis_target') }} THEN  
           {{ var('homeostasis_target') }} / NULLIF(ns.mean_strength, 0)  -- Scale up
         ELSE 1.0  -- No scaling needed
       END as scaling_factor,
@@ -135,12 +134,12 @@
       -- Identify weak connections for pruning
       CASE WHEN retrieval_strength < {{ var('weak_connection_threshold') }} THEN TRUE
            ELSE FALSE END as prune_connection
-    FROM {{ ref('ltm_semantic_network') }} ltm
+    FROM {{ ref('stable_memories') }} ltm
     CROSS JOIN network_stats ns
   )
   
   -- Step 3: Apply homeostatic scaling to prevent runaway potentiation
-  UPDATE {{ ref('ltm_semantic_network') }}
+  UPDATE {{ ref('stable_memories') }}
   SET 
     retrieval_strength = LEAST(1.0, GREATEST(0.0,
       retrieval_strength * scaling_factor * 
@@ -149,11 +148,11 @@
     )),
     last_homeostasis_at = CURRENT_TIMESTAMP
   FROM scaling_targets st
-  WHERE ltm_semantic_network.id = st.id
+  WHERE stable_memories.id = st.id
     AND st.scaling_factor != 1.0;
   
   -- Step 4: Prune weak synaptic connections to maintain network efficiency  
-  DELETE FROM {{ ref('ltm_semantic_network') }}
+  DELETE FROM {{ ref('stable_memories') }}
   WHERE retrieval_strength < {{ var('weak_connection_threshold') }}
     AND memory_age = 'remote'
     AND access_frequency < 2;  -- Only prune rarely accessed weak connections
@@ -161,7 +160,7 @@
   -- Step 5: Log homeostasis results
   {% if execute %}
     {% set pruned_count_query %}
-      SELECT COUNT(*) FROM {{ ref('ltm_semantic_network') }}
+      SELECT COUNT(*) FROM {{ ref('stable_memories') }}
       WHERE retrieval_strength < {{ var('weak_connection_threshold') }}
     {% endset %}
     {% set results = run_query(pruned_count_query) %}
@@ -175,11 +174,11 @@
   SELECT 
     COUNT(*) as total_synapses,
     AVG(retrieval_strength) as avg_strength,
-    COUNT(CASE WHEN retrieval_strength > 0.7 THEN 1 END) as strong_connections,
+    COUNT(CASE WHEN retrieval_strength > {{ var('strong_connection_threshold') }} THEN 1 END) as strong_connections,
     COUNT(CASE WHEN retrieval_strength < 0.1 THEN 1 END) as weak_connections,
     MAX(last_homeostasis_at) as last_homeostasis,
     CURRENT_TIMESTAMP as health_check_at
-  FROM {{ ref('ltm_semantic_network') }};
+  FROM {{ ref('stable_memories') }};
   
   {{ log("Synaptic homeostasis completed - Network rebalanced and pruned", info=true) }}
 {% endmacro %}
@@ -209,8 +208,8 @@
       b.semantic_category as category_b,
       a.consolidated_strength as strength_a,
       b.consolidated_strength as strength_b
-    FROM {{ ref('ltm_semantic_network') }} a
-    CROSS JOIN {{ ref('ltm_semantic_network') }} b
+    FROM {{ ref('stable_memories') }} a
+    CROSS JOIN {{ ref('stable_memories') }} b
     WHERE a.id < b.id  -- Prevent duplicate pairs
       AND a.semantic_category != b.semantic_category  -- Focus on distant associations
       AND a.consolidated_strength > 0.3  -- Only consider moderately strong memories
@@ -243,13 +242,13 @@
         CASE 
           WHEN (category_a = 'work_meeting' AND category_b = 'financial_planning') THEN
             '{"creative_link": "Strategic business alignment between team coordination and resource allocation", 
-              "connection_type": "strategic_synthesis", "novelty_score": 0.8, "plausibility": 0.9}'
+              "connection_type": "strategic_synthesis", "novelty_score": {{ var('high_quality_threshold') }}, "plausibility": {{ var('overload_threshold') }}}'
           WHEN (category_a = 'technical_procedures' AND category_b = 'social_cognition') THEN
             '{"creative_link": "Human-centered technical design bridging systematic processes with user empathy", 
-              "connection_type": "human_technology_interface", "novelty_score": 0.7, "plausibility": 0.8}'
+              "connection_type": "human_technology_interface", "novelty_score": {{ var('strong_connection_threshold') }}, "plausibility": {{ var('high_quality_threshold') }}}'
           ELSE 
             '{"creative_link": "Cross-domain pattern recognition connecting diverse cognitive processes", 
-              "connection_type": "general_synthesis", "novelty_score": 0.5, "plausibility": 0.7}'
+              "connection_type": "general_synthesis", "novelty_score": {{ var('novelty_score_threshold') }}, "plausibility": {{ var('strong_connection_threshold') }}}'
         END::JSON
       ) as creative_association,
       
@@ -270,7 +269,7 @@
       json_extract(creative_association, '$.connection_type') as connection_type
     FROM creative_connections
     WHERE creative_strength > {{ var('creative_connection_threshold') }}
-      AND CAST(json_extract(creative_association, '$.plausibility') AS FLOAT) > 0.6
+      AND CAST(json_extract(creative_association, '$.plausibility') AS FLOAT) > {{ var('plausibility_threshold') }}
   )
   
   -- Step 4: Insert novel creative associations into semantic network
@@ -398,7 +397,7 @@
       connection_strength * (1.0 - {{ decay_rate }})
     ),
     last_decayed_at = CURRENT_TIMESTAMP
-  WHERE last_accessed_at < CURRENT_TIMESTAMP - INTERVAL '24 HOURS'
+  WHERE last_accessed_at < CURRENT_TIMESTAMP - INTERVAL '{{ var('memory_cleanup_window') }} HOURS'
     AND connection_strength > 0.01  -- Only decay non-trivial connections
 {% endmacro %}
 

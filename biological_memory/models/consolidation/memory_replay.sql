@@ -9,7 +9,7 @@
   - LLM-based semantic associations and causal relationships  
   - Hebbian learning (1.1x strengthening factor)
   - Competitive forgetting (0.8x weak, 1.2x strong memories)
-  - Cortical transfer for memories with strength >0.5
+  - Cortical transfer for memories with strength >{{ var('stability_threshold') }}
   - Semantic gist generation for long-term neocortical storage
   - Memory pool optimization with pre/post hooks
 #}
@@ -23,7 +23,7 @@
     pre_hook="SET memory_limit = '10GB'",
     post_hook=[
         "VACUUM ANALYZE {{ this }}",
-        "DELETE FROM {{ this }} WHERE consolidated_strength < 0.1"
+        "DELETE FROM {{ this }} WHERE consolidated_strength < {{ var('weak_connection_threshold') }}"
     ]
 ) }}
 
@@ -96,13 +96,13 @@ replay_cycles AS (
         ) as replay_associations,
         
         -- Hebbian learning: strengthen co-activated patterns (1.1x factor) - NULL SAFE
-        COALESCE(hebbian_potential, 0.1) * 1.1 AS strengthened_weight,
+        COALESCE(hebbian_potential, 0.1) * {{ var('strong_memory_boost_factor') }} AS strengthened_weight,
         
         -- Competitive forgetting: Apply differential strengthening - NULL SAFE
         CASE 
-            WHEN COALESCE(stm_strength, 0.1) < 0.3 THEN COALESCE(stm_strength, 0.1) * 0.8  -- Decay weak memories
-            WHEN COALESCE(stm_strength, 0.1) > 0.7 THEN COALESCE(stm_strength, 0.1) * 1.2  -- Strengthen strong memories  
-            ELSE COALESCE(stm_strength, 0.1) * 0.95  -- Mild decay for medium strength
+            WHEN COALESCE(stm_strength, 0.1) < {{ var('plasticity_threshold') }} * {{ var('homeostasis_target') }} THEN COALESCE(stm_strength, 0.1) * {{ var('weak_memory_decay_factor') }}  -- Decay weak memories
+            WHEN COALESCE(stm_strength, 0.1) > {{ var('strong_connection_threshold') }} THEN COALESCE(stm_strength, 0.1) * {{ var('strong_memory_boost_factor') }}  -- Strengthen strong memories  
+            ELSE COALESCE(stm_strength, 0.1) * {{ var('gradual_forgetting_rate') }}  -- Mild decay for medium strength
         END as consolidated_strength,
         
         -- Calculate replay strength based on multiple factors - NULL SAFE
@@ -119,32 +119,32 @@ cortical_transfer AS (
     SELECT *,
         -- Generate semantic gist for neocortical storage (abstract representation) - NULL SAFE
         CASE 
-            WHEN COALESCE(consolidated_strength, 0.0) > 0.5 THEN
+            WHEN COALESCE(consolidated_strength, 0.0) > {{ var('stability_threshold') }} THEN
                 CASE 
                     WHEN COALESCE(level_0_goal, '') LIKE '%Strategy%' OR COALESCE(level_0_goal, '') LIKE '%Planning%'
                         THEN '{"gist": "Strategic planning and goal-oriented thinking process", 
                                "category": "executive_function", 
                                "region": "prefrontal_cortex",
                                "abstraction_level": "conceptual",
-                               "integration_strength": 0.8}'
+                               "integration_strength": {{ var('high_quality_threshold') }}}}'
                     WHEN COALESCE(level_0_goal, '') LIKE '%Communication%' OR COALESCE(level_0_goal, '') LIKE '%Collaboration%'
                         THEN '{"gist": "Social communication and collaborative interaction pattern", 
                                "category": "social_cognition", 
                                "region": "temporal_superior_cortex",
                                "abstraction_level": "social",
-                               "integration_strength": 0.7}'
+                               "integration_strength": {{ var('strong_connection_threshold') }}}}'
                     WHEN COALESCE(level_0_goal, '') LIKE '%Financial%' OR COALESCE(level_0_goal, '') LIKE '%Management%'
                         THEN '{"gist": "Resource management and financial decision-making schema", 
                                "category": "quantitative_reasoning", 
                                "region": "parietal_cortex",
                                "abstraction_level": "analytical",
-                               "integration_strength": 0.9}'
+                               "integration_strength": {{ var('overload_threshold') }}}}'
                     WHEN COALESCE(level_0_goal, '') LIKE '%Project%' OR COALESCE(level_0_goal, '') LIKE '%Execution%'
                         THEN '{"gist": "Project execution and temporal coordination pattern", 
                                "category": "temporal_sequencing", 
                                "region": "frontal_motor_cortex",
                                "abstraction_level": "procedural",
-                               "integration_strength": 0.8}'
+                               "integration_strength": {{ var('high_quality_threshold') }}}}'
                     WHEN COALESCE(level_0_goal, '') LIKE '%Client%' OR COALESCE(level_0_goal, '') LIKE '%Service%'
                         THEN '{"gist": "Customer service and relationship maintenance schema", 
                                "category": "interpersonal_skills", 
@@ -161,14 +161,14 @@ cortical_transfer AS (
                            "category": "general_cognition", 
                            "region": "association_cortex",
                            "abstraction_level": "general",
-                           "integration_strength": 0.6}'
+                           "integration_strength": {{ var('consolidation_threshold') }}}'
                 END::JSON
             ELSE NULL
         END as cortical_representation,
         
         -- Calculate integration with existing cortical knowledge
         CASE 
-            WHEN consolidated_strength > 0.5 THEN 
+            WHEN consolidated_strength > {{ var('stability_threshold') }} THEN 
                 (consolidated_strength * 0.4 + replay_strength * 0.3 + 
                  {{ safe_divide('co_activation_count', '5.0', '0.0') }} * 0.3)
             ELSE 0.0
@@ -176,7 +176,7 @@ cortical_transfer AS (
         
         -- Determine memory fate (consolidation vs. forgetting)
         CASE 
-            WHEN consolidated_strength > 0.5 AND replay_strength > 0.6 THEN 'cortical_transfer'
+            WHEN consolidated_strength > {{ var('stability_threshold') }} AND replay_strength > {{ var('consolidation_threshold') }} THEN 'cortical_transfer'
             WHEN consolidated_strength > 0.3 AND replay_strength > 0.4 THEN 'hippocampal_retention'
             WHEN consolidated_strength > 0.1 THEN 'gradual_forgetting'
             ELSE 'rapid_forgetting'
@@ -245,5 +245,5 @@ SELECT
     CEIL({{ safe_divide('ROW_NUMBER() OVER (ORDER BY final_consolidated_strength DESC) * 1.0', '100', '1') }}) as consolidation_batch
 
 FROM stabilized_memories
-WHERE final_consolidated_strength > 0.1  -- Filter out completely decayed memories
+WHERE final_consolidated_strength > {{ var('weak_connection_threshold') }}  -- Filter out completely decayed memories
 ORDER BY final_consolidated_strength DESC, replay_strength DESC

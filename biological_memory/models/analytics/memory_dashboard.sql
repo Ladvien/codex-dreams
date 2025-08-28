@@ -38,7 +38,7 @@ WITH memory_type_stats AS (
 consolidation_metrics AS (
   SELECT 
     COUNT(*) as total_consolidating,
-    COUNT(CASE WHEN consolidation_priority > 0.7 THEN 1 END) as high_priority_count,
+    COUNT(CASE WHEN consolidation_priority > {{ var('strong_connection_threshold') }} THEN 1 END) as high_priority_count,
     AVG(consolidation_priority) as avg_consolidation_priority,
     AVG(interference_score) as avg_interference,
     COUNT(DISTINCT consolidation_batch) as active_batches
@@ -93,15 +93,15 @@ performance_trends AS (
   FROM (
     SELECT memory_id, 'working_memory' as memory_type, activation_strength, created_at 
     FROM {{ ref('active_memories') }}
-    WHERE created_at > CURRENT_TIMESTAMP - INTERVAL '24 HOURS'
+    WHERE created_at > CURRENT_TIMESTAMP - INTERVAL '{{ var('recent_activity_window') }} HOURS'
     UNION ALL
     SELECT memory_id, 'short_term_memory' as memory_type, activation_strength, created_at
     FROM {{ ref('consolidating_memories') }}  
-    WHERE consolidated_at > CURRENT_TIMESTAMP - INTERVAL '24 HOURS'
+    WHERE consolidated_at > CURRENT_TIMESTAMP - INTERVAL '{{ var('recent_activity_window') }} HOURS'
     UNION ALL
     SELECT memory_id, memory_type, activation_strength, created_at
     FROM {{ ref('stable_memories') }}
-    WHERE last_processed_at > CURRENT_TIMESTAMP - INTERVAL '24 HOURS'
+    WHERE last_processed_at > CURRENT_TIMESTAMP - INTERVAL '{{ var('recent_activity_window') }} HOURS'
   ) recent_memories
   GROUP BY DATE_TRUNC('hour', created_at), memory_type
 )
@@ -141,7 +141,7 @@ SELECT
   
   -- Health status assessment
   CASE 
-    WHEN shm.working_memory_utilization > 0.9 THEN 'OVERLOADED'
+    WHEN shm.working_memory_utilization > {{ var('overload_threshold') }} THEN 'OVERLOADED'
     WHEN shm.consolidation_ratio > 2.0 THEN 'CONSOLIDATION_BACKLOG' 
     WHEN shm.ltm_stability < 0.1 THEN 'UNSTABLE'
     WHEN shm.recent_learning_rate < 0.1 THEN 'LOW_ACTIVITY'
@@ -151,7 +151,7 @@ SELECT
   
   -- Recommendations
   CASE 
-    WHEN shm.working_memory_utilization > 0.9 
+    WHEN shm.working_memory_utilization > {{ var('overload_threshold') }} 
     THEN 'Increase consolidation frequency'
     WHEN shm.consolidation_ratio > 2.0
     THEN 'Optimize batch processing size'

@@ -31,7 +31,7 @@ WITH consolidated_memories AS (
   WHERE 
     -- Only memories that meet long-term storage criteria
     activation_strength > {{ var('long_term_memory_threshold') }}
-    AND consolidation_priority > 0.6
+    AND consolidation_priority > {{ var('consolidation_threshold') }}
     AND {{ memory_age_seconds('created_at') }} > 3600  -- At least 1 hour old
 ),
 
@@ -112,15 +112,15 @@ SELECT
   
   -- Memory quality indicators
   CASE 
-    WHEN stability_score > 0.8 THEN 'high_quality'
-    WHEN stability_score > 0.6 THEN 'medium_quality'
+    WHEN stability_score > {{ var('high_quality_threshold') }} THEN 'high_quality'
+    WHEN stability_score > {{ var('medium_quality_threshold') }} THEN 'medium_quality'
     WHEN stability_score > 0.4 THEN 'low_quality'
     ELSE 'unstable'
   END as memory_quality,
   
   -- Consolidation status
   CASE
-    WHEN decay_resistance > 0.7 AND importance_score > 0.6 THEN 'fully_consolidated'
+    WHEN decay_resistance > {{ var('strong_connection_threshold') }} AND importance_score > {{ var('consolidation_threshold') }} THEN 'fully_consolidated'
     WHEN decay_resistance > 0.5 AND importance_score > 0.4 THEN 'partially_consolidated'
     ELSE 'consolidating'
   END as consolidation_status

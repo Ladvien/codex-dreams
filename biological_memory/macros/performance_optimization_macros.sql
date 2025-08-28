@@ -42,7 +42,7 @@
     prompt_text TEXT NOT NULL,
     response_text TEXT NOT NULL,
     model_name VARCHAR(50) NOT NULL DEFAULT 'ollama',
-    temperature FLOAT DEFAULT 0.7,
+    temperature FLOAT DEFAULT {{ var('creativity_temperature') }},
     max_tokens INTEGER DEFAULT 1000,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -104,7 +104,7 @@
     SELECT *,
       CEIL(ROW_NUMBER() OVER (ORDER BY created_at DESC) / {{ batch_size }}.0) as batch_id
     FROM {{ source('biological_memory', 'raw_memories') }}
-    WHERE created_at > CURRENT_TIMESTAMP - INTERVAL '1 DAY'
+    WHERE created_at > CURRENT_TIMESTAMP - INTERVAL '{{ var('recent_activity_window') }} HOURS'
   )
   
   {% if operation == 'consolidation' %}
@@ -146,8 +146,8 @@
     160 as max_connections,
     ROUND({{ safe_divide('COUNT(*) * 100.0', '160', '0.0') }}, 2) as utilization_percentage,
     CASE 
-      WHEN {{ safe_divide('COUNT(*)', '160.0', '0.0') }} > 0.8 THEN 'HIGH'
-      WHEN {{ safe_divide('COUNT(*)', '160.0', '0.0') }} > 0.6 THEN 'MEDIUM' 
+      WHEN {{ safe_divide('COUNT(*)', '160.0', '0.0') }} > {{ var('high_quality_threshold') }} THEN 'HIGH'
+      WHEN {{ safe_divide('COUNT(*)', '160.0', '0.0') }} > {{ var('medium_quality_threshold') }} THEN 'MEDIUM' 
       ELSE 'LOW'
     END as utilization_status,
     CURRENT_TIMESTAMP as measured_at
@@ -184,7 +184,7 @@
         activation_strength != LAG(activation_strength) OVER (PARTITION BY memory_id ORDER BY {{ timestamp_column }})
         as has_changes
       FROM {{ source('biological_memory', 'raw_memories') }}
-      WHERE {{ timestamp_column }} >= '{{ max_timestamp }}'::TIMESTAMP - INTERVAL '1 HOUR'
+      WHERE {{ timestamp_column }} >= '{{ max_timestamp }}'::TIMESTAMP - INTERVAL '{{ var('short_processing_window') }} HOURS'
     )
     SELECT * FROM incremental_changes WHERE has_changes = TRUE
     

@@ -267,8 +267,8 @@ SELECT
     
     -- Consolidation readiness (biological thresholds)
     CASE 
-        WHEN co_activation_count >= 3 AND emotional_salience > 0.5 THEN TRUE
-        WHEN activation_strength > 0.8 AND recency_factor > 0.3 THEN TRUE  -- High activation override
+        WHEN co_activation_count >= 3 AND emotional_salience > {{ var('homeostasis_target') }} THEN TRUE
+        WHEN activation_strength > {{ var('high_quality_threshold') }} AND recency_factor > {{ var('plasticity_threshold') }} * {{ var('homeostasis_target') }} THEN TRUE  -- High activation override
         ELSE FALSE
     END as ready_for_consolidation,
     

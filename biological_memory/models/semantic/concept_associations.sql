@@ -33,7 +33,7 @@ WITH concept_pairs AS (
       AND COALESCE(last_processed_at, '1900-01-01'::TIMESTAMP) > (
         SELECT COALESCE(MAX(last_updated_at), '1900-01-01'::TIMESTAMP)
         FROM {{ this }}
-      ) - INTERVAL '1 HOUR'
+      ) - INTERVAL '{{ var('short_processing_window') }} HOURS'
     {% endif %}
   ) cross_concepts
   WHERE concept1 != concept2
@@ -50,9 +50,9 @@ co_occurrence_analysis AS (
     COUNT(DISTINCT sm.memory_id) as shared_memories,
     
     -- Temporal co-occurrence patterns - NULL SAFE
-    COUNT(CASE WHEN COALESCE(sm.created_at, '1900-01-01'::TIMESTAMP) > CURRENT_TIMESTAMP - INTERVAL '24 HOURS' 
+    COUNT(CASE WHEN COALESCE(sm.created_at, '1900-01-01'::TIMESTAMP) > CURRENT_TIMESTAMP - INTERVAL '{{ var('recent_activity_window') }} HOURS' 
           THEN 1 END) as recent_co_occurrences,
-    COUNT(CASE WHEN COALESCE(sm.created_at, '1900-01-01'::TIMESTAMP) > CURRENT_TIMESTAMP - INTERVAL '7 DAYS' 
+    COUNT(CASE WHEN COALESCE(sm.created_at, '1900-01-01'::TIMESTAMP) > CURRENT_TIMESTAMP - INTERVAL '{{ var('weekly_memory_window') }} HOURS' 
           THEN 1 END) as weekly_co_occurrences,
           
     -- Semantic similarity estimation - NULL SAFE
@@ -146,14 +146,14 @@ final_associations AS (
     
     -- Association quality metrics - NULL SAFE
     CASE 
-      WHEN COALESCE(semantic_similarity, 0.0) > COALESCE({{ var('semantic_association_threshold') }}, 0.7) 
+      WHEN COALESCE(semantic_similarity, 0.0) > {{ var('semantic_association_threshold') }} 
            AND COALESCE(co_occurrence_count, 0) >= 5 
       THEN 'strong_semantic'
       WHEN COALESCE(recent_co_occurrences, 0) >= 3 
       THEN 'strong_temporal'  
       WHEN COALESCE(co_occurrence_count, 0) >= 10
       THEN 'strong_frequency'
-      WHEN COALESCE(semantic_similarity, 0.0) > 0.5 OR COALESCE(co_occurrence_count, 0) >= 3
+      WHEN COALESCE(semantic_similarity, 0.0) > {{ var('homeostasis_target') }} OR COALESCE(co_occurrence_count, 0) >= 3
       THEN 'moderate'
       ELSE 'weak'
     END as association_quality,

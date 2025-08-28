@@ -78,8 +78,8 @@ memory_age_analysis AS (
         SELECT 
             CASE 
                 WHEN {{ memory_age_seconds('timestamp') }} <= 86400 THEN 'recent'  -- 1 day
-                WHEN {{ memory_age_seconds('timestamp') }} <= 604800 THEN 'week_old'  -- 7 days
-                WHEN {{ memory_age_seconds('timestamp') }} <= 2592000 THEN 'month_old'  -- 30 days
+                WHEN {{ memory_age_seconds('timestamp') }} <= {{ var('weekly_memory_window') }} * 3600 THEN 'week_old'  -- 7 days in hours
+                WHEN {{ memory_age_seconds('timestamp') }} <= {{ var('monthly_memory_window') }} * 3600 THEN 'month_old'  -- 30 days in hours
                 ELSE 'remote'
             END as age_category
         FROM {{ ref('stm_hierarchical_episodes') }}
@@ -146,10 +146,10 @@ access_frequency_stats AS (
 system_performance AS (
     -- System-wide performance and capacity metrics  
     SELECT 
-        -- Working memory capacity utilization (Miller's 7±2) - NULL SAFE
+        -- Working memory capacity utilization (Miller's Law) - NULL SAFE
         COALESCE((SELECT total_memories FROM memory_distribution WHERE memory_type = 'working_memory'), 0) as wm_current_load,
-        COALESCE({{ var('working_memory_capacity') }}, 7) as wm_max_capacity,
-        {{ safe_divide('COALESCE((SELECT total_memories FROM memory_distribution WHERE memory_type = \'working_memory\'), 0) * 100.0', 'COALESCE(' ~ var('working_memory_capacity') ~ ', 7)', '0.0') }} as wm_utilization_pct,
+        {{ var('working_memory_capacity') }} as wm_max_capacity,
+        {{ safe_divide('COALESCE((SELECT total_memories FROM memory_distribution WHERE memory_type = \'working_memory\'), 0) * 100.0', var('working_memory_capacity'), '0.0') }} as wm_utilization_pct,
         
         -- Short-term memory processing efficiency - NULL SAFE
         COALESCE((SELECT total_memories FROM memory_distribution WHERE memory_type = 'short_term_memory'), 0) as stm_current_count,
@@ -211,7 +211,7 @@ SELECT
     
     -- System performance metrics - NULL SAFE
     COALESCE(sp.wm_current_load, 0) as wm_current_load,
-    COALESCE(sp.wm_max_capacity, 7) as wm_max_capacity,
+    COALESCE(sp.wm_max_capacity, {{ var('working_memory_capacity') }}) as wm_max_capacity,
     COALESCE(sp.wm_utilization_pct, 0.0) as wm_utilization_pct,
     COALESCE(sp.stm_current_count, 0) as stm_current_count,
     COALESCE(sp.ltm_stable_count, 0) as ltm_stable_count,
@@ -219,7 +219,7 @@ SELECT
     
     -- Health status assessment
     CASE 
-        WHEN sp.wm_utilization_pct > 90 THEN 'OVERLOADED'
+        WHEN sp.wm_utilization_pct > {{ var('overload_threshold') }} * 100 THEN 'OVERLOADED'
         WHEN sp.consolidation_success_rate < 50 THEN 'CONSOLIDATION_ISSUES'
         WHEN COALESCE(sd.semantic_category_diversity, 0) < 3 THEN 'LOW_SEMANTIC_DIVERSITY'
         WHEN cm.avg_consolidation_strength < 0.3 THEN 'WEAK_CONSOLIDATION'
@@ -233,13 +233,13 @@ SELECT
         WHEN sp.wm_utilization_pct > 85 THEN 'WARNING: Working memory near capacity'
         WHEN sp.consolidation_success_rate < 60 THEN 'WARNING: Low consolidation efficiency'
         WHEN cm.avg_consolidation_strength < 0.4 THEN 'WARNING: Weak memory consolidation'
-        WHEN afs.avg_access_frequency < 0.5 THEN 'INFO: Low system activity'
+        WHEN afs.avg_access_frequency < {{ var('homeostasis_target') }} THEN 'INFO: Low system activity'
         ELSE 'System operating within normal parameters'
     END as performance_alert,
     
     -- Optimization recommendations
     CASE 
-        WHEN sp.wm_utilization_pct > 90 
+        WHEN sp.wm_utilization_pct > {{ var('overload_threshold') }} * 100 
         THEN 'Increase consolidation frequency to reduce working memory load'
         WHEN sp.consolidation_success_rate < 50
         THEN 'Review consolidation thresholds and replay mechanisms'

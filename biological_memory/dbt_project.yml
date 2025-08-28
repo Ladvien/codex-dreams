@@ -28,8 +28,34 @@ vars:
   short_term_memory_duration: 30  # seconds
   long_term_memory_threshold: 0.7  # activation strength threshold
   
+  # Memory strength and quality thresholds
+  strong_connection_threshold: 0.7  # Strong memory connections
+  medium_quality_threshold: 0.6    # Medium quality memories
+  high_quality_threshold: 0.8      # High quality memories  
+  consolidation_threshold: 0.6     # Minimum for consolidation
+  stability_threshold: 0.5         # Basic stability requirement
+  overload_threshold: 0.9          # Working memory overload
+  
+  # Memory decay and strengthening factors
+  weak_memory_decay_factor: 0.8    # Decay rate for weak memories
+  strong_memory_boost_factor: 1.2  # Boost rate for strong memories
+  gradual_forgetting_rate: 0.9     # Rate of gradual memory loss
+  default_decay_factor: 0.7        # Standard decay rate
+  
+  # Creative and semantic association parameters
+  plausibility_threshold: 0.6      # Minimum plausibility for associations
+  novelty_score_threshold: 0.5     # Minimum novelty for creative associations
+  creativity_temperature: 0.7      # LLM temperature for creative tasks
+  
+  # Temporal windows for memory processing (in hours)
+  recent_activity_window: 24       # Recent activity classification
+  short_processing_window: 1       # Short-term processing window
+  weekly_memory_window: 168        # 7 days in hours
+  monthly_memory_window: 720       # 30 days in hours
+  memory_cleanup_window: 24        # Hours before cleanup
+  
   # Hebbian learning parameters  
-  hebbian_learning_rate: 0.1  # Enhanced learning rate for BMP-009
+  hebbian_learning_rate: 0.1       # Enhanced learning rate for BMP-009
   synaptic_decay_rate: 0.001
   homeostasis_target: 0.5
   plasticity_threshold: 0.6
