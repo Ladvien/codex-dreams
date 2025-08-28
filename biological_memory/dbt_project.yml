@@ -29,10 +29,20 @@ vars:
   long_term_memory_threshold: 0.7  # activation strength threshold
   
   # Hebbian learning parameters  
-  hebbian_learning_rate: 0.01
+  hebbian_learning_rate: 0.1  # Enhanced learning rate for BMP-009
   synaptic_decay_rate: 0.001
   homeostasis_target: 0.5
   plasticity_threshold: 0.6
+  
+  # Synaptic homeostasis parameters
+  homeostasis_adjustment_rate: 0.05
+  weak_connection_threshold: 0.01  # Prune connections below this threshold
+  
+  # REM-sleep creative association parameters
+  rem_association_batch_size: 100
+  rem_creativity_factor: 0.8
+  creative_connection_threshold: 0.4
+  association_strengthening_rate: 0.15
   
   # Consolidation parameters
   consolidation_batch_size: 1000

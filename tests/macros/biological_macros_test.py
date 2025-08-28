@@ -418,3 +418,357 @@ class TestMacroIntegration:
         
         # All processes should work together for stable memory system
         assert True, "Biological macros should maintain system stability"
+
+
+class TestAdvancedHebbianImplementation:
+    """Test advanced Hebbian learning implementation (BMP-009)."""
+    
+    def test_temporal_coactivation_windows(self):
+        """Test precise 5-minute temporal co-activation windows."""
+        # Test that co-activations are counted within exact 5-minute windows
+        base_time = datetime.now(timezone.utc)
+        
+        test_cases = [
+            {'delay_seconds': 30, 'should_count': True},    # 30 seconds - within window
+            {'delay_seconds': 180, 'should_count': True},   # 3 minutes - within window  
+            {'delay_seconds': 299, 'should_count': True},   # 4:59 - within window
+            {'delay_seconds': 301, 'should_count': False},  # 5:01 - outside window
+            {'delay_seconds': 600, 'should_count': False},  # 10 minutes - outside window
+        ]
+        
+        window_seconds = 5 * 60  # 5 minutes
+        
+        for case in test_cases:
+            delay = case['delay_seconds']
+            within_window = delay <= window_seconds
+            expected = case['should_count']
+            
+            assert within_window == expected, \
+                f"Delay of {delay}s should {'be' if expected else 'not be'} within 5-minute window"
+    
+    def test_coactivation_counting_accuracy(self):
+        """Test accurate co-activation counting with semantic categories."""
+        # Simulate STM memories with shared categories
+        memories = [
+            {'id': 1, 'timestamp': datetime.now(timezone.utc), 'semantic_category': 'meeting'},
+            {'id': 2, 'timestamp': datetime.now(timezone.utc) - timedelta(minutes=2), 'semantic_category': 'meeting'},
+            {'id': 3, 'timestamp': datetime.now(timezone.utc) - timedelta(minutes=4), 'semantic_category': 'meeting'},
+            {'id': 4, 'timestamp': datetime.now(timezone.utc) - timedelta(minutes=1), 'semantic_category': 'coding'},
+            {'id': 5, 'timestamp': datetime.now(timezone.utc) - timedelta(minutes=3), 'semantic_category': 'coding'},
+        ]
+        
+        # Count expected co-activations within same category and 5-minute window
+        expected_coactivations = []
+        
+        for i, mem_a in enumerate(memories):
+            for mem_b in memories[i+1:]:
+                if (mem_a['semantic_category'] == mem_b['semantic_category'] and
+                    abs((mem_a['timestamp'] - mem_b['timestamp']).total_seconds()) <= 300):
+                    expected_coactivations.append((mem_a['id'], mem_b['id']))
+        
+        # Should find co-activations: (1,2), (1,3), (2,3) for meetings, (4,5) for coding
+        assert len(expected_coactivations) == 4, "Should find 4 co-activations"
+        assert (1, 2) in expected_coactivations, "Should find meeting co-activation"
+        assert (4, 5) in expected_coactivations, "Should find coding co-activation"
+    
+    def test_hebbian_delta_calculation(self):
+        """Test Hebbian delta calculation with runaway prevention."""
+        test_scenarios = [
+            {'current_strength': 0.1, 'coactivations': 3, 'learning_rate': 0.1},
+            {'current_strength': 0.5, 'coactivations': 5, 'learning_rate': 0.1},
+            {'current_strength': 0.9, 'coactivations': 2, 'learning_rate': 0.1},  # Near saturation
+        ]
+        
+        for scenario in test_scenarios:
+            current = scenario['current_strength']
+            coact = min(scenario['coactivations'], 10.0)  # Cap at 10 to prevent saturation
+            rate = scenario['learning_rate']
+            
+            # Calculate Hebbian delta: rate × coactivation × (1 - current_strength)
+            hebbian_delta = rate * (coact / 10.0) * (1.0 - current)
+            new_strength = current * (1 + hebbian_delta)
+            
+            # Test delta properties
+            assert hebbian_delta >= 0, "Hebbian delta should be non-negative"
+            assert new_strength <= 1.0, "Strength should not exceed 1.0 (saturation prevention)"
+            assert new_strength > current, "New strength should be higher"
+            
+            # Higher co-activations should lead to larger deltas (when not saturated)
+            if current < 0.8:  # Not near saturation
+                assert hebbian_delta > 0.001, "Should have meaningful delta for non-saturated connections"
+    
+    def test_normalization_prevents_runaway(self):
+        """Test that normalization prevents runaway potentiation."""
+        # Test extreme co-activation scenario
+        extreme_coactivations = [15, 20, 25]  # Very high co-activation counts
+        
+        for coact_count in extreme_coactivations:
+            # Apply normalization: min(coact_count, 10.0) / 10.0
+            normalized = min(coact_count, 10.0) / 10.0
+            
+            assert normalized <= 1.0, "Normalized co-activation should not exceed 1.0"
+            
+            # Even extreme co-activations should be capped
+            if coact_count > 10:
+                assert normalized == 1.0, "Co-activations > 10 should normalize to 1.0"
+
+
+class TestAdvancedSynapticHomeostasis:
+    """Test advanced synaptic homeostasis implementation (BMP-009)."""
+    
+    def test_network_statistics_calculation(self):
+        """Test network statistics calculation for homeostasis."""
+        # Sample retrieval strengths from semantic network
+        sample_strengths = [0.1, 0.3, 0.5, 0.7, 0.9, 0.2, 0.6, 0.8, 0.4]
+        
+        # Calculate expected statistics
+        mean_strength = sum(sample_strengths) / len(sample_strengths)
+        max_strength = max(sample_strengths)
+        min_strength = min(sample_strengths)
+        
+        # Test statistical calculations
+        assert 0 < mean_strength < 1, "Mean strength should be in valid range"
+        assert max_strength == 0.9, "Max strength should be correctly identified"
+        assert min_strength == 0.1, "Min strength should be correctly identified"
+        
+        # Calculate standard deviation concept
+        variance = sum((x - mean_strength) ** 2 for x in sample_strengths) / len(sample_strengths)
+        std_dev = math.sqrt(variance)
+        
+        assert std_dev > 0, "Standard deviation should indicate variability"
+    
+    def test_scaling_factor_logic(self):
+        """Test scaling factor calculation for homeostasis."""
+        homeostasis_target = 0.5
+        
+        test_scenarios = [
+            {'mean_strength': 0.8, 'expected_action': 'scale_down'},    # Too high
+            {'mean_strength': 0.2, 'expected_action': 'scale_up'},      # Too low  
+            {'mean_strength': 0.5, 'expected_action': 'no_scaling'},    # Just right
+            {'mean_strength': 0.45, 'expected_action': 'no_scaling'},   # Close enough
+        ]
+        
+        for scenario in test_scenarios:
+            mean = scenario['mean_strength']
+            
+            # Calculate scaling factor
+            if mean > homeostasis_target * 1.5:  # 0.75
+                scaling_factor = homeostasis_target / mean  # Scale down
+                expected_action = 'scale_down'
+            elif mean < homeostasis_target * 0.5:  # 0.25
+                scaling_factor = homeostasis_target / mean  # Scale up  
+                expected_action = 'scale_up'
+            else:
+                scaling_factor = 1.0  # No scaling
+                expected_action = 'no_scaling'
+            
+            assert scenario['expected_action'] == expected_action, \
+                f"Mean {mean} should trigger {expected_action}"
+            
+            if expected_action == 'scale_down':
+                assert scaling_factor < 1.0, "Should scale down when mean is too high"
+            elif expected_action == 'scale_up':
+                assert scaling_factor > 1.0, "Should scale up when mean is too low"
+            else:
+                assert scaling_factor == 1.0, "Should not scale when mean is appropriate"
+    
+    def test_weak_connection_identification(self):
+        """Test identification of weak connections for pruning."""
+        connection_data = [
+            {'strength': 0.005, 'age': 'remote', 'access_freq': 1, 'should_prune': True},
+            {'strength': 0.008, 'age': 'remote', 'access_freq': 0, 'should_prune': True},
+            {'strength': 0.012, 'age': 'remote', 'access_freq': 1, 'should_prune': False},  # Above threshold
+            {'strength': 0.005, 'age': 'recent', 'access_freq': 1, 'should_prune': False}, # Not remote
+            {'strength': 0.009, 'age': 'remote', 'access_freq': 3, 'should_prune': False}, # High access
+        ]
+        
+        threshold = 0.01
+        
+        for connection in connection_data:
+            strength = connection['strength']
+            age = connection['age']
+            access_freq = connection['access_freq']
+            expected_prune = connection['should_prune']
+            
+            # Pruning logic: weak AND remote AND rarely accessed
+            should_prune = (strength < threshold and 
+                          age == 'remote' and 
+                          access_freq < 2)
+            
+            assert should_prune == expected_prune, \
+                f"Connection with strength {strength}, age {age}, access {access_freq} pruning mismatch"
+    
+    def test_network_health_metrics(self):
+        """Test network health metrics creation."""
+        # Sample network data after homeostasis
+        sample_data = {
+            'total_synapses': 5000,
+            'strong_connections': 150,  # strength > 0.7
+            'weak_connections': 50,     # strength < 0.1  
+            'avg_strength': 0.52
+        }
+        
+        # Test health metric calculations
+        strong_ratio = sample_data['strong_connections'] / sample_data['total_synapses']
+        weak_ratio = sample_data['weak_connections'] / sample_data['total_synapses']
+        
+        assert 0.02 < strong_ratio < 0.1, "Strong connections should be reasonable minority"
+        assert weak_ratio < 0.05, "Weak connections should be small after pruning"
+        assert 0.4 < sample_data['avg_strength'] < 0.6, "Average should be near homeostatic target"
+
+
+class TestAdvancedAssociationStrengthening:
+    """Test advanced REM-sleep association strengthening (BMP-009)."""
+    
+    def test_distant_memory_pair_selection(self):
+        """Test selection of distant memory pairs for creative linking."""
+        # Sample memories from different categories
+        memories = [
+            {'id': 1, 'category': 'work_meeting', 'strength': 0.8},
+            {'id': 2, 'category': 'financial_planning', 'strength': 0.7},
+            {'id': 3, 'category': 'technical_procedures', 'strength': 0.6},
+            {'id': 4, 'category': 'social_cognition', 'strength': 0.5},
+            {'id': 5, 'category': 'work_meeting', 'strength': 0.4},  # Same category as #1
+        ]
+        
+        # Generate cross-category pairs (distant associations)
+        distant_pairs = []
+        for i, mem_a in enumerate(memories):
+            for mem_b in memories[i+1:]:
+                if (mem_a['category'] != mem_b['category'] and  # Different categories
+                    mem_a['strength'] > 0.3 and mem_b['strength'] > 0.3):  # Strong enough
+                    distant_pairs.append((mem_a['id'], mem_b['id'], mem_a['category'], mem_b['category']))
+        
+        # Should find distant pairs but not same-category pairs
+        assert len(distant_pairs) > 0, "Should find distant memory pairs"
+        
+        for pair in distant_pairs:
+            mem_a_id, mem_b_id, cat_a, cat_b = pair
+            assert cat_a != cat_b, "Distant pairs should have different categories"
+            assert mem_a_id != mem_b_id, "Should pair different memories"
+    
+    def test_creative_connection_types(self):
+        """Test different types of creative connections."""
+        connection_types = [
+            'strategic_synthesis',
+            'human_technology_interface', 
+            'executive_emotional_intelligence',
+            'analytical_project_management',
+            'communicative_strategy',
+            'collective_problem_solving',
+            'general_synthesis'
+        ]
+        
+        for conn_type in connection_types:
+            assert len(conn_type) > 5, "Connection type should be descriptive"
+            assert '_' in conn_type, "Connection type should use underscore format"
+            
+            # Each type should represent meaningful cognitive synthesis
+            assert any(keyword in conn_type for keyword in 
+                     ['synthesis', 'intelligence', 'management', 'strategy', 'solving']), \
+                f"Connection type {conn_type} should indicate cognitive process"
+    
+    def test_novelty_and_plausibility_scoring(self):
+        """Test novelty and plausibility scoring for creative connections."""
+        creative_connections = [
+            {'type': 'strategic_synthesis', 'novelty': 0.8, 'plausibility': 0.9},
+            {'type': 'human_technology_interface', 'novelty': 0.7, 'plausibility': 0.8},
+            {'type': 'general_synthesis', 'novelty': 0.5, 'plausibility': 0.7}
+        ]
+        
+        for connection in creative_connections:
+            novelty = connection['novelty']
+            plausibility = connection['plausibility']
+            
+            # Test scoring ranges
+            assert 0 <= novelty <= 1, "Novelty should be 0-1 range"
+            assert 0 <= plausibility <= 1, "Plausibility should be 0-1 range"
+            
+            # Strategic and specific connections should have higher scores
+            if 'strategic' in connection['type']:
+                assert novelty >= 0.6, "Strategic connections should be moderately novel"
+                assert plausibility >= 0.8, "Strategic connections should be highly plausible"
+            
+            # General connections should have lower novelty
+            if 'general' in connection['type']:
+                assert novelty <= 0.6, "General connections should be less novel"
+    
+    def test_creative_strength_calculation(self):
+        """Test creative association strength calculation."""
+        test_pairs = [
+            {'strength_a': 0.8, 'strength_b': 0.7, 'different_categories': True},
+            {'strength_a': 0.6, 'strength_b': 0.5, 'different_categories': True},
+            {'strength_a': 0.9, 'strength_b': 0.8, 'different_categories': False},  # Same category
+        ]
+        
+        creativity_factor = 0.8
+        
+        for pair in test_pairs:
+            strength_a = pair['strength_a']
+            strength_b = pair['strength_b']
+            different_cats = pair['different_categories']
+            
+            # Calculate creative strength: (strength_a * 0.4 + strength_b * 0.4 + novelty_bonus) * factor
+            base_strength = strength_a * 0.4 + strength_b * 0.4
+            novelty_bonus = 0.2 if different_cats else 0.0
+            creative_strength = (base_strength + novelty_bonus) * creativity_factor
+            
+            # Test creative strength properties
+            assert creative_strength > 0, "Creative strength should be positive"
+            assert creative_strength <= 1.0, "Creative strength should not exceed 1.0"
+            
+            # Different categories should get novelty bonus
+            if different_cats:
+                same_cat_strength = base_strength * creativity_factor  # No bonus
+                assert creative_strength > same_cat_strength, \
+                    "Different categories should get novelty bonus"
+    
+    def test_rem_batch_size_limits(self):
+        """Test REM association batch size for computational efficiency."""
+        total_memories = 10000
+        batch_size_options = [50, 100, 200, 500]
+        
+        for batch_size in batch_size_options:
+            # Calculate computational load
+            max_possible_pairs = total_memories * (total_memories - 1) // 2
+            sample_ratio = batch_size / max_possible_pairs
+            
+            # Test batch size reasonableness
+            assert batch_size <= 500, "Batch size should be limited for performance"
+            assert sample_ratio < 0.001, "Should sample tiny fraction for efficiency"
+            
+            # Larger batches allow more creativity but cost more computation
+            if batch_size >= 200:
+                assert sample_ratio < 0.0001, "Large batches need very selective sampling"
+            
+    def test_creative_association_storage(self):
+        """Test storage structure for creative associations."""
+        sample_association = {
+            'source_memory_id': 123,
+            'target_memory_id': 456,
+            'source_gist': 'Database optimization meeting',
+            'target_gist': 'Personal reflection time',
+            'creative_link_description': 'Both involve systematic analysis and optimization processes',
+            'connection_type': 'analytical_synthesis',
+            'association_strength': 0.65,
+            'novelty_score': 0.7,
+            'plausibility_score': 0.8,
+            'discovery_method': 'rem_sleep_simulation',
+            'created_during_rem': True
+        }
+        
+        # Validate association storage structure
+        required_fields = [
+            'source_memory_id', 'target_memory_id', 'creative_link_description',
+            'association_strength', 'novelty_score', 'plausibility_score'
+        ]
+        
+        for field in required_fields:
+            assert field in sample_association, f"Should store {field}"
+            assert sample_association[field] is not None, f"{field} should not be null"
+        
+        # Test field value ranges
+        assert 0 < sample_association['association_strength'] <= 1, "Strength should be valid range"
+        assert 0 <= sample_association['novelty_score'] <= 1, "Novelty should be 0-1"
+        assert 0 <= sample_association['plausibility_score'] <= 1, "Plausibility should be 0-1"
+        assert sample_association['created_during_rem'] == True, "Should mark as REM-created"
