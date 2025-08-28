@@ -11,8 +11,9 @@
 | Infrastructure | BMP-001 | COMPLETED | 2025-08-28 01:04:01 |
 | Database | BMP-002 | COMPLETED | 2025-08-28 01:06:21 |
 | Analytics | BMP-003 | COMPLETED | 2025-08-28 01:07:14 |
-| Memory | BMP-004 | WAITING | Dependencies: BMP-001,002,003 |
-| QA | BMP-010 | IN_PROGRESS | 2025-08-28 14:15:00 |
+| Memory | BMP-004 | IN_PROGRESS | 2025-08-28 22:42:00 |
+| Memory | BMP-005 | IN_PROGRESS | 2025-08-28 01:22:45 |
+| QA | BMP-010 | IN_PROGRESS | 2025-08-28 14:30:00 |
 
 ## Communication Log
 
@@ -90,6 +91,25 @@ Will implement connection tests, validation logic, and documentation per accepta
 - `/run_env_tests.py` - Environment test runner
 
 **Ready for**: BMP-002 (DuckDB Extensions), BMP-003 (dbt Configuration)
+
+### 2025-08-28 22:42:00 - Memory Agent Claims BMP-004
+**Memory Agent**: Starting BMP-004: Working Memory Implementation with 5-minute attention window and Miller's 7±2 capacity limits. Building on completed dependencies (BMP-001,002,003). Implementation:
+- Working memory view in biological_memory/models/working_memory/
+- PostgreSQL connection via postgres_scanner (192.168.1.104:5432)
+- 5-minute sliding window for recent memories
+- LLM extraction using prompt() function with gpt-oss:20b
+- Miller's 7±2 capacity limits with importance-based ranking
+- Continuous view optimization for <100ms performance
+
+### 2025-08-28 01:22:45 - Memory Agent Claims BMP-005
+**Memory Agent**: Starting BMP-005: Short-Term Memory with Hierarchical Episodes. BMP-004 working memory models are in place, proceeding with hierarchical episodic memory implementation. Building STM with:
+- Incremental materialization with unique_key='id' in biological_memory/models/short_term_memory/
+- Hierarchical LLM extraction (goal → tasks → actions) using Ollama gpt-oss:20b
+- Spatial memory components (egocentric/allocentric/object positions)
+- Biological features: recency_factor (exponential decay), emotional_salience (sentiment-based)
+- Hebbian co-activation counting with 1-hour temporal window
+- Consolidation readiness logic (co_activation_count >= 3, salience > 0.5)
+- STM strength calculation: recency_factor * emotional_salience
 
 ### 2025-08-28 14:15:00 - QA Agent Update
 **QA Agent**: Starting comprehensive test suite implementation for BMP-010. Creating test directory structure, implementing test naming conventions (_test suffix), setting up test database isolation with TEST_DATABASE_URL, and creating Ollama mocks for offline testing. Target: >90% coverage, <5min test runtime.
