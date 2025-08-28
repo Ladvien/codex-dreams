@@ -256,7 +256,7 @@ class SecuritySanitizer:
         sanitized_message = sanitized_message.replace('\\x00', '\\\\x00')  # Null bytes
         
         # Remove ANSI escape codes that could manipulate terminal output
-        ansi_escape = re.compile(r'\\x1B(?:[@-Z\\-_]|\\[[0-?]*[ -/]*[@-~])')
+        ansi_escape = re.compile(r'\\x1B(?:[@-Z\\\\_-]|\\[[0-?]*[ -/]*[@-~])')
         sanitized_message = ansi_escape.sub('', sanitized_message)
         
         # Apply sensitive data sanitization

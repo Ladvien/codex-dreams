@@ -455,13 +455,7 @@ class SQLRuntimeSafetyManager:
                     with conn.cursor() as cursor:
                         cursor.execute(f"SET statement_timeout = {timeout_seconds * 1000}")
                 
-                # Execute query with timeout using signal (Unix-like systems)
-                def timeout_handler(signum, frame):
-                    raise TimeoutError(f"Query timeout after {timeout_seconds} seconds")
-                
-                old_handler = signal.signal(signal.SIGALRM, timeout_handler)
-                signal.alarm(timeout_seconds)
-                
+                # Execute query (simplified without signal timeout for better compatibility)
                 try:
                     if parameters:
                         if db_type == "duckdb":
@@ -499,9 +493,9 @@ class SQLRuntimeSafetyManager:
                         safety_level=self.safety_level
                     )
                     
-                finally:
-                    signal.alarm(0)  # Cancel timeout
-                    signal.signal(signal.SIGALRM, old_handler)  # Restore handler
+                except Exception as query_error:
+                    # Handle query execution errors
+                    raise query_error
                     
         except TimeoutError as e:
             return SQLExecutionResult(
@@ -534,13 +528,11 @@ class SQLRuntimeSafetyManager:
         
         try:
             with self.get_safe_connection(db_path, db_type) as conn:
-                # Begin transaction
-                if db_type in ["sqlite", "postgres"]:
-                    conn.begin() if hasattr(conn, 'begin') else conn.execute("BEGIN")
-                elif db_type == "duckdb":
-                    conn.begin()
-                
+                # Use DuckDB's transaction handling
                 try:
+                    # Begin transaction
+                    conn.execute("BEGIN TRANSACTION")
+                    
                     results = []
                     total_rows_affected = 0
                     
@@ -548,34 +540,22 @@ class SQLRuntimeSafetyManager:
                         params = parameters_list[i] if parameters_list and i < len(parameters_list) else None
                         
                         if params:
-                            if db_type == "duckdb":
-                                result = conn.execute(query, params).fetchall()
-                            elif db_type == "sqlite":
-                                cursor = conn.execute(query, params)
-                                result = cursor.fetchall()
-                            elif db_type == "postgres":
-                                with conn.cursor() as cursor:
-                                    cursor.execute(query, params)
-                                    result = cursor.fetchall() if cursor.description else []
+                            cursor_result = conn.execute(query, params)
                         else:
-                            if db_type == "duckdb":
-                                result = conn.execute(query).fetchall()
-                            elif db_type == "sqlite":
-                                cursor = conn.execute(query)
-                                result = cursor.fetchall()
-                            elif db_type == "postgres":
-                                with conn.cursor() as cursor:
-                                    cursor.execute(query)
-                                    result = cursor.fetchall() if cursor.description else []
+                            cursor_result = conn.execute(query)
                         
-                        results.extend(result if result else [])
-                        total_rows_affected += len(result) if result else 0
+                        # Handle different result types
+                        try:
+                            result = cursor_result.fetchall()
+                            if result:
+                                results.extend(result)
+                                total_rows_affected += len(result)
+                        except Exception:
+                            # Some queries (like INSERT) might not return results
+                            total_rows_affected += 1
                     
                     # Commit transaction
-                    if hasattr(conn, 'commit'):
-                        conn.commit()
-                    else:
-                        conn.execute("COMMIT")
+                    conn.execute("COMMIT")
                     
                     return SQLExecutionResult(
                         success=True,
@@ -588,10 +568,7 @@ class SQLRuntimeSafetyManager:
                 except Exception as e:
                     # Rollback transaction
                     try:
-                        if hasattr(conn, 'rollback'):
-                            conn.rollback()
-                        else:
-                            conn.execute("ROLLBACK")
+                        conn.execute("ROLLBACK")
                         self.logger.info("Transaction rolled back successfully")
                     except Exception as rollback_error:
                         self.logger.error(f"Rollback failed: {rollback_error}")

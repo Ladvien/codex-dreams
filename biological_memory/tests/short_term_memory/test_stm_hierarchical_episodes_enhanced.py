@@ -633,11 +633,8 @@ if __name__ == "__main__":
     import tempfile
     import os
     
-    db_file = tempfile.NamedTemporaryFile(delete=False, suffix='.duckdb')
-    db_file.close()
-    
     try:
-        conn = duckdb.connect(db_file.name)
+        conn = duckdb.connect(':memory:')
         
         # Setup basic tables
         conn.execute("CREATE SCHEMA IF NOT EXISTS self_sensored")
@@ -712,4 +709,3 @@ if __name__ == "__main__":
         
     finally:
         conn.close()
-        os.unlink(db_file.name)
