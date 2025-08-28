@@ -551,17 +551,39 @@ class BiologicalMemoryErrorHandler:
                                 max_retries: int = 5,
                                 base_delay: float = 1.0,
                                 max_delay: float = 32.0,
-                                exceptions: tuple = (Exception,)) -> Any:
-        """Execute function with exponential backoff retry"""
+                                exceptions: tuple = (Exception,),
+                                jitter: bool = True,
+                                backoff_multiplier: float = 2.0) -> Any:
+        """Execute function with exponential backoff retry with jitter and configurable multiplier"""
+        import random
         
         for attempt in range(max_retries + 1):
             try:
                 return func()
             except exceptions as e:
                 if attempt == max_retries:
+                    # Log final failure
+                    error_event = ErrorEvent(
+                        error_id=SecuritySanitizer.generate_secure_error_id(),
+                        error_type=ErrorType.CONNECTION_FAILURE,
+                        timestamp=datetime.now(),
+                        component="retry_system",
+                        operation="exponential_backoff",
+                        error_message=f"All retry attempts failed: {str(e)}",
+                        recovery_attempts=max_retries,
+                        context={'max_retries': max_retries, 'base_delay': base_delay}
+                    )
+                    self.log_error_event(error_event)
                     raise e
                 
-                delay = min(base_delay * (2 ** attempt), max_delay)
+                # Calculate delay with exponential backoff
+                delay = min(base_delay * (backoff_multiplier ** attempt), max_delay)
+                
+                # Add jitter to prevent thundering herd
+                if jitter:
+                    jitter_factor = random.uniform(0.5, 1.5)
+                    delay *= jitter_factor
+                
                 self.logger.warning(f"Retry attempt {attempt + 1}/{max_retries} failed: {str(e)}. "
                                   f"Retrying in {delay:.2f}s")
                 time.sleep(delay)

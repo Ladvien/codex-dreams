@@ -24,9 +24,24 @@ from error_handling import (
     with_error_handling, CircuitBreaker
 )
 
+# Import SQL runtime safety system - BMP-HIGH-006
+from sql_runtime_safety import (
+    SQLRuntimeSafetyManager, SQLRuntimeSafetyLevel, create_sql_safety_manager
+)
+
 # Import LLM integration service
 from llm_integration_service import (
     initialize_llm_service, register_llm_functions, get_llm_service
+)
+
+# Import health monitoring service
+from health_check_service import (
+    initialize_health_monitor, get_health_monitor, ComprehensiveHealthMonitor
+)
+
+# Import automated recovery service
+from automated_recovery_service import (
+    initialize_recovery_service, get_recovery_service, AutomatedRecoveryService
 )
 
 
@@ -66,8 +81,17 @@ class BiologicalMemoryOrchestrator:
             ollama_timeout_seconds=self.ollama_timeout_seconds
         )
         
+        # Initialize BMP-HIGH-006 SQL runtime safety system
+        self.sql_safety = create_sql_safety_manager(self.error_handler)
+        
         # Initialize LLM integration service
         self._init_llm_service()
+        
+        # Initialize health monitoring system
+        self._init_health_monitoring()
+        
+        # Initialize automated recovery system
+        self._init_automated_recovery()
         
         # Processing state
         self.is_wake_hours = False
@@ -129,6 +153,61 @@ class BiologicalMemoryOrchestrator:
         except Exception as e:
             self.logger.error(f"Failed to initialize LLM service: {e}")
             # Continue without LLM - fallbacks will handle this
+
+    def _init_health_monitoring(self):
+        """Initialize comprehensive health monitoring system"""
+        try:
+            # Get configuration from environment variables
+            enable_http_endpoints = os.getenv('HEALTH_HTTP_ENDPOINTS', 'true').lower() == 'true'
+            http_port = int(os.getenv('HEALTH_HTTP_PORT', '8080'))
+            alert_webhook_url = os.getenv('HEALTH_ALERT_WEBHOOK_URL')
+            
+            # Initialize health monitor
+            self.health_monitor = initialize_health_monitor(
+                base_path=str(self.base_path),
+                error_handler=self.error_handler,
+                enable_http_endpoints=enable_http_endpoints,
+                http_port=http_port,
+                alert_webhook_url=alert_webhook_url
+            )
+            
+            # Start continuous monitoring if enabled
+            if os.getenv('HEALTH_CONTINUOUS_MONITORING', 'true').lower() == 'true':
+                self.health_monitor.start_monitoring()
+                self.logger.info(f"Health monitoring started on port {http_port}")
+            else:
+                self.logger.info("Health monitoring initialized (manual checks only)")
+                
+        except Exception as e:
+            self.logger.error(f"Failed to initialize health monitoring: {e}")
+            # Continue without health monitoring - not critical for basic operation
+
+    def _init_automated_recovery(self):
+        """Initialize automated recovery system"""
+        try:
+            # Get configuration from environment variables
+            recovery_enabled = os.getenv('AUTOMATED_RECOVERY_ENABLED', 'true').lower() == 'true'
+            dry_run = os.getenv('RECOVERY_DRY_RUN', 'false').lower() == 'true'
+            
+            # Initialize recovery service
+            self.recovery_service = initialize_recovery_service(
+                base_path=str(self.base_path),
+                error_handler=self.error_handler,
+                recovery_enabled=recovery_enabled,
+                dry_run=dry_run
+            )
+            
+            # Start automated recovery if enabled
+            if recovery_enabled:
+                self.recovery_service.start_automated_recovery()
+                mode = "DRY RUN" if dry_run else "PRODUCTION"
+                self.logger.info(f"Automated recovery started ({mode} mode)")
+            else:
+                self.logger.info("Automated recovery initialized but disabled")
+                
+        except Exception as e:
+            self.logger.error(f"Failed to initialize automated recovery: {e}")
+            # Continue without recovery - not critical for basic operation
 
     def setup_logging(self):
         """Set up comprehensive logging for biological rhythms"""
@@ -281,23 +360,36 @@ class BiologicalMemoryOrchestrator:
         }
         
         try:
-            # Test database connectivity with retry
+            # Test database connectivity with SQL safety system - BMP-HIGH-006
             db_path = self.base_path / 'dbs' / 'memory.duckdb'
-            conn = self.error_handler.get_database_connection(str(db_path), timeout=10)
             
-            # Check if core tables exist
-            tables = conn.execute("SELECT table_name FROM information_schema.tables").fetchall()
-            table_names = [t[0] for t in tables]
+            # Use SQL safety manager for bulletproof database operations
+            result = self.sql_safety.execute_safe_query(
+                db_path=str(db_path),
+                query="SELECT table_name FROM information_schema.tables",
+                db_type="duckdb",
+                timeout_override=10
+            )
             
-            # Enhanced health checks
-            health_results.update({
-                'database_accessible': True,
-                'table_count': len(table_names),
-                'tables': table_names,
-                'db_file_size_mb': (db_path.stat().st_size / 1024 / 1024) if db_path.exists() else 0
-            })
-            
-            conn.close()
+            if result.success:
+                table_names = [row[0] for row in result.result_set] if result.result_set else []
+                
+                # Enhanced health checks with SQL safety metrics
+                health_results.update({
+                    'database_accessible': True,
+                    'table_count': len(table_names),
+                    'tables': table_names,
+                    'db_file_size_mb': (db_path.stat().st_size / 1024 / 1024) if db_path.exists() else 0,
+                    'sql_safety_stats': self.sql_safety.get_execution_stats(),
+                    'query_execution_time_ms': result.execution_time_ms
+                })
+            else:
+                health_results.update({
+                    'database_accessible': False,
+                    'connection_error': result.error_message,
+                    'sql_safety_stats': self.sql_safety.get_execution_stats()
+                })
+                table_names = []
             
             # System resource monitoring
             health_results['system_resources'] = self.error_handler.monitor_system_resources()
@@ -314,12 +406,16 @@ class BiologicalMemoryOrchestrator:
             # Log comprehensive health status
             self._safe_log_output(self.log_dir / 'health_status.jsonl', health_results)
             
-            # Determine overall health
+            # Determine overall health including SQL safety metrics
+            sql_stats = health_results.get('sql_safety_stats', {})
+            sql_success_rate = sql_stats.get('success_rate_percent', 0)
+            
             overall_healthy = (
                 health_results['database_accessible'] and
                 len(table_names) > 0 and
                 health_results['system_resources'].get('memory_percent', 100) < 95 and
-                health_results['system_resources'].get('disk_percent', 100) < 95
+                health_results['system_resources'].get('disk_percent', 100) < 95 and
+                sql_success_rate >= 90  # SQL operations must be at least 90% successful
             )
             
             if overall_healthy:
@@ -547,10 +643,15 @@ class BiologicalMemoryOrchestrator:
 
     def signal_handler(self, signum, frame):
         """
-        Handle shutdown signals gracefully
+        Handle shutdown signals gracefully - BMP-HIGH-006 Enhanced
         """
         self.logger.info(f"Received signal {signum}, shutting down gracefully...")
         self.stop_working_memory_thread()
+        
+        # BMP-HIGH-006: Gracefully shutdown SQL safety system
+        if hasattr(self, 'sql_safety'):
+            self.sql_safety.shutdown()
+            
         sys.exit(0)
 
     def run(self):

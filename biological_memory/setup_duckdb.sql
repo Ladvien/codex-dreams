@@ -67,11 +67,9 @@ PRAGMA threads=4;
 -- Enable progress bar for long-running cross-database queries
 PRAGMA enable_progress_bar=true;
 
--- Set timeout for postgres_scanner connections (30 seconds)
-PRAGMA postgres_scanner_timeout=30000;
-
--- Configure batch size for postgres_scanner operations
-PRAGMA postgres_scanner_batch_size=10000;
+-- Note: postgres_scanner_timeout and postgres_scanner_batch_size
+-- are no longer supported in recent DuckDB versions
+-- Connection timeouts are handled by the underlying PostgreSQL driver
 
 -- Success message
 SELECT 'DuckDB postgres_scanner extension configured successfully!' as status;

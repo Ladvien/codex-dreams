@@ -80,41 +80,95 @@ vars:
   max_memory_threads: 4
   temp_materialization_threshold: 100000
 
-# Model configurations
+# Model configurations - Optimized for <50ms query performance
 models:
   biological_memory:
-    # Working memory models (fast, temporary views)
+    # Working memory models (ephemeral for speed - most accessed, temporary data)
     working_memory:
-      +materialized: view
-      +pre-hook: "{{ log('Processing working memory batch', info=true) }}"
+      +materialized: ephemeral
+      +pre-hook: [
+        "{{ log('Processing working memory batch', info=true) }}",
+        "SET threads = 4",
+        "SET enable_hash_join = true"
+      ]
       +post-hook: "{{ calculate_memory_stats('working_memory') }}"
+      +tags: ["performance_critical", "real_time"]
       
-    # Short-term memory (incremental for real-time updates)
+    # Short-term memory (incremental for real-time updates with performance optimization)
     short_term_memory:
       +materialized: incremental
       +unique_key: memory_id
       +on_schema_change: append_new_columns
       +incremental_strategy: merge
-      +pre-hook: "{{ synaptic_homeostasis() }}"
+      +pre-hook: [
+        "{{ synaptic_homeostasis() }}",
+        "SET memory_limit = '4GB'",
+        "SET enable_parallel_aggregation = true"
+      ]
+      +post-hook: [
+        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_memory_id ON {{ this }} (memory_id)",
+        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_created_at ON {{ this }} (created_at DESC)",
+        "ANALYZE {{ this }}"
+      ]
+      +tags: ["performance_optimized", "incremental"]
       
-    # Long-term memory (tables with proper indexing)
+    # Long-term memory (tables with comprehensive indexing for complex queries)
     long_term_memory:
       +materialized: table
-      +post-hook: "{{ create_memory_indexes() }}"
-      +tags: ["core", "memory", "production"]
+      +pre-hook: "SET memory_limit = '6GB'"
+      +post-hook: [
+        "{{ create_memory_indexes() }}",
+        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_semantic_search ON {{ this }} USING gin(concepts)",
+        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_stability ON {{ this }} (stability_score DESC, created_at DESC)",
+        "ANALYZE {{ this }}"
+      ]
+      +tags: ["core", "memory", "production", "indexed"]
       
-    # Semantic associations (incremental with complex logic)
+    # Semantic associations (materialized table for complex similarity calculations)
     semantic:
-      +materialized: incremental
+      +materialized: table
       +unique_key: [source_concept, target_concept]
-      +incremental_strategy: merge
-      +pre-hook: "{{ strengthen_associations() }}"
-      +post-hook: "{{ update_semantic_graph() }}"
+      +pre-hook: [
+        "{{ strengthen_associations() }}",
+        "SET memory_limit = '8GB'",
+        "SET enable_hash_join = true"
+      ]
+      +post-hook: [
+        "{{ update_semantic_graph() }}",
+        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_source_target ON {{ this }} (source_concept, target_concept)",
+        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_similarity ON {{ this }} (similarity_score DESC)",
+        "ANALYZE {{ this }}"
+      ]
+      +tags: ["semantic", "performance_intensive"]
       
-    # Analytics and reporting (views for flexibility)
+    # Analytics and reporting (views for flexibility with performance hints)
     analytics:
       +materialized: view
-      +tags: ["analytics", "dashboard"]
+      +pre-hook: "SET enable_index_scan = true"
+      +tags: ["analytics", "dashboard", "reporting"]
+      
+    # Performance models (ephemeral for real-time monitoring)
+    performance:
+      +materialized: ephemeral
+      +pre-hook: "SET threads = 2"
+      +tags: ["monitoring", "performance_tracking"]
+      
+    # Consolidation models (incremental with heavy optimization)
+    consolidation:
+      +materialized: incremental  
+      +unique_key: id
+      +incremental_strategy: merge
+      +pre-hook: [
+        "SET memory_limit = '10GB'",
+        "SET threads = 4",
+        "SET enable_parallel_aggregation = true"
+      ]
+      +post-hook: [
+        "VACUUM ANALYZE {{ this }}",
+        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_consolidated_strength ON {{ this }} (consolidated_strength DESC)",
+        "DELETE FROM {{ this }} WHERE consolidated_strength < {{ var('weak_connection_threshold') }}"
+      ]
+      +tags: ["consolidation", "memory_intensive"]
 
 # Snapshot configurations for tracking memory evolution
 snapshots:
