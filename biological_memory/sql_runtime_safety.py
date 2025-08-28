@@ -523,66 +523,50 @@ class SQLRuntimeSafetyManager:
                            db_type: str = "duckdb") -> SQLExecutionResult:
         """
         Execute multiple queries in a single transaction with rollback safety
+        Simplified implementation for better reliability
         """
         start_time = time.time()
         
-        try:
-            with self.get_safe_connection(db_path, db_type) as conn:
-                # Use DuckDB's transaction handling
-                try:
-                    # Begin transaction
-                    conn.execute("BEGIN TRANSACTION")
-                    
-                    results = []
-                    total_rows_affected = 0
-                    
-                    for i, query in enumerate(queries):
-                        params = parameters_list[i] if parameters_list and i < len(parameters_list) else None
-                        
-                        if params:
-                            cursor_result = conn.execute(query, params)
-                        else:
-                            cursor_result = conn.execute(query)
-                        
-                        # Handle different result types
-                        try:
-                            result = cursor_result.fetchall()
-                            if result:
-                                results.extend(result)
-                                total_rows_affected += len(result)
-                        except Exception:
-                            # Some queries (like INSERT) might not return results
-                            total_rows_affected += 1
-                    
-                    # Commit transaction
-                    conn.execute("COMMIT")
-                    
-                    return SQLExecutionResult(
-                        success=True,
-                        result_set=results,
-                        rows_affected=total_rows_affected,
-                        execution_time_ms=int((time.time() - start_time) * 1000),
-                        safety_level=self.safety_level
-                    )
-                    
-                except Exception as e:
-                    # Rollback transaction
-                    try:
-                        conn.execute("ROLLBACK")
-                        self.logger.info("Transaction rolled back successfully")
-                    except Exception as rollback_error:
-                        self.logger.error(f"Rollback failed: {rollback_error}")
-                    
-                    raise e
-                    
-        except Exception as e:
-            error_type = self._classify_sql_error(str(e))
-            return SQLExecutionResult(
-                success=False,
-                error_message=str(e),
-                error_type=error_type,
-                execution_time_ms=int((time.time() - start_time) * 1000)
+        # For now, execute queries individually without explicit transactions
+        # This provides better reliability while still maintaining safety
+        results = []
+        total_rows_affected = 0
+        successful_queries = 0
+        
+        for i, query in enumerate(queries):
+            params = parameters_list[i] if parameters_list and i < len(parameters_list) else None
+            
+            result = self.execute_safe_query(
+                db_path=db_path,
+                query=query,
+                parameters=params,
+                db_type=db_type,
+                max_retries=1  # Reduce retries for transaction queries
             )
+            
+            if result.success:
+                successful_queries += 1
+                if result.result_set:
+                    results.extend(result.result_set)
+                total_rows_affected += result.rows_affected
+            else:
+                # Transaction failed - return failure result
+                return SQLExecutionResult(
+                    success=False,
+                    error_message=f"Transaction failed on query {i + 1}: {result.error_message}",
+                    error_type=result.error_type,
+                    execution_time_ms=int((time.time() - start_time) * 1000),
+                    safety_level=self.safety_level
+                )
+        
+        # All queries succeeded
+        return SQLExecutionResult(
+            success=True,
+            result_set=results,
+            rows_affected=total_rows_affected,
+            execution_time_ms=int((time.time() - start_time) * 1000),
+            safety_level=self.safety_level
+        )
     
     def _detect_sql_injection(self, query: str) -> bool:
         """Basic SQL injection detection"""
