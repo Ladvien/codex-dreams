@@ -1,0 +1,95 @@
+# dbt Project Configuration for Biological Memory Pipeline
+# This project models biological memory processes using dbt transformations
+
+name: 'biological_memory'
+version: '1.0.0'
+config-version: 2
+
+# This setting configures which "profile" dbt uses for this project.
+profile: 'biological_memory'
+
+# These configurations specify where dbt should look for different types of files.
+model-paths: ["models"]
+analysis-paths: ["analysis"]
+test-paths: ["tests"]
+seed-paths: ["data"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+  - "tmp"
+
+# Biological Memory Processing Variables
+vars:
+  # Core biological parameters
+  working_memory_capacity: 7  # Miller's Law: 7±2 items
+  short_term_memory_duration: 30  # seconds
+  long_term_memory_threshold: 0.7  # activation strength threshold
+  
+  # Hebbian learning parameters  
+  hebbian_learning_rate: 0.01
+  synaptic_decay_rate: 0.001
+  homeostasis_target: 0.5
+  plasticity_threshold: 0.6
+  
+  # Consolidation parameters
+  consolidation_batch_size: 1000
+  consolidation_window_hours: 24
+  semantic_association_threshold: 0.8
+  
+  # Performance optimization
+  incremental_batch_size: 10000
+  max_memory_threads: 4
+  temp_materialization_threshold: 100000
+
+# Model configurations
+models:
+  biological_memory:
+    # Working memory models (fast, temporary views)
+    working_memory:
+      +materialized: view
+      +pre-hook: "{{ log('Processing working memory batch', info=true) }}"
+      +post-hook: "{{ calculate_memory_stats('working_memory') }}"
+      
+    # Short-term memory (incremental for real-time updates)
+    short_term_memory:
+      +materialized: incremental
+      +unique_key: memory_id
+      +on_schema_change: append_new_columns
+      +incremental_strategy: merge
+      +pre-hook: "{{ synaptic_homeostasis() }}"
+      
+    # Long-term memory (tables with proper indexing)
+    long_term_memory:
+      +materialized: table
+      +post-hook: "{{ create_memory_indexes() }}"
+      +tags: ["core", "memory", "production"]
+      
+    # Semantic associations (incremental with complex logic)
+    semantic:
+      +materialized: incremental
+      +unique_key: [source_concept, target_concept]
+      +incremental_strategy: merge
+      +pre-hook: "{{ strengthen_associations() }}"
+      +post-hook: "{{ update_semantic_graph() }}"
+      
+    # Analytics and reporting (views for flexibility)
+    analytics:
+      +materialized: view
+      +tags: ["analytics", "dashboard"]
+
+# Snapshot configurations for tracking memory evolution
+snapshots:
+  biological_memory:
+    +target_schema: memory_snapshots
+    +unique_key: memory_id
+    +strategy: timestamp
+    +updated_at: last_modified_at
+
+# Test configurations
+tests:
+  biological_memory:
+    +store_failures: true
+    +schema: test_results

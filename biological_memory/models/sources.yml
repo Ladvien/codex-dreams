@@ -1,0 +1,80 @@
+# Source definitions for biological memory pipeline
+# These define the raw data sources that dbt models will transform
+
+version: 2
+
+sources:
+  - name: biological_memory
+    description: "Raw biological memory data sources"
+    schema: public
+    tables:
+      - name: raw_memories
+        description: "Raw memory records from the application"
+        columns:
+          - name: memory_id
+            description: "Unique identifier for each memory"
+            tests:
+              - unique
+              - not_null
+          - name: content
+            description: "The actual memory content/text"
+            tests:
+              - not_null
+          - name: concepts
+            description: "Array of concept keywords extracted from content"
+          - name: activation_strength
+            description: "Current activation level (0.0-1.0)"
+            tests:
+              - not_null
+          - name: created_at
+            description: "When the memory was first created"
+            tests:
+              - not_null
+          - name: last_accessed_at  
+            description: "When the memory was last accessed"
+          - name: access_count
+            description: "Number of times memory has been accessed"
+            tests:
+              - not_null
+          - name: importance_score
+            description: "Importance rating for consolidation priority"
+          - name: memory_type
+            description: "Initial memory type classification"
+            
+      - name: memory_similarities
+        description: "Similarity scores between memory pairs"
+        columns:
+          - name: source_memory_id
+            description: "ID of the source memory"
+            tests:
+              - not_null
+          - name: target_memory_id
+            description: "ID of the target memory" 
+            tests:
+              - not_null
+          - name: similarity_score
+            description: "Similarity score (0.0-1.0)"
+          - name: time_diff_hours
+            description: "Time difference between memories in hours"
+            
+      - name: semantic_associations
+        description: "Pre-computed semantic associations between memories"
+        columns:
+          - name: memory_id
+            description: "Memory identifier"
+          - name: association_count
+            description: "Number of semantic associations"
+          - name: avg_association_strength
+            description: "Average strength of associations"
+          - name: max_association_strength
+            description: "Maximum association strength"
+            
+      - name: network_centrality
+        description: "Network centrality measures for memories"
+        columns:
+          - name: memory_id
+            description: "Memory identifier"
+          - name: centrality_score
+            description: "Network centrality score"
+          - name: clustering_coefficient
+            description: "Local clustering coefficient"
