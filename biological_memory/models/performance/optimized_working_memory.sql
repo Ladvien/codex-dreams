@@ -23,7 +23,7 @@ WITH high_activation_memories AS (
     EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - created_at)) as age_seconds,
     EXP(-LN(2) * {{ safe_divide('EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - last_accessed_at))', '3600.0', '1.0') }}) as recency_score,
     {{ safe_divide('LN(1 + access_count)', 'LN(101)', '0.0') }} as frequency_score
-  FROM {{ source('biological_memory', 'raw_memories') }}
+  FROM {{ source('self_sensored', 'raw_memories') }}
   WHERE 
     -- Optimized filters with indexes
     activation_strength > {{ var('plasticity_threshold') }}

@@ -1,0 +1,15 @@
+# Basic profiles for STORY-DB-003 validation - without prompt settings
+biological_memory:
+  target: test_basic
+  outputs:
+    test_basic:
+      type: duckdb
+      path: '/Users/ladvien/codex-dreams/biological_memory/test_basic.duckdb'
+      threads: 2
+      extensions:
+        - httpfs           # For Ollama HTTP calls
+        - postgres_scanner # For PostgreSQL connections
+        - json            # For JSON processing
+        - fts             # Full-text search
+      settings:
+        max_memory: '1GB'

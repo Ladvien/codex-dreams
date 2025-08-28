@@ -54,9 +54,9 @@ semantic_enrichment AS (
       '0.0'
     ) }} as access_rate_per_hour
   FROM consolidated_memories cm
-  LEFT JOIN {{ source('biological_memory', 'semantic_associations') }} sa
+  LEFT JOIN {{ source('self_sensored', 'semantic_associations') }} sa
     ON cm.memory_id = sa.memory_id
-  LEFT JOIN {{ source('biological_memory', 'network_centrality') }} nc
+  LEFT JOIN {{ source('self_sensored', 'network_centrality') }} nc
     ON cm.memory_id = nc.memory_id
 ),
 

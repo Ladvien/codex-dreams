@@ -48,7 +48,7 @@ consolidation_candidates AS (
     -- Calculate interference from similar memories
     (
       SELECT AVG({{ calculate_interference('similarity_score', 'time_diff_hours') }})
-      FROM {{ source('biological_memory', 'memory_similarities') }} ms
+      FROM {{ source('self_sensored', 'memory_similarities') }} ms
       WHERE ms.target_memory_id = source_memories.memory_id
     ) as interference_score,
     

@@ -162,7 +162,7 @@ network_centrality AS (
     -- Betweenness centrality proxy: Memories bridging different semantic categories
     COALESCE(
       (SELECT COUNT(DISTINCT target_category) 
-       FROM {{ source('biological_memory', 'semantic_associations') }} cross_cat
+       FROM {{ source('self_sensored', 'semantic_associations') }} cross_cat
        WHERE cross_cat.memory_id = cm.memory_id 
        AND cross_cat.target_category != cm.semantic_category), 
       0
@@ -188,8 +188,8 @@ network_centrality AS (
     
   FROM consolidated_memories cm
   LEFT JOIN cortical_minicolumns mc ON cm.assigned_cortical_minicolumn = mc.cortical_minicolumn_id
-  LEFT JOIN {{ source('biological_memory', 'semantic_associations') }} sa ON cm.memory_id = sa.memory_id
-  LEFT JOIN {{ source('biological_memory', 'network_centrality') }} nc ON cm.memory_id = nc.memory_id
+  LEFT JOIN {{ source('self_sensored', 'semantic_associations') }} sa ON cm.memory_id = sa.memory_id
+  LEFT JOIN {{ source('self_sensored', 'network_centrality') }} nc ON cm.memory_id = nc.memory_id
 ),
 
 -- Step 4: Implement Long-Term Potentiation (LTP) and Long-Term Depression (LTD)

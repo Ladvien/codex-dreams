@@ -21,7 +21,7 @@ biological_memory:
           # Connection details for postgres_scanner extension
           host: 'localhost'
           port: 5432
-          database: 'biological_memory_source'
+          database: 'self_sensored'
           schema: 'public'
           user: 'your_postgres_user'
           password: 'your_postgres_password'
@@ -65,7 +65,7 @@ biological_memory:
 # Environment Variable Examples:
 # export POSTGRES_HOST="your-postgres-server.com"
 # export POSTGRES_PORT="5432" 
-# export POSTGRES_DATABASE="biological_memory_source"
+# export POSTGRES_DATABASE="self_sensored"
 # export POSTGRES_USER="your_username"
 # export POSTGRES_PASSWORD="your_password"
 

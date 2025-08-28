@@ -4,8 +4,8 @@
 version: 2
 
 sources:
-  - name: biological_memory
-    description: "Raw biological memory data sources"
+  - name: self_sensored
+    description: "Raw biological memory data sources from self_sensored database"
     schema: public
     tables:
       - name: raw_memories
