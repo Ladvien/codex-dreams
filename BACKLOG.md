@@ -1,11 +1,25 @@
 # Biological Memory Pipeline - Jira Stories
 
-## ✅ Epic: Biological Memory Pipeline Implementation - COMPLETED
+## ✅ Epic 1: Biological Memory Pipeline Implementation - COMPLETED
 
 **Status**: COMPLETED SUCCESSFULLY ✅  
 **Completion Date**: 2025-08-29 00:15:00 UTC  
 **Total Stories**: 13/13 ✅  
 **Success Rate**: 100%
+
+## 🚨 Epic 2: Critical Production Blockers - Target Directory Audit
+
+**Status**: OPEN  
+**Created**: 2025-08-28  
+**Priority**: P0 CRITICAL  
+**Purpose**: Address critical bugs and architectural violations discovered during parallel agent audit of compiled target directory
+
+### Audit Team Results
+- 🔍 **Code Scout**: 6 critical issues, 85% architecture compliance
+- 📊 **Data Analyst**: 8 database issues, 47% database health  
+- 🧠 **ML Systems**: 7 AI/ML failures, 8% functionality
+- 🏗️ **Architecture Guardian**: 31% overall compliance - ARCHITECTURAL FAILURE
+- 🐛 **Bug Hunter**: 20 runtime bugs - PRODUCTION BLOCKED
 
 ### Live Resources Configuration (from .env)
 - **PostgreSQL Host**: 192.168.1.104:5432
@@ -683,6 +697,90 @@ def test_circuit_breaker():
 - [ ] Logging comprehensive
 - [ ] Documentation complete
 - [ ] Integration tested
+
+---
+
+## 🔴 Epic 2 - P0 CRITICAL Stories (System Breaking)
+
+### AUDIT-001: Fix Schema Inconsistency Crisis
+**Type**: Bug  
+**Priority**: P0 - BLOCKS EVERYTHING  
+**Story Points**: 8  
+
+**Description**:
+Mixed `public` vs `main` schema references causing cross-schema JOIN failures and runtime crashes.
+
+**Acceptance Criteria**:
+- [ ] Replace all `"memory"."public"` with `"memory"."main"`
+- [ ] Update all schema references to be consistent
+- [ ] Verify all JOINs work across models
+- [ ] Test incremental merge strategies
+
+### AUDIT-002: Emergency LLM Integration Restoration  
+**Type**: Bug  
+**Priority**: P0  
+**Story Points**: 13  
+
+**Description**:
+100% of LLM functionality stripped during compilation. System operates as dumb rule engine.
+
+**Acceptance Criteria**:
+- [ ] Restore prompt() function calls in compiled SQL
+- [ ] Fix Ollama endpoint configuration
+- [ ] Implement proper model selection (gpt-oss:20b)
+- [ ] Add JSON response validation
+
+### AUDIT-003: Fix Null Pointer Crashes
+**Type**: Bug  
+**Priority**: P0  
+**Story Points**: 5  
+
+**Description**:
+Multiple null dereferences causing immediate crashes when processing memories without embeddings.
+
+**Acceptance Criteria**:
+- [ ] Add COALESCE for all embedding operations
+- [ ] Validate phantom_objects before JSON extraction
+- [ ] Check spatial_extraction for NULL
+
+### AUDIT-004: Prevent Division by Zero
+**Type**: Bug  
+**Priority**: P0  
+**Story Points**: 3  
+
+**Description**:
+Division by zero errors in normalization calculations causing SQL execution failures.
+
+**Acceptance Criteria**:
+- [ ] Add NULLIF(denominator, 0) to all divisions
+- [ ] Fix recency_factor calculation
+- [ ] Fix co_activation_count normalization
+
+### AUDIT-005: DuckDB Function Compatibility
+**Type**: Bug  
+**Priority**: P0  
+**Story Points**: 8  
+
+**Description**:
+PostgreSQL functions don't exist in DuckDB, causing immediate failures.
+
+**Acceptance Criteria**:
+- [ ] Replace array_dot_product() with DuckDB equivalent
+- [ ] Fix all array operations for DuckDB
+- [ ] Test all vector operations
+
+### AUDIT-006: Fix Hardcoded Parameters  
+**Type**: Bug  
+**Priority**: P0  
+**Story Points**: 5  
+
+**Description**:
+All biological parameters hardcoded, destroying configurability.
+
+**Acceptance Criteria**:
+- [ ] Replace hardcoded values with dbt variables
+- [ ] Ensure variable substitution works
+- [ ] Add parameter validation
 
 ---
 

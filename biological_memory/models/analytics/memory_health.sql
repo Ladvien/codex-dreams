@@ -22,9 +22,9 @@ WITH memory_distribution AS (
     SELECT 
         'working_memory' as memory_type,
         COUNT(DISTINCT memory_id) as total_memories,
-        AVG(activation_strength) as avg_activation_strength,
-        AVG(hebbian_strength) as avg_hebbian_strength,
-        MAX(processed_at) as last_updated
+        AVG(COALESCE(activation_strength, 0.1)) as avg_activation_strength,
+        AVG(COALESCE(hebbian_strength, 0.1)) as avg_hebbian_strength,
+        MAX(COALESCE(processed_at, NOW())) as last_updated
     FROM {{ ref('active_memories') }}
     
     UNION ALL
@@ -32,9 +32,9 @@ WITH memory_distribution AS (
     SELECT 
         'short_term_memory' as memory_type,
         COUNT(DISTINCT id) as total_memories,
-        AVG(stm_strength) as avg_activation_strength,
-        AVG(hebbian_potential) as avg_hebbian_strength,
-        MAX(processed_at) as last_updated
+        AVG(COALESCE(stm_strength, 0.1)) as avg_activation_strength,
+        AVG(COALESCE(hebbian_potential, 0.1)) as avg_hebbian_strength,
+        MAX(COALESCE(processed_at, NOW())) as last_updated
     FROM {{ ref('stm_hierarchical_episodes') }}
     
     UNION ALL
@@ -42,9 +42,9 @@ WITH memory_distribution AS (
     SELECT 
         'consolidating_memory' as memory_type,
         COUNT(DISTINCT id) as total_memories,
-        AVG(consolidated_strength) as avg_activation_strength,
-        AVG(hebbian_strength) as avg_hebbian_strength,
-        MAX(consolidated_at) as last_updated
+        AVG(COALESCE(consolidated_strength, 0.1)) as avg_activation_strength,
+        AVG(COALESCE(hebbian_strength, 0.1)) as avg_hebbian_strength,
+        MAX(COALESCE(consolidated_at, NOW())) as last_updated
     FROM {{ ref('memory_replay') }}
     WHERE consolidation_fate IN ('cortical_transfer', 'hippocampal_retention')
     
@@ -53,9 +53,9 @@ WITH memory_distribution AS (
     SELECT 
         'long_term_memory' as memory_type,
         COUNT(DISTINCT memory_id) as total_memories,
-        AVG(stability_score) as avg_activation_strength,
-        AVG(hebbian_strength) as avg_hebbian_strength,
-        MAX(last_processed_at) as last_updated
+        AVG(COALESCE(stability_score, 0.1)) as avg_activation_strength,
+        AVG(COALESCE(hebbian_strength, 0.1)) as avg_hebbian_strength,
+        MAX(COALESCE(last_processed_at, NOW())) as last_updated
     FROM {{ ref('stable_memories') }}
 ),
 
@@ -146,20 +146,23 @@ access_frequency_stats AS (
 system_performance AS (
     -- System-wide performance and capacity metrics  
     SELECT 
-        -- Working memory capacity utilization (Miller's 7±2)
-        (SELECT total_memories FROM memory_distribution WHERE memory_type = 'working_memory') as wm_current_load,
-        {{ var('working_memory_capacity') }} as wm_max_capacity,
-        (SELECT total_memories FROM memory_distribution WHERE memory_type = 'working_memory') * 100.0 / {{ var('working_memory_capacity') }} as wm_utilization_pct,
+        -- Working memory capacity utilization (Miller's 7±2) - NULL SAFE
+        COALESCE((SELECT total_memories FROM memory_distribution WHERE memory_type = 'working_memory'), 0) as wm_current_load,
+        COALESCE({{ var('working_memory_capacity') }}, 7) as wm_max_capacity,
+        COALESCE((SELECT total_memories FROM memory_distribution WHERE memory_type = 'working_memory'), 0) * 100.0 / COALESCE({{ var('working_memory_capacity') }}, 7) as wm_utilization_pct,
         
-        -- Short-term memory processing efficiency
-        (SELECT total_memories FROM memory_distribution WHERE memory_type = 'short_term_memory') as stm_current_count,
+        -- Short-term memory processing efficiency - NULL SAFE
+        COALESCE((SELECT total_memories FROM memory_distribution WHERE memory_type = 'short_term_memory'), 0) as stm_current_count,
         
-        -- Long-term memory stability
-        (SELECT total_memories FROM memory_distribution WHERE memory_type = 'long_term_memory') as ltm_stable_count,
+        -- Long-term memory stability - NULL SAFE
+        COALESCE((SELECT total_memories FROM memory_distribution WHERE memory_type = 'long_term_memory'), 0) as ltm_stable_count,
         
-        -- Consolidation efficiency ratio
-        COALESCE((SELECT cortical_transfers + hippocampal_retentions FROM consolidation_metrics) * 100.0 /
-                 NULLIF((SELECT total_consolidating FROM consolidation_metrics), 0), 0) as consolidation_success_rate
+        -- Consolidation efficiency ratio - NULL SAFE
+        COALESCE(
+            COALESCE((SELECT COALESCE(cortical_transfers, 0) + COALESCE(hippocampal_retentions, 0) FROM consolidation_metrics), 0) * 100.0 /
+            NULLIF(COALESCE((SELECT total_consolidating FROM consolidation_metrics), 1), 0), 
+            0.0
+        ) as consolidation_success_rate
 )
 
 SELECT 
@@ -168,11 +171,11 @@ SELECT
     'biological_memory_health' as system_name,
     '1.0.0' as version,
     
-    -- Memory distribution metrics
-    (SELECT total_memories FROM memory_distribution WHERE memory_type = 'working_memory') as total_working_memories,
-    (SELECT total_memories FROM memory_distribution WHERE memory_type = 'short_term_memory') as total_short_term_memories,
-    (SELECT total_memories FROM memory_distribution WHERE memory_type = 'consolidating_memory') as total_consolidating_memories,
-    (SELECT total_memories FROM memory_distribution WHERE memory_type = 'long_term_memory') as total_long_term_memories,
+    -- Memory distribution metrics - NULL SAFE
+    COALESCE((SELECT total_memories FROM memory_distribution WHERE memory_type = 'working_memory'), 0) as total_working_memories,
+    COALESCE((SELECT total_memories FROM memory_distribution WHERE memory_type = 'short_term_memory'), 0) as total_short_term_memories,
+    COALESCE((SELECT total_memories FROM memory_distribution WHERE memory_type = 'consolidating_memory'), 0) as total_consolidating_memories,
+    COALESCE((SELECT total_memories FROM memory_distribution WHERE memory_type = 'long_term_memory'), 0) as total_long_term_memories,
     
     -- Memory age distribution
     ma.recent_memories,
@@ -181,18 +184,18 @@ SELECT
     ma.remote_memories,
     ma.total_classified_memories,
     
-    -- Biological health indicators
-    (SELECT AVG(avg_activation_strength) FROM memory_distribution) as avg_system_activation,
-    (SELECT AVG(avg_hebbian_strength) FROM memory_distribution WHERE avg_hebbian_strength IS NOT NULL) as avg_hebbian_strength,
+    -- Biological health indicators - NULL SAFE
+    COALESCE((SELECT AVG(COALESCE(avg_activation_strength, 0.1)) FROM memory_distribution), 0.1) as avg_system_activation,
+    COALESCE((SELECT AVG(COALESCE(avg_hebbian_strength, 0.1)) FROM memory_distribution WHERE avg_hebbian_strength IS NOT NULL), 0.1) as avg_hebbian_strength,
     
-    -- Consolidation health metrics
-    cm.total_consolidating,
-    cm.cortical_transfers,
-    cm.hippocampal_retentions,
-    cm.avg_consolidation_strength,
-    cm.avg_replay_strength,
-    cm.avg_cortical_integration,
-    cm.last_consolidation,
+    -- Consolidation health metrics - NULL SAFE
+    COALESCE(cm.total_consolidating, 0) as total_consolidating,
+    COALESCE(cm.cortical_transfers, 0) as cortical_transfers,
+    COALESCE(cm.hippocampal_retentions, 0) as hippocampal_retentions,
+    COALESCE(cm.avg_consolidation_strength, 0.1) as avg_consolidation_strength,
+    COALESCE(cm.avg_replay_strength, 0.1) as avg_replay_strength,
+    COALESCE(cm.avg_cortical_integration, 0.1) as avg_cortical_integration,
+    COALESCE(cm.last_consolidation, NOW()) as last_consolidation,
     
     -- Semantic diversity metrics
     COALESCE(sd.unique_semantic_categories, 0) as semantic_category_diversity,
@@ -200,19 +203,19 @@ SELECT
     COALESCE(sd.avg_retrieval_strength, 0.0) as avg_retrieval_strength,
     COALESCE(sd.unique_goal_categories, 0) as goal_category_diversity,
     
-    -- Access frequency statistics
-    afs.avg_access_frequency,
-    afs.max_access_frequency,
-    afs.highly_accessed_memories,
-    afs.total_access_events,
+    -- Access frequency statistics - NULL SAFE
+    COALESCE(afs.avg_access_frequency, 0.0) as avg_access_frequency,
+    COALESCE(afs.max_access_frequency, 0) as max_access_frequency,
+    COALESCE(afs.highly_accessed_memories, 0) as highly_accessed_memories,
+    COALESCE(afs.total_access_events, 0) as total_access_events,
     
-    -- System performance metrics
-    sp.wm_current_load,
-    sp.wm_max_capacity,
-    sp.wm_utilization_pct,
-    sp.stm_current_count,
-    sp.ltm_stable_count,
-    sp.consolidation_success_rate,
+    -- System performance metrics - NULL SAFE
+    COALESCE(sp.wm_current_load, 0) as wm_current_load,
+    COALESCE(sp.wm_max_capacity, 7) as wm_max_capacity,
+    COALESCE(sp.wm_utilization_pct, 0.0) as wm_utilization_pct,
+    COALESCE(sp.stm_current_count, 0) as stm_current_count,
+    COALESCE(sp.ltm_stable_count, 0) as ltm_stable_count,
+    COALESCE(sp.consolidation_success_rate, 0.0) as consolidation_success_rate,
     
     -- Health status assessment
     CASE 

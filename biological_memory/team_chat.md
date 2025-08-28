@@ -3999,3 +3999,23 @@ Based on comprehensive analysis from 6 specialist agents (Architecture Guardian,
 ## Next Priority After BMP-012
 - BMP-006: Memory Consolidation completion
 - BMP-007: Long-Term Semantic Memory validation
+
+### **AUDIT-003: Fix Null Pointer Crashes**
+**Status**: ✅ CLAIMED BY DATABASE AUDITOR (📊)  
+**Claimed At**: 2025-08-28 16:00:00  
+**Agent**: Database Auditor Agent  
+**Mission**: Comprehensive null safety implementation across all SQL models  
+**Progress**: STARTING - Scanning for null pointer vulnerabilities  
+
+**Tasks**:
+- [ ] Scan all SQL files for null pointer dereferences
+- [ ] Add COALESCE and NULL checks for embedding operations  
+- [ ] Fix JSON extraction safety (phantom_objects, spatial_extraction)
+- [ ] Add safe defaults for missing data throughout models
+- [ ] Test with edge cases (empty records, null values, missing fields)
+- [ ] Write comprehensive null safety tests
+- [ ] Document null safety patterns in codex memory
+
+**Priority**: CRITICAL - Data safety and crash prevention  
+
+---

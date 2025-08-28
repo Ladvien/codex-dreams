@@ -3,10 +3,10 @@
   Helper functions for data processing and transformations
 #}
 
-{# Generate UUID for memory records #}
+{# Generate UUID for memory records - NULL SAFE #}
 {% macro generate_memory_id() %}
-  {# Create unique identifier for memory records #}
-  {{ dbt_utils.generate_surrogate_key(['content', 'created_at', 'random()']) }}
+  {# Create unique identifier for memory records with null safety #}
+  {{ dbt_utils.generate_surrogate_key(['COALESCE(content, \'no_content\')', 'COALESCE(created_at, NOW())', 'random()']) }}
 {% endmacro %}
 
 {# Convert timestamp to memory age in seconds #}
@@ -15,22 +15,32 @@
   EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - {{ created_at }}))
 {% endmacro %}
 
-{# Normalize activation strength to 0-1 range #}
+{# Normalize activation strength to 0-1 range - NULL SAFE #}
 {% macro normalize_activation(raw_activation, min_val, max_val) %}
-  {# Min-max normalization for activation values #}
-  ({{ raw_activation }} - {{ min_val }}) / NULLIF({{ max_val }} - {{ min_val }}, 0)
+  {# Min-max normalization for activation values with null safety #}
+  COALESCE(
+    (COALESCE({{ raw_activation }}, 0.0) - COALESCE({{ min_val }}, 0.0)) / 
+    NULLIF(COALESCE({{ max_val }}, 1.0) - COALESCE({{ min_val }}, 0.0), 0),
+    0.0
+  )
 {% endmacro %}
 
-{# Calculate recency score using exponential decay #}
+{# Calculate recency score using exponential decay - NULL SAFE #}
 {% macro recency_score(last_accessed_at, half_life_hours) %}
-  {# Exponential decay score based on last access time #}
-  EXP(-LN(2) * {{ memory_age_seconds(last_accessed_at) }} / ({{ half_life_hours }} * 3600.0))
+  {# Exponential decay score based on last access time with null safety #}
+  COALESCE(
+    EXP(-LN(2) * {{ memory_age_seconds('COALESCE(' ~ last_accessed_at ~ ', NOW())') }} / (COALESCE({{ half_life_hours }}, 1.0) * 3600.0)),
+    1.0
+  )
 {% endmacro %}
 
-{# Calculate frequency score using log scaling #}
+{# Calculate frequency score using log scaling - NULL SAFE #}
 {% macro frequency_score(access_count) %}
-  {# Logarithmic scaling for frequency to prevent dominance #}
-  LN(1 + {{ access_count }}) / LN(1 + 100)  -- Normalize to 0-1 range
+  {# Logarithmic scaling for frequency to prevent dominance with null safety #}
+  COALESCE(
+    LN(1 + GREATEST(COALESCE({{ access_count }}, 0), 0)) / LN(1 + 100),
+    0.0
+  )  -- Normalize to 0-1 range
 {% endmacro %}
 
 {# Memory type classification logic #}
@@ -57,32 +67,41 @@
   END
 {% endmacro %}
 
-{# Create semantic embedding placeholder #}
+{# Create semantic embedding placeholder - NULL SAFE #}
 {% macro create_embedding_placeholder(text_content, embedding_dim) %}
-  {# Generate placeholder embedding vector until real embeddings are available #}
-  ARRAY[{% for i in range(embedding_dim) %}
-    MD5({{ text_content }} || '{{ i }}')::INT % 100 / 100.0
-    {%- if not loop.last %},{% endif %}
-  {% endfor %}]::FLOAT[]
+  {# Generate placeholder embedding vector with null safety #}
+  COALESCE(
+    ARRAY[{% for i in range(embedding_dim) %}
+      ABS(HASHTEXT(COALESCE({{ text_content }}, 'empty_content') || '{{ i }}')::BIGINT % 10000) / 10000.0
+      {%- if not loop.last %},{% endif %}
+    {% endfor %}]::FLOAT[],
+    ARRAY[{% for i in range(embedding_dim) %}
+      0.1{%- if not loop.last %},{% endif %}
+    {% endfor %}]::FLOAT[]
+  )
 {% endmacro %}
 
-{# JSON extraction helper for flexible schema #}
+{# JSON extraction helper for flexible schema - ENHANCED NULL SAFETY #}
 {% macro extract_json_field(json_column, field_path, default_value) %}
-  {# Safe JSON field extraction with default fallback #}
+  {# Enhanced safe JSON field extraction with validation and default fallback #}
   COALESCE(
-    ({{ json_column }} ->> '{{ field_path }}')::TEXT,
+    CASE 
+      WHEN {{ json_column }} IS NOT NULL AND JSON_VALID({{ json_column }}::TEXT) 
+      THEN ({{ json_column }} ->> '{{ field_path }}')::TEXT
+      ELSE NULL
+    END,
     '{{ default_value }}'
   )
 {% endmacro %}
 
-{# Memory consolidation priority score #}
+{# Memory consolidation priority score - NULL SAFE #}
 {% macro consolidation_priority(activation_strength, frequency, recency, importance) %}
-  {# Calculate priority for memory consolidation #}
+  {# Calculate priority for memory consolidation with null safety #}
   (
-    {{ activation_strength }} * 0.4 +
-    {{ frequency }} * 0.3 + 
-    {{ recency }} * 0.2 +
-    {{ importance }} * 0.1
+    COALESCE({{ activation_strength }}, 0.1) * 0.4 +
+    COALESCE({{ frequency }}, 0.0) * 0.3 + 
+    COALESCE({{ recency }}, 0.0) * 0.2 +
+    COALESCE({{ importance }}, 0.0) * 0.1
   )
 {% endmacro %}
 
@@ -98,13 +117,63 @@
   SELECT * FROM batched_data
 {% endmacro %}
 
-{# Time window helper for incremental models #}
+{# Time window helper for incremental models - NULL SAFE #}
 {% macro get_incremental_window(timestamp_column, window_hours) %}
-  {# Generate WHERE clause for incremental processing #}
+  {# Generate WHERE clause for incremental processing with null safety #}
   {% if is_incremental() %}
-    WHERE {{ timestamp_column }} > (
-      SELECT COALESCE(MAX({{ timestamp_column }}), '1900-01-01'::TIMESTAMP)
+    WHERE COALESCE({{ timestamp_column }}, '1900-01-01'::TIMESTAMP) > (
+      SELECT COALESCE(MAX(COALESCE({{ timestamp_column }}, '1900-01-01'::TIMESTAMP)), '1900-01-01'::TIMESTAMP)
       FROM {{ this }}
     ) - INTERVAL '{{ window_hours }} HOURS'
   {% endif %}
+{% endmacro %}
+
+{# Enhanced null-safe array operations #}
+{% macro safe_array_access(array_col, index, default_value) %}
+  {# Safely access array element with bounds checking #}
+  COALESCE(
+    CASE 
+      WHEN {{ array_col }} IS NOT NULL 
+           AND array_length({{ array_col }}, 1) >= {{ index }}
+           AND {{ index }} > 0
+      THEN {{ array_col }}[{{ index }}]
+      ELSE NULL
+    END,
+    {{ default_value }}
+  )
+{% endmacro %}
+
+{# Safe JSON array extraction #}
+{% macro safe_json_array_extract(json_col, index, default_value) %}
+  {# Safely extract from JSON array with null checking #}
+  COALESCE(
+    CASE 
+      WHEN {{ json_col }} IS NOT NULL 
+           AND JSON_VALID({{ json_col }}::TEXT)
+           AND JSON_TYPE({{ json_col }}) = 'array'
+           AND JSON_ARRAY_LENGTH({{ json_col }}) > {{ index }}
+      THEN JSON_EXTRACT_STRING({{ json_col }}, '$[{{ index }}]')
+      ELSE NULL
+    END,
+    '{{ default_value }}'
+  )
+{% endmacro %}
+
+{# Null-safe mathematical operations #}
+{% macro safe_math_operation(operation, operand1, operand2, default_value) %}
+  {# Perform mathematical operations with null safety #}
+  COALESCE(
+    CASE 
+      WHEN '{{ operation }}' = 'divide' AND COALESCE({{ operand2 }}, 0) != 0
+      THEN COALESCE({{ operand1 }}, 0.0) / COALESCE({{ operand2 }}, 1.0)
+      WHEN '{{ operation }}' = 'multiply'
+      THEN COALESCE({{ operand1 }}, 0.0) * COALESCE({{ operand2 }}, 0.0)
+      WHEN '{{ operation }}' = 'add'
+      THEN COALESCE({{ operand1 }}, 0.0) + COALESCE({{ operand2 }}, 0.0)
+      WHEN '{{ operation }}' = 'subtract'
+      THEN COALESCE({{ operand1 }}, 0.0) - COALESCE({{ operand2 }}, 0.0)
+      ELSE NULL
+    END,
+    {{ default_value }}
+  )
 {% endmacro %}

@@ -22,15 +22,15 @@ WITH concept_pairs AS (
     concept2 as target_concept
   FROM (
     SELECT 
-      unnest(concepts) as concept1,
-      unnest(concepts) as concept2,
+      unnest(COALESCE(concepts, ARRAY['unknown_concept'])) as concept1,
+      unnest(COALESCE(concepts, ARRAY['unknown_concept'])) as concept2,
       memory_id,
-      activation_strength
+      COALESCE(activation_strength, 0.1)
     FROM {{ ref('stable_memories') }}
-    WHERE array_length(concepts, 1) > 1
+    WHERE COALESCE(array_length(concepts, 1), 0) > 1
     
     {% if is_incremental() %}
-      AND last_processed_at > (
+      AND COALESCE(last_processed_at, '1900-01-01'::TIMESTAMP) > (
         SELECT COALESCE(MAX(last_updated_at), '1900-01-01'::TIMESTAMP)
         FROM {{ this }}
       ) - INTERVAL '1 HOUR'
@@ -45,23 +45,26 @@ co_occurrence_analysis AS (
     cp.source_concept,
     cp.target_concept,
     COUNT(*) as co_occurrence_count,
-    AVG(sm.activation_strength) as avg_activation_strength,
-    MAX(sm.activation_strength) as max_activation_strength,
+    AVG(COALESCE(sm.activation_strength, 0.1)) as avg_activation_strength,
+    MAX(COALESCE(sm.activation_strength, 0.1)) as max_activation_strength,
     COUNT(DISTINCT sm.memory_id) as shared_memories,
     
-    -- Temporal co-occurrence patterns
-    COUNT(CASE WHEN sm.created_at > CURRENT_TIMESTAMP - INTERVAL '24 HOURS' 
+    -- Temporal co-occurrence patterns - NULL SAFE
+    COUNT(CASE WHEN COALESCE(sm.created_at, '1900-01-01'::TIMESTAMP) > CURRENT_TIMESTAMP - INTERVAL '24 HOURS' 
           THEN 1 END) as recent_co_occurrences,
-    COUNT(CASE WHEN sm.created_at > CURRENT_TIMESTAMP - INTERVAL '7 DAYS' 
+    COUNT(CASE WHEN COALESCE(sm.created_at, '1900-01-01'::TIMESTAMP) > CURRENT_TIMESTAMP - INTERVAL '7 DAYS' 
           THEN 1 END) as weekly_co_occurrences,
           
-    -- Semantic similarity estimation
-    {{ semantic_similarity('concept_vectors.vector1', 'concept_vectors.vector2') }} as semantic_similarity
+    -- Semantic similarity estimation - NULL SAFE
+    COALESCE(
+      {{ semantic_similarity('COALESCE(concept_vectors.vector1, ARRAY[0.0])', 'COALESCE(concept_vectors.vector2, ARRAY[0.0])') }},
+      0.0
+    ) as semantic_similarity
     
   FROM concept_pairs cp
   JOIN {{ ref('stable_memories') }} sm ON (
-    sm.concepts @> ARRAY[cp.source_concept] AND 
-    sm.concepts @> ARRAY[cp.target_concept]
+    COALESCE(sm.concepts, ARRAY['unknown_concept']) @> ARRAY[cp.source_concept] AND 
+    COALESCE(sm.concepts, ARRAY['unknown_concept']) @> ARRAY[cp.target_concept]
   )
   LEFT JOIN (
     SELECT 
@@ -85,28 +88,28 @@ association_strength_calculation AS (
   SELECT *,
     -- Calculate association strength using multiple factors
     (
-      -- Co-occurrence frequency (normalized)
-      LN(1 + co_occurrence_count) / LN(1 + 100) * 0.3 +
+      -- Co-occurrence frequency (normalized) - NULL SAFE
+      LN(1 + COALESCE(co_occurrence_count, 1)) / LN(1 + 100) * 0.3 +
       
       -- Average activation strength of shared memories
-      avg_activation_strength * 0.25 +
+      COALESCE(avg_activation_strength, 0.1) * 0.25 +
       
       -- Recent activity bias
-      LEAST(1.0, recent_co_occurrences / 10.0) * 0.2 +
+      LEAST(1.0, COALESCE(recent_co_occurrences, 0) / 10.0) * 0.2 +
       
       -- Semantic similarity
-      GREATEST(0.0, semantic_similarity) * 0.15 +
+      GREATEST(0.0, COALESCE(semantic_similarity, 0.0)) * 0.15 +
       
       -- Shared memory diversity
-      LEAST(1.0, shared_memories / 20.0) * 0.1
+      LEAST(1.0, COALESCE(shared_memories, 1) / 20.0) * 0.1
       
     ) as raw_association_strength,
     
-    -- Hebbian learning application (simplified calculation)
+    -- Hebbian learning application (simplified calculation) - NULL SAFE
     -- Strength = existing_strength + learning_rate * (pre * post)
     LEAST(1.0, 
       COALESCE(existing_strength, 0.1) + 
-      {{ var('hebbian_learning_rate') }} * avg_activation_strength * (co_occurrence_count / 10.0)
+      COALESCE({{ var('hebbian_learning_rate') }}, 0.01) * COALESCE(avg_activation_strength, 0.1) * (COALESCE(co_occurrence_count, 1) / 10.0)
     ) as hebbian_association_strength
     
   FROM co_occurrence_analysis coa
@@ -132,35 +135,35 @@ final_associations AS (
     max_activation_strength,
     semantic_similarity,
     
-    -- Final association strength with homeostasis
+    -- Final association strength with homeostasis - NULL SAFE
     -- Apply homeostatic scaling to prevent runaway potentiation
     CASE
-      WHEN GREATEST(raw_association_strength, hebbian_association_strength) > {{ var('homeostasis_target') }} THEN
-        GREATEST(raw_association_strength, hebbian_association_strength) * 
-        ({{ var('homeostasis_target') }} / GREATEST(raw_association_strength, hebbian_association_strength))
-      ELSE GREATEST(raw_association_strength, hebbian_association_strength)
+      WHEN GREATEST(COALESCE(raw_association_strength, 0.1), COALESCE(hebbian_association_strength, 0.1)) > COALESCE({{ var('homeostasis_target') }}, 0.5) THEN
+        GREATEST(COALESCE(raw_association_strength, 0.1), COALESCE(hebbian_association_strength, 0.1)) * 
+        (COALESCE({{ var('homeostasis_target') }}, 0.5) / GREATEST(COALESCE(raw_association_strength, 0.1), COALESCE(hebbian_association_strength, 0.1)))
+      ELSE GREATEST(COALESCE(raw_association_strength, 0.1), COALESCE(hebbian_association_strength, 0.1))
     END as association_strength,
     
-    -- Association quality metrics
+    -- Association quality metrics - NULL SAFE
     CASE 
-      WHEN semantic_similarity > {{ var('semantic_association_threshold') }} 
-           AND co_occurrence_count >= 5 
+      WHEN COALESCE(semantic_similarity, 0.0) > COALESCE({{ var('semantic_association_threshold') }}, 0.7) 
+           AND COALESCE(co_occurrence_count, 0) >= 5 
       THEN 'strong_semantic'
-      WHEN recent_co_occurrences >= 3 
+      WHEN COALESCE(recent_co_occurrences, 0) >= 3 
       THEN 'strong_temporal'  
-      WHEN co_occurrence_count >= 10
+      WHEN COALESCE(co_occurrence_count, 0) >= 10
       THEN 'strong_frequency'
-      WHEN semantic_similarity > 0.5 OR co_occurrence_count >= 3
+      WHEN COALESCE(semantic_similarity, 0.0) > 0.5 OR COALESCE(co_occurrence_count, 0) >= 3
       THEN 'moderate'
       ELSE 'weak'
     END as association_quality,
     
-    -- Bidirectional strength (associations can be asymmetric)
-    raw_association_strength * 
-    (1.0 + semantic_similarity * 0.2) as forward_strength,
+    -- Bidirectional strength (associations can be asymmetric) - NULL SAFE
+    COALESCE(raw_association_strength, 0.1) * 
+    (1.0 + COALESCE(semantic_similarity, 0.0) * 0.2) as forward_strength,
     
-    raw_association_strength * 
-    (1.0 + semantic_similarity * 0.1) as backward_strength,
+    COALESCE(raw_association_strength, 0.1) * 
+    (1.0 + COALESCE(semantic_similarity, 0.0) * 0.1) as backward_strength,
     
     CURRENT_TIMESTAMP as last_updated_at
   FROM association_strength_calculation
@@ -183,6 +186,6 @@ SELECT
   last_updated_at
 FROM final_associations
 WHERE 
-  association_strength > 0.05  -- Filter weak associations
-  AND co_occurrence_count >= 2  -- Minimum evidence threshold
-ORDER BY association_strength DESC
+  COALESCE(association_strength, 0.0) > 0.05  -- Filter weak associations
+  AND COALESCE(co_occurrence_count, 0) >= 2  -- Minimum evidence threshold
+ORDER BY COALESCE(association_strength, 0.0) DESC

@@ -33,21 +33,48 @@ WITH working_memories AS (
 -- Uses Ollama endpoint for semantic understanding and task decomposition
 hierarchical AS (
     SELECT *,
-        -- LLM-enhanced goal extraction (high-level objectives)
+        -- LLM-enhanced goal extraction (high-level objectives) - NULL SAFE
         COALESCE(
             TRY_CAST(
-                json_extract_string(
-                    llm_generate_json(
-                        'Extract the high-level goal from this content: ' || LEFT(content, 300) ||
-                        '. Return JSON with key "goal" containing one of: Product Launch Strategy, ' ||
-                        'Communication and Collaboration, Financial Planning and Management, ' ||
-                        'Project Management and Execution, Client Relations and Service, ' ||
-                        'Operations and Maintenance, or General Task Processing.',
-                        'gpt-oss',
-                        '{{ env_var("OLLAMA_URL") }}',
-                        300
+                COALESCE(
+                    json_extract_string(
+                        CASE 
+                            WHEN llm_generate_json(
+                                'Extract the high-level goal from this content: ' || COALESCE(LEFT(content, 300), 'no content') ||
+                                '. Return JSON with key "goal" containing one of: Product Launch Strategy, ' ||
+                                'Communication and Collaboration, Financial Planning and Management, ' ||
+                                'Project Management and Execution, Client Relations and Service, ' ||
+                                'Operations and Maintenance, or General Task Processing.',
+                                'gpt-oss',
+                                COALESCE('{{ env_var("OLLAMA_URL") }}', 'http://localhost:11434'),
+                                300
+                            ) IS NOT NULL AND JSON_VALID(
+                                llm_generate_json(
+                                    'Extract the high-level goal from this content: ' || COALESCE(LEFT(content, 300), 'no content') ||
+                                    '. Return JSON with key "goal" containing one of: Product Launch Strategy, ' ||
+                                    'Communication and Collaboration, Financial Planning and Management, ' ||
+                                    'Project Management and Execution, Client Relations and Service, ' ||
+                                    'Operations and Maintenance, or General Task Processing.',
+                                    'gpt-oss',
+                                    COALESCE('{{ env_var("OLLAMA_URL") }}', 'http://localhost:11434'),
+                                    300
+                                )
+                            )
+                            THEN llm_generate_json(
+                                'Extract the high-level goal from this content: ' || COALESCE(LEFT(content, 300), 'no content') ||
+                                '. Return JSON with key "goal" containing one of: Product Launch Strategy, ' ||
+                                'Communication and Collaboration, Financial Planning and Management, ' ||
+                                'Project Management and Execution, Client Relations and Service, ' ||
+                                'Operations and Maintenance, or General Task Processing.',
+                                'gpt-oss',
+                                COALESCE('{{ env_var("OLLAMA_URL") }}', 'http://localhost:11434'),
+                                300
+                            )
+                            ELSE '{"goal": "General Task Processing"}'
+                        END,
+                        '$.goal'
                     ),
-                    '$.goal'
+                    'General Task Processing'
                 ) AS VARCHAR
             ),
             -- Fallback to rule-based extraction
@@ -68,16 +95,34 @@ hierarchical AS (
             END
         ) as level_0_goal,
         
-        -- LLM-enhanced mid-level task extraction
+        -- LLM-enhanced mid-level task extraction - NULL SAFE
         COALESCE(
             TRY_CAST(
-                llm_generate_json(
-                    'Extract mid-level tasks from this content: ' || LEFT(content, 300) ||
-                    '. Return JSON array of 3 specific tasks as strings.',
-                    'gpt-oss',
-                    '{{ env_var("OLLAMA_URL") }}',
-                    300
-                ) AS JSON
+                CASE 
+                    WHEN llm_generate_json(
+                        'Extract mid-level tasks from this content: ' || COALESCE(LEFT(content, 300), 'no content') ||
+                        '. Return JSON array of 3 specific tasks as strings.',
+                        'gpt-oss',
+                        COALESCE('{{ env_var("OLLAMA_URL") }}', 'http://localhost:11434'),
+                        300
+                    ) IS NOT NULL AND JSON_VALID(
+                        llm_generate_json(
+                            'Extract mid-level tasks from this content: ' || COALESCE(LEFT(content, 300), 'no content') ||
+                            '. Return JSON array of 3 specific tasks as strings.',
+                            'gpt-oss',
+                            COALESCE('{{ env_var("OLLAMA_URL") }}', 'http://localhost:11434'),
+                            300
+                        )
+                    )
+                    THEN llm_generate_json(
+                        'Extract mid-level tasks from this content: ' || COALESCE(LEFT(content, 300), 'no content') ||
+                        '. Return JSON array of 3 specific tasks as strings.',
+                        'gpt-oss',
+                        COALESCE('{{ env_var("OLLAMA_URL") }}', 'http://localhost:11434'),
+                        300
+                    )
+                    ELSE '["Task execution", "Process completion", "Quality assurance"]'
+                END AS JSON
             ),
             -- Fallback to rule-based extraction
             CASE 
@@ -89,27 +134,53 @@ hierarchical AS (
             END::JSON
         ) as level_1_tasks,
         
-        -- LLM-enhanced atomic action extraction
+        -- LLM-enhanced atomic action extraction - NULL SAFE
         COALESCE(
             TRY_CAST(
-                llm_generate_json(
-                    'Extract atomic actions from this content: ' || LEFT(content, 200) ||
-                    '. Return JSON array of specific actions like: verify_status, transmit_information, ' ||
-                    'generate_artifact, modify_record, evaluate_content, allocate_time.',
-                    'gpt-oss',
-                    '{{ env_var("OLLAMA_URL") }}',
-                    300
-                ) AS JSON
+                CASE 
+                    WHEN llm_generate_json(
+                        'Extract atomic actions from this content: ' || COALESCE(LEFT(content, 200), 'no content') ||
+                        '. Return JSON array of specific actions like: verify_status, transmit_information, ' ||
+                        'generate_artifact, modify_record, evaluate_content, allocate_time.',
+                        'gpt-oss',
+                        COALESCE('{{ env_var("OLLAMA_URL") }}', 'http://localhost:11434'),
+                        300
+                    ) IS NOT NULL AND JSON_VALID(
+                        llm_generate_json(
+                            'Extract atomic actions from this content: ' || COALESCE(LEFT(content, 200), 'no content') ||
+                            '. Return JSON array of specific actions like: verify_status, transmit_information, ' ||
+                            'generate_artifact, modify_record, evaluate_content, allocate_time.',
+                            'gpt-oss',
+                            COALESCE('{{ env_var("OLLAMA_URL") }}', 'http://localhost:11434'),
+                            300
+                        )
+                    )
+                    THEN llm_generate_json(
+                        'Extract atomic actions from this content: ' || COALESCE(LEFT(content, 200), 'no content') ||
+                        '. Return JSON array of specific actions like: verify_status, transmit_information, ' ||
+                        'generate_artifact, modify_record, evaluate_content, allocate_time.',
+                        'gpt-oss',
+                        COALESCE('{{ env_var("OLLAMA_URL") }}', 'http://localhost:11434'),
+                        300
+                    )
+                    ELSE '["verify_status", "process_information", "complete_task"]'
+                END AS JSON
             ),
-            -- Fallback to rule-based extraction
-            ARRAY[
-                CASE WHEN LOWER(content) LIKE '%check%' THEN 'verify_status' ELSE NULL END,
-                CASE WHEN LOWER(content) LIKE '%send%' THEN 'transmit_information' ELSE NULL END,
-                CASE WHEN LOWER(content) LIKE '%create%' THEN 'generate_artifact' ELSE NULL END,
-                CASE WHEN LOWER(content) LIKE '%update%' THEN 'modify_record' ELSE NULL END,
-                CASE WHEN LOWER(content) LIKE '%review%' THEN 'evaluate_content' ELSE NULL END,
-                CASE WHEN LOWER(content) LIKE '%schedule%' THEN 'allocate_time' ELSE NULL END
-            ]
+            -- Fallback to rule-based extraction - NULL SAFE
+            COALESCE(
+                ARRAY_REMOVE(
+                    ARRAY[
+                        CASE WHEN LOWER(COALESCE(content, '')) LIKE '%check%' THEN 'verify_status' ELSE NULL END,
+                        CASE WHEN LOWER(COALESCE(content, '')) LIKE '%send%' THEN 'transmit_information' ELSE NULL END,
+                        CASE WHEN LOWER(COALESCE(content, '')) LIKE '%create%' THEN 'generate_artifact' ELSE NULL END,
+                        CASE WHEN LOWER(COALESCE(content, '')) LIKE '%update%' THEN 'modify_record' ELSE NULL END,
+                        CASE WHEN LOWER(COALESCE(content, '')) LIKE '%review%' THEN 'evaluate_content' ELSE NULL END,
+                        CASE WHEN LOWER(COALESCE(content, '')) LIKE '%schedule%' THEN 'allocate_time' ELSE NULL END
+                    ],
+                    NULL
+                ),
+                ARRAY['verify_status', 'process_information', 'complete_task']
+            )
         ) as atomic_actions
     FROM working_memories
 ),
@@ -130,24 +201,30 @@ biological_features AS (
             ELSE '{"location": "unspecified", "egocentric": "current context", "allocentric": "general environment", "objects": []}'
         END::JSON as spatial_extraction,
         
-        -- Calculate decay and consolidation potential (biological timing)
-        EXP(-EXTRACT(EPOCH FROM (NOW() - last_accessed_at)) / 3600.0) as recency_factor,
+        -- Calculate decay and consolidation potential (biological timing) - NULL SAFE
+        COALESCE(
+            EXP(-GREATEST(0, EXTRACT(EPOCH FROM (NOW() - COALESCE(last_accessed_at, NOW())))) / 3600.0),
+            1.0
+        ) as recency_factor,
         
-        -- Enhanced emotional salience calculation
-        (activation_strength * 0.4 + 
+        -- Enhanced emotional salience calculation - NULL SAFE
+        (COALESCE(activation_strength, 0.1) * 0.4 + 
         CASE 
-            WHEN LOWER(content) LIKE '%important%' OR LOWER(content) LIKE '%critical%' OR LOWER(content) LIKE '%urgent%' THEN 0.4
-            WHEN LOWER(content) LIKE '%success%' OR LOWER(content) LIKE '%achievement%' OR LOWER(content) LIKE '%completed%' THEN 0.3 
-            WHEN LOWER(content) LIKE '%problem%' OR LOWER(content) LIKE '%issue%' OR LOWER(content) LIKE '%broken%' THEN 0.25
-            WHEN LOWER(content) LIKE '%deadline%' OR LOWER(content) LIKE '%due%' OR LOWER(content) LIKE '%pending%' THEN 0.2
+            WHEN LOWER(COALESCE(content, '')) LIKE '%important%' OR LOWER(COALESCE(content, '')) LIKE '%critical%' OR LOWER(COALESCE(content, '')) LIKE '%urgent%' THEN 0.4
+            WHEN LOWER(COALESCE(content, '')) LIKE '%success%' OR LOWER(COALESCE(content, '')) LIKE '%achievement%' OR LOWER(COALESCE(content, '')) LIKE '%completed%' THEN 0.3 
+            WHEN LOWER(COALESCE(content, '')) LIKE '%problem%' OR LOWER(COALESCE(content, '')) LIKE '%issue%' OR LOWER(COALESCE(content, '')) LIKE '%broken%' THEN 0.25
+            WHEN LOWER(COALESCE(content, '')) LIKE '%deadline%' OR LOWER(COALESCE(content, '')) LIKE '%due%' OR LOWER(COALESCE(content, '')) LIKE '%pending%' THEN 0.2
             ELSE 0.1 
         END) as emotional_salience,
         
-        -- Hebbian strength (co-activation patterns within 1-hour window)
-        COUNT(*) OVER (
-            PARTITION BY level_0_goal 
-            ORDER BY last_accessed_at 
-            RANGE BETWEEN INTERVAL '1 hour' PRECEDING AND CURRENT ROW
+        -- Hebbian strength (co-activation patterns within 1-hour window) - NULL SAFE
+        COALESCE(
+            COUNT(*) OVER (
+                PARTITION BY COALESCE(level_0_goal, 'Unknown Goal') 
+                ORDER BY COALESCE(last_accessed_at, NOW()) 
+                RANGE BETWEEN INTERVAL '1 hour' PRECEDING AND CURRENT ROW
+            ),
+            1
         ) as co_activation_count,
         
         -- Phantom objects with affordances (enhanced embodied cognition)

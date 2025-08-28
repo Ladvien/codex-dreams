@@ -40,28 +40,50 @@ WITH stm_memories AS (
 -- Simulate sharp-wave ripple patterns and memory reactivation
 replay_cycles AS (
     SELECT *,
-        -- LLM-enhanced pattern completion with hippocampal replay simulation
+        -- LLM-enhanced pattern completion with hippocampal replay simulation - NULL SAFE
         -- Uses Ollama endpoint for semantic association and causal relationship extraction
         COALESCE(
             TRY_CAST(
-                llm_generate_json(
-                    'Extract memory patterns and associations for hippocampal replay. Goal: ' || level_0_goal || 
-                    '. Content: ' || LEFT(content, 500) ||
-                    '. Return JSON with keys: related_patterns (array), semantic_associations (array), ' ||
-                    'causal_relationships (array), predictive_patterns (array). Be specific to the goal context.',
-                    'gpt-oss',
-                    '{{ env_var("OLLAMA_URL") }}',
-                    300
-                ) AS JSON
+                CASE 
+                    WHEN llm_generate_json(
+                        'Extract memory patterns and associations for hippocampal replay. Goal: ' || COALESCE(level_0_goal, 'Unknown Goal') || 
+                        '. Content: ' || COALESCE(LEFT(content, 500), 'No content available') ||
+                        '. Return JSON with keys: related_patterns (array), semantic_associations (array), ' ||
+                        'causal_relationships (array), predictive_patterns (array). Be specific to the goal context.',
+                        'gpt-oss',
+                        COALESCE('{{ env_var("OLLAMA_URL") }}', 'http://localhost:11434'),
+                        300
+                    ) IS NOT NULL AND JSON_VALID(
+                        llm_generate_json(
+                            'Extract memory patterns and associations for hippocampal replay. Goal: ' || COALESCE(level_0_goal, 'Unknown Goal') || 
+                            '. Content: ' || COALESCE(LEFT(content, 500), 'No content available') ||
+                            '. Return JSON with keys: related_patterns (array), semantic_associations (array), ' ||
+                            'causal_relationships (array), predictive_patterns (array). Be specific to the goal context.',
+                            'gpt-oss',
+                            COALESCE('{{ env_var("OLLAMA_URL") }}', 'http://localhost:11434'),
+                            300
+                        )
+                    )
+                    THEN llm_generate_json(
+                        'Extract memory patterns and associations for hippocampal replay. Goal: ' || COALESCE(level_0_goal, 'Unknown Goal') || 
+                        '. Content: ' || COALESCE(LEFT(content, 500), 'No content available') ||
+                        '. Return JSON with keys: related_patterns (array), semantic_associations (array), ' ||
+                        'causal_relationships (array), predictive_patterns (array). Be specific to the goal context.',
+                        'gpt-oss',
+                        COALESCE('{{ env_var("OLLAMA_URL") }}', 'http://localhost:11434'),
+                        300
+                    )
+                    ELSE '{"related_patterns": ["general_processing"], "semantic_associations": ["task", "completion"], "causal_relationships": ["process_improves_efficiency"], "predictive_patterns": ["structured_process_predicts_success"]}'
+                END AS JSON
             ),
-            -- Fallback to rule-based if LLM fails
+            -- Fallback to rule-based if LLM fails - NULL SAFE
             CASE 
-                WHEN level_0_goal LIKE '%Strategy%' OR level_0_goal LIKE '%Planning%'
+                WHEN COALESCE(level_0_goal, '') LIKE '%Strategy%' OR COALESCE(level_0_goal, '') LIKE '%Planning%'
                     THEN '{"related_patterns": ["strategic_thinking", "planning_processes"], 
                           "semantic_associations": ["objectives", "roadmap", "execution"],
                           "causal_relationships": ["planning_leads_to_execution"],
                           "predictive_patterns": ["planning_predicts_success"]}'
-                WHEN level_0_goal LIKE '%Communication%' OR level_0_goal LIKE '%Collaboration%'
+                WHEN COALESCE(level_0_goal, '') LIKE '%Communication%' OR COALESCE(level_0_goal, '') LIKE '%Collaboration%'
                     THEN '{"related_patterns": ["social_interaction", "team_coordination"], 
                           "semantic_associations": ["meeting", "discussion", "feedback"],
                           "causal_relationships": ["communication_improves_understanding"],
@@ -73,21 +95,21 @@ replay_cycles AS (
             END::JSON
         ) as replay_associations,
         
-        -- Hebbian learning: strengthen co-activated patterns (1.1x factor)
-        hebbian_potential * 1.1 AS strengthened_weight,
+        -- Hebbian learning: strengthen co-activated patterns (1.1x factor) - NULL SAFE
+        COALESCE(hebbian_potential, 0.1) * 1.1 AS strengthened_weight,
         
-        -- Competitive forgetting: Apply differential strengthening
+        -- Competitive forgetting: Apply differential strengthening - NULL SAFE
         CASE 
-            WHEN stm_strength < 0.3 THEN stm_strength * 0.8  -- Decay weak memories
-            WHEN stm_strength > 0.7 THEN stm_strength * 1.2  -- Strengthen strong memories  
-            ELSE stm_strength * 0.95  -- Mild decay for medium strength
+            WHEN COALESCE(stm_strength, 0.1) < 0.3 THEN COALESCE(stm_strength, 0.1) * 0.8  -- Decay weak memories
+            WHEN COALESCE(stm_strength, 0.1) > 0.7 THEN COALESCE(stm_strength, 0.1) * 1.2  -- Strengthen strong memories  
+            ELSE COALESCE(stm_strength, 0.1) * 0.95  -- Mild decay for medium strength
         END as consolidated_strength,
         
-        -- Calculate replay strength based on multiple factors
-        (stm_strength * 0.3 + 
-         emotional_salience * 0.3 + 
-         (co_activation_count / 10.0) * 0.2 + 
-         recency_factor * 0.2) as replay_strength
+        -- Calculate replay strength based on multiple factors - NULL SAFE
+        (COALESCE(stm_strength, 0.1) * 0.3 + 
+         COALESCE(emotional_salience, 0.1) * 0.3 + 
+         (COALESCE(co_activation_count, 1) / 10.0) * 0.2 + 
+         COALESCE(recency_factor, 0.1) * 0.2) as replay_strength
     FROM stm_memories
 ),
 
@@ -95,41 +117,41 @@ replay_cycles AS (
 -- Transfer memories with sufficient strength to cortical storage
 cortical_transfer AS (
     SELECT *,
-        -- Generate semantic gist for neocortical storage (abstract representation)
+        -- Generate semantic gist for neocortical storage (abstract representation) - NULL SAFE
         CASE 
-            WHEN consolidated_strength > 0.5 THEN
+            WHEN COALESCE(consolidated_strength, 0.0) > 0.5 THEN
                 CASE 
-                    WHEN level_0_goal LIKE '%Strategy%' OR level_0_goal LIKE '%Planning%'
+                    WHEN COALESCE(level_0_goal, '') LIKE '%Strategy%' OR COALESCE(level_0_goal, '') LIKE '%Planning%'
                         THEN '{"gist": "Strategic planning and goal-oriented thinking process", 
                                "category": "executive_function", 
                                "region": "prefrontal_cortex",
                                "abstraction_level": "conceptual",
                                "integration_strength": 0.8}'
-                    WHEN level_0_goal LIKE '%Communication%' OR level_0_goal LIKE '%Collaboration%'
+                    WHEN COALESCE(level_0_goal, '') LIKE '%Communication%' OR COALESCE(level_0_goal, '') LIKE '%Collaboration%'
                         THEN '{"gist": "Social communication and collaborative interaction pattern", 
                                "category": "social_cognition", 
                                "region": "temporal_superior_cortex",
                                "abstraction_level": "social",
                                "integration_strength": 0.7}'
-                    WHEN level_0_goal LIKE '%Financial%' OR level_0_goal LIKE '%Management%'
+                    WHEN COALESCE(level_0_goal, '') LIKE '%Financial%' OR COALESCE(level_0_goal, '') LIKE '%Management%'
                         THEN '{"gist": "Resource management and financial decision-making schema", 
                                "category": "quantitative_reasoning", 
                                "region": "parietal_cortex",
                                "abstraction_level": "analytical",
                                "integration_strength": 0.9}'
-                    WHEN level_0_goal LIKE '%Project%' OR level_0_goal LIKE '%Execution%'
+                    WHEN COALESCE(level_0_goal, '') LIKE '%Project%' OR COALESCE(level_0_goal, '') LIKE '%Execution%'
                         THEN '{"gist": "Project execution and temporal coordination pattern", 
                                "category": "temporal_sequencing", 
                                "region": "frontal_motor_cortex",
                                "abstraction_level": "procedural",
                                "integration_strength": 0.8}'
-                    WHEN level_0_goal LIKE '%Client%' OR level_0_goal LIKE '%Service%'
+                    WHEN COALESCE(level_0_goal, '') LIKE '%Client%' OR COALESCE(level_0_goal, '') LIKE '%Service%'
                         THEN '{"gist": "Customer service and relationship maintenance schema", 
                                "category": "interpersonal_skills", 
                                "region": "orbitofrontal_cortex",
                                "abstraction_level": "interpersonal",
                                "integration_strength": 0.75}'
-                    WHEN level_0_goal LIKE '%Operations%' OR level_0_goal LIKE '%Maintenance%'
+                    WHEN COALESCE(level_0_goal, '') LIKE '%Operations%' OR COALESCE(level_0_goal, '') LIKE '%Maintenance%'
                         THEN '{"gist": "Operational maintenance and system reliability pattern", 
                                "category": "technical_procedures", 
                                "region": "motor_cortex",
