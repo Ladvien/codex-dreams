@@ -216,9 +216,9 @@ SELECT
     phantom_objects,
     
     -- Consolidation results
-    json_extract_string(COALESCE(cortical_representation, '{"gist": "not_consolidated"}'), '$.gist') as semantic_gist,
-    json_extract_string(COALESCE(cortical_representation, '{"category": "unknown"}'), '$.category') as semantic_category,
-    json_extract_string(COALESCE(cortical_representation, '{"region": "unknown"}'), '$.region') as cortical_region,
+    json_extract(COALESCE(cortical_representation, '{"gist": "not_consolidated"}'), '$.gist') as semantic_gist,
+    json_extract(COALESCE(cortical_representation, '{"category": "unknown"}'), '$.category') as semantic_category,
+    json_extract(COALESCE(cortical_representation, '{"region": "unknown"}'), '$.region') as cortical_region,
     
     -- Memory strength and dynamics
     final_consolidated_strength as consolidated_strength,

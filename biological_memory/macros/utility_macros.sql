@@ -68,13 +68,13 @@
 
 {# Create semantic embedding placeholder - NULL SAFE #}
 {% macro create_embedding_placeholder(text_content, embedding_dim) %}
-  {# Generate placeholder embedding vector with null safety #}
+  {# Generate placeholder embedding vector with null safety - DuckDB compatible #}
   COALESCE(
-    ARRAY[{% for i in range(embedding_dim) %}
-      {{ safe_divide('ABS(HASHTEXT(COALESCE(' ~ text_content ~ ', \'empty_content\') || \'' ~ i ~ '\')::BIGINT % 10000)', '10000.0', '0.1') }}
+    [{% for i in range(embedding_dim) %}
+      {{ safe_divide('ABS(hash(COALESCE(' ~ text_content ~ ', \'empty_content\') || \'' ~ i ~ '\') % 10000)', '10000.0', '0.1') }}
       {%- if not loop.last %},{% endif %}
     {% endfor %}]::FLOAT[],
-    ARRAY[{% for i in range(embedding_dim) %}
+    [{% for i in range(embedding_dim) %}
       0.1{%- if not loop.last %},{% endif %}
     {% endfor %}]::FLOAT[]
   )
@@ -133,7 +133,7 @@
   COALESCE(
     CASE 
       WHEN {{ array_col }} IS NOT NULL 
-           AND array_length({{ array_col }}, 1) >= {{ index }}
+           AND len({{ array_col }}) >= {{ index }}
            AND {{ index }} > 0
       THEN {{ array_col }}[{{ index }}]
       ELSE NULL

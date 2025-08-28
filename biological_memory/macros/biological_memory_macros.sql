@@ -265,12 +265,12 @@
   validated_connections AS (
     SELECT 
       *,
-      CAST(json_extract_string(creative_association, '$.novelty_score') AS FLOAT) as novelty_score,
-      CAST(json_extract_string(creative_association, '$.plausibility') AS FLOAT) as plausibility_score,
-      json_extract_string(creative_association, '$.connection_type') as connection_type
+      CAST(json_extract(creative_association, '$.novelty_score') AS FLOAT) as novelty_score,
+      CAST(json_extract(creative_association, '$.plausibility') AS FLOAT) as plausibility_score,
+      json_extract(creative_association, '$.connection_type') as connection_type
     FROM creative_connections
     WHERE creative_strength > {{ var('creative_connection_threshold') }}
-      AND CAST(json_extract_string(creative_association, '$.plausibility') AS FLOAT) > 0.6
+      AND CAST(json_extract(creative_association, '$.plausibility') AS FLOAT) > 0.6
   )
   
   -- Step 4: Insert novel creative associations into semantic network
@@ -293,7 +293,7 @@
     memory_b_id,
     gist_a,
     gist_b,
-    json_extract_string(creative_association, '$.creative_link'),
+    json_extract(creative_association, '$.creative_link'),
     connection_type,
     creative_strength,
     novelty_score,
@@ -426,9 +426,36 @@
 
 {# Semantic similarity using vector operations #}
 {% macro semantic_similarity(vector1, vector2) %}
-  {# Calculate cosine similarity between semantic vectors #}
+  {# Calculate cosine similarity between semantic vectors using DuckDB-compatible functions #}
   {# Returns value between -1 and 1, where 1 is identical #}
   (
-    {{ safe_divide('array_dot_product(' ~ vector1 ~ ', ' ~ vector2 ~ ')', '(array_magnitude(' ~ vector1 ~ ') * array_magnitude(' ~ vector2 ~ '))', '0.0') }}
+    {{ safe_divide(
+      '{{ vector_dot_product(' ~ vector1 ~ ', ' ~ vector2 ~ ') }}',
+      '({{ vector_magnitude(' ~ vector1 ~ ') }} * {{ vector_magnitude(' ~ vector2 ~ ') }})',
+      '0.0'
+    ) }}
+  )
+{% endmacro %}
+
+{# DuckDB-compatible vector dot product using list operations #}
+{% macro vector_dot_product(vector1, vector2) %}
+  COALESCE(
+    (SELECT SUM(COALESCE(v1 * v2, 0)) 
+     FROM (
+       SELECT 
+         UNNEST({{ vector1 }}) as v1,
+         UNNEST({{ vector2 }}) as v2,
+         GENERATE_SERIES(1, GREATEST(LEN({{ vector1 }}), LEN({{ vector2 }}))) as idx
+     )
+    ),
+    0.0
+  )
+{% endmacro %}
+
+{# DuckDB-compatible vector magnitude using list operations #}
+{% macro vector_magnitude(vector) %}
+  COALESCE(
+    SQRT((SELECT SUM(COALESCE(v * v, 0)) FROM (SELECT UNNEST({{ vector }}) as v))),
+    0.0
   )
 {% endmacro %}

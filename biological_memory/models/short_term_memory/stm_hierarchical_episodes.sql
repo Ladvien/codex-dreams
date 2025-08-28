@@ -37,7 +37,7 @@ hierarchical AS (
         COALESCE(
             TRY_CAST(
                 COALESCE(
-                    json_extract_string(
+                    json_extract(
                         CASE 
                             WHEN llm_generate_json(
                                 'Extract the high-level goal from this content: ' || COALESCE(LEFT(content, 300), 'no content') ||
@@ -179,7 +179,7 @@ hierarchical AS (
                     ],
                     NULL
                 ),
-                ARRAY['verify_status', 'process_information', 'complete_task']
+                ['verify_status', 'process_information', 'complete_task']
             )
         ) as atomic_actions
     FROM working_memories

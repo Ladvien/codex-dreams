@@ -16,7 +16,7 @@ WITH current_working_set AS (
   SELECT 
     {{ generate_memory_id() }} as memory_id,
     COALESCE(content, 'No content') as content,
-    COALESCE(concepts, ARRAY['unknown']) as concepts,
+    COALESCE(concepts, ['unknown']) as concepts,
     COALESCE(activation_strength, 0.1) as activation_strength,
     COALESCE(created_at, NOW()) as created_at,
     COALESCE(last_accessed_at, NOW()) as last_accessed_at,

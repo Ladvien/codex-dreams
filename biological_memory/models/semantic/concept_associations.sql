@@ -22,12 +22,12 @@ WITH concept_pairs AS (
     concept2 as target_concept
   FROM (
     SELECT 
-      unnest(COALESCE(concepts, ARRAY['unknown_concept'])) as concept1,
-      unnest(COALESCE(concepts, ARRAY['unknown_concept'])) as concept2,
+      unnest(COALESCE(concepts, ['unknown_concept'])) as concept1,
+      unnest(COALESCE(concepts, ['unknown_concept'])) as concept2,
       memory_id,
       COALESCE(activation_strength, 0.1)
     FROM {{ ref('stable_memories') }}
-    WHERE COALESCE(array_length(concepts, 1), 0) > 1
+    WHERE COALESCE(len(concepts), 0) > 1
     
     {% if is_incremental() %}
       AND COALESCE(last_processed_at, '1900-01-01'::TIMESTAMP) > (
@@ -57,14 +57,14 @@ co_occurrence_analysis AS (
           
     -- Semantic similarity estimation - NULL SAFE
     COALESCE(
-      {{ semantic_similarity('COALESCE(concept_vectors.vector1, ARRAY[0.0])', 'COALESCE(concept_vectors.vector2, ARRAY[0.0])') }},
+      {{ semantic_similarity('COALESCE(concept_vectors.vector1, [0.0])', 'COALESCE(concept_vectors.vector2, [0.0])') }},
       0.0
     ) as semantic_similarity
     
   FROM concept_pairs cp
   JOIN {{ ref('stable_memories') }} sm ON (
-    COALESCE(sm.concepts, ARRAY['unknown_concept']) @> ARRAY[cp.source_concept] AND 
-    COALESCE(sm.concepts, ARRAY['unknown_concept']) @> ARRAY[cp.target_concept]
+    list_contains(COALESCE(sm.concepts, ['unknown_concept']), cp.source_concept) AND 
+    list_contains(COALESCE(sm.concepts, ['unknown_concept']), cp.target_concept)
   )
   LEFT JOIN (
     SELECT 
