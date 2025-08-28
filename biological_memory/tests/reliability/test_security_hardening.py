@@ -115,12 +115,13 @@ class TestSecurityHardening(unittest.TestCase):
         self.assertEqual(len(self.error_handler.error_events), 1)
         logged_event = self.error_handler.error_events[0]
         
-        # Current implementation stores context as-is (security issue)
-        # This test documents expected behavior after fix
-        if hasattr(logged_event, 'sanitized_context'):
-            self.assertNotIn('super_secret_password', str(logged_event.sanitized_context))
-            self.assertNotIn('sk-1234567890abcdef', str(logged_event.sanitized_context))
-            self.assertIn('this_should_remain', str(logged_event.sanitized_context))
+        # STORY-CS-001: Verify that sensitive data was sanitized
+        logged_event = self.error_handler.error_events[0]
+        
+        # Check that sensitive data was redacted from context
+        self.assertNotIn('super_secret_password', str(logged_event.context))
+        self.assertNotIn('sk-1234567890abcdef', str(logged_event.context))
+        self.assertIn('this_should_remain', str(logged_event.context))
     
     def test_error_event_memory_bounds(self):
         """Test that error events don't accumulate indefinitely"""
@@ -136,18 +137,11 @@ class TestSecurityHardening(unittest.TestCase):
             )
             self.error_handler.log_error_event(error_event)
         
-        # Check that memory usage is bounded
-        # Current implementation doesn't bound memory (security issue)
-        # This test documents expected behavior after fix
+        # STORY-CS-001: Check that memory usage is bounded
         current_count = len(self.error_handler.error_events)
         
         # After implementing circular buffer, this should be bounded
-        # For now, document the issue
-        if hasattr(self.error_handler, 'max_error_events'):
-            self.assertLessEqual(current_count, self.error_handler.max_error_events)
-        else:
-            # Current implementation - unbounded (needs fix)
-            self.assertEqual(current_count, 1500)
+        self.assertLessEqual(current_count, self.error_handler.max_error_events)
     
     def test_dead_letter_queue_file_permissions(self):
         """Test that dead letter queue database has secure permissions"""
@@ -344,12 +338,12 @@ class TestDataSanitization(unittest.TestCase):
         # In a privacy-compliant system, PII would be redacted
         self.error_handler.log_error_event(error_event)
         
-        # TODO: Implement PII redaction logic
-        # After implementation, verify PII is redacted in logs
-        if hasattr(self.error_handler, 'sanitize_pii'):
-            logged_event = self.error_handler.error_events[-1]
-            self.assertNotIn('user@example.com', str(logged_event.context))
-            self.assertNotIn('123-45-6789', str(logged_event.context))
+        # STORY-CS-001: Verify PII is redacted in logs  
+        logged_event = self.error_handler.error_events[-1]
+        self.assertNotIn('user@example.com', str(logged_event.context))
+        self.assertNotIn('123-45-6789', str(logged_event.context))
+        self.assertNotIn('4111-1111-1111-1111', str(logged_event.context))
+        self.assertIn('processing_stage_2', str(logged_event.context))
     
     def test_memory_content_sanitization(self):
         """Test that memory content with sensitive data is sanitized"""
