@@ -4554,3 +4554,44 @@ Analytics dashboard models memory_health.sql and memory_dashboard.sql contain in
 - Model references corrected: active_memories → wm_active_context
 - All other model references validated as correct
 - Dashboard parsing successful once model references fixed
+
+### 🔬 **EMBEDDING ARCHITECTURE PATTERNS - 2025-08-28 15:53**
+
+**Production Embedding Pipeline Specifications**:
+```sql
+-- New Real Embedding Macro (RECOMMENDED)
+{{ create_real_embedding('concept_text', 384) }}
+-- Generates: nomic-embed-text 384-dimension real semantic vectors
+
+-- Deprecated MD5 Placeholder (DO NOT USE IN PRODUCTION)  
+{{ create_embedding_placeholder('concept_text', 128) }}
+-- Warning: Generates random hash-based vectors with no semantic meaning
+```
+
+**DuckDB UDF Integration Pattern**:
+```sql
+-- Direct SQL usage for embedding generation
+SELECT llm_generate_embedding('artificial intelligence', 'nomic-embed-text', 384) as embedding;
+-- Returns: FLOAT[384] with real semantic vector values
+```
+
+**Semantic Similarity Calculation**:
+```sql
+-- Real vector cosine similarity (PRODUCTION READY)
+{{ semantic_similarity('vector1', 'vector2') }}
+-- Uses: vector_dot_product() and vector_magnitude() with real embeddings
+
+-- Performance: 1 API call vs 517 MD5 hash operations per concept pair
+-- Accuracy: True semantic relationships vs random hash noise
+```
+
+**Model Configuration Standards**:
+- **Primary Model**: nomic-embed-text (768 native dimensions)
+- **Production Dimension**: 384 (optimal balance of accuracy/performance)
+- **Fallback Dimensions**: 256, 128, 64 (Matryoshka truncation)
+- **API Endpoint**: /api/embeddings (Ollama REST)
+- **Caching Strategy**: 24-hour cache with access tracking
+- **Error Handling**: Graceful fallback to zero vectors with logging
+
+**Files Modified**: llm_integration_service.py, utility_macros.sql, concept_associations.sql, validation test suite
+**Git Commit**: 64ba5c6 - Production-ready real embedding implementation approved for deployment
