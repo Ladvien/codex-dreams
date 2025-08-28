@@ -2,6 +2,9 @@
 """
 BMP-013: Comprehensive Error Handling and Recovery System
 Implements robust error handling, retry logic, and recovery mechanisms for biological memory pipeline
+
+STORY-CS-001: Security Hardening - Credential Exposure Prevention
+Adds comprehensive credential sanitization and PII redaction
 """
 
 import time
@@ -9,6 +12,9 @@ import json
 import logging
 import threading
 import sqlite3
+import re
+import uuid
+import hashlib
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, Callable, List, Tuple
 from pathlib import Path
@@ -29,6 +35,7 @@ class ErrorType(Enum):
     SERVICE_UNAVAILABLE = "service_unavailable"
     DATA_CORRUPTION = "data_corruption"
     CONFIGURATION_ERROR = "configuration_error"
+    SECURITY_VIOLATION = "security_violation"
 
 
 class RecoveryStrategy(Enum):
