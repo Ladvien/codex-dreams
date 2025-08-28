@@ -108,7 +108,7 @@ replay_cycles AS (
         -- Calculate replay strength based on multiple factors - NULL SAFE
         (COALESCE(stm_strength, 0.1) * 0.3 + 
          COALESCE(emotional_salience, 0.1) * 0.3 + 
-         (COALESCE(co_activation_count, 1) / 10.0) * 0.2 + 
+         {{ safe_divide('COALESCE(co_activation_count, 1)', '10.0', '0.0') }} * 0.2 + 
          COALESCE(recency_factor, 0.1) * 0.2) as replay_strength
     FROM stm_memories
 ),
@@ -170,7 +170,7 @@ cortical_transfer AS (
         CASE 
             WHEN consolidated_strength > 0.5 THEN 
                 (consolidated_strength * 0.4 + replay_strength * 0.3 + 
-                 (co_activation_count / 5.0) * 0.3)
+                 {{ safe_divide('co_activation_count', '5.0', '0.0') }} * 0.3)
             ELSE 0.0
         END as cortical_integration_strength,
         
@@ -242,7 +242,7 @@ SELECT
     'consolidated' as memory_status,
     
     -- Performance optimization: batch processing
-    CEIL(ROW_NUMBER() OVER (ORDER BY final_consolidated_strength DESC) * 1.0 / 100) as consolidation_batch
+    CEIL({{ safe_divide('ROW_NUMBER() OVER (ORDER BY final_consolidated_strength DESC) * 1.0', '100', '1') }}) as consolidation_batch
 
 FROM stabilized_memories
 WHERE final_consolidated_strength > 0.1  -- Filter out completely decayed memories

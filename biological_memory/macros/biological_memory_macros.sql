@@ -56,7 +56,7 @@
       -- Hebbian strength calculation: ΔW = η × coactivation × (1 - current_strength)
       AVG(
         {{ var('hebbian_learning_rate') }} * 
-        LEAST(c.coactivation_count, 10.0) / 10.0 *  -- Normalize to prevent saturation
+        {{ safe_divide('LEAST(c.coactivation_count, 10.0)', '10.0', '0.0') }} *  -- Normalize to prevent saturation
         (1.0 - COALESCE(m.consolidated_strength, 0.1))  -- Prevent runaway potentiation
       ) as hebbian_delta
     FROM coactivation c
@@ -381,7 +381,7 @@
   UPDATE {{ this.schema }}.semantic_concepts 
   SET 
     centrality_score = (
-      SELECT COUNT(*) * 1.0 / (SELECT COUNT(*) FROM {{ this.schema }}.semantic_concepts)
+      {{ safe_divide('COUNT(*) * 1.0', '(SELECT COUNT(*) FROM ' ~ this.schema ~ '.semantic_concepts)', '0.0') }}
       FROM {{ this.schema }}.memory_associations ma
       WHERE ma.source_concept = semantic_concepts.concept_id 
          OR ma.target_concept = semantic_concepts.concept_id
@@ -420,7 +420,7 @@
   {# Calculate retroactive and proactive interference #}
   {# Higher similarity and closer timing = more interference #}
   (
-    {{ similarity_score }} * EXP(-{{ time_difference }} / 3600.0)  -- Exponential decay over hours
+    {{ similarity_score }} * EXP(-{{ safe_divide(time_difference, '3600.0', '1.0') }})  -- Exponential decay over hours
   )
 {% endmacro %}
 
@@ -429,7 +429,6 @@
   {# Calculate cosine similarity between semantic vectors #}
   {# Returns value between -1 and 1, where 1 is identical #}
   (
-    array_dot_product({{ vector1 }}, {{ vector2 }}) / 
-    (array_magnitude({{ vector1 }}) * array_magnitude({{ vector2 }}))
+    {{ safe_divide('array_dot_product(' ~ vector1 ~ ', ' ~ vector2 ~ ')', '(array_magnitude(' ~ vector1 ~ ') * array_magnitude(' ~ vector2 ~ '))', '0.0') }}
   )
 {% endmacro %}

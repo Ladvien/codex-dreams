@@ -71,7 +71,7 @@ final_consolidation AS (
     -- Memory type classification
     {{ classify_memory_type(
       'homeostatic_strength',
-      '(' ~ memory_age_seconds('created_at') ~ ' / 3600.0)',
+      '{{ safe_divide(' ~ memory_age_seconds('created_at') ~ ', \'3600.0\', \'0.0\') }}',
       'access_count'
     ) }} as classified_memory_type
   FROM consolidation_candidates
@@ -93,7 +93,6 @@ SELECT
   interference_score,
   consolidated_at,
   -- Batch processing for performance
-  CEIL(ROW_NUMBER() OVER (ORDER BY consolidation_priority DESC) * 1.0
-       / {{ var('consolidation_batch_size') }}) as consolidation_batch
+  CEIL({{ safe_divide('ROW_NUMBER() OVER (ORDER BY consolidation_priority DESC) * 1.0', var('consolidation_batch_size'), '1') }}) as consolidation_batch
 FROM final_consolidation
 WHERE final_activation_strength > 0.1  -- Filter out decayed memories

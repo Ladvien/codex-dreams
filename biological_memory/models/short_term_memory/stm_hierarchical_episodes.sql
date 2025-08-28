@@ -203,7 +203,7 @@ biological_features AS (
         
         -- Calculate decay and consolidation potential (biological timing) - NULL SAFE
         COALESCE(
-            EXP(-GREATEST(0, EXTRACT(EPOCH FROM (NOW() - COALESCE(last_accessed_at, NOW())))) / 3600.0),
+            EXP(-{{ safe_divide('GREATEST(0, EXTRACT(EPOCH FROM (NOW() - COALESCE(last_accessed_at, NOW()))))', '3600.0', '1.0') }}),
             1.0
         ) as recency_factor,
         

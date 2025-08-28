@@ -21,7 +21,7 @@ WITH memory_type_stats AS (
     MAX(activation_strength) as max_activation,
     AVG(access_count) as avg_access_count,
     SUM(access_count) as total_accesses,
-    AVG({{ memory_age_seconds('created_at') }} / 3600.0) as avg_age_hours
+    AVG({{ safe_divide(memory_age_seconds('created_at'), '3600.0', '0.0') }}) as avg_age_hours
   FROM (
     SELECT memory_id, 'working_memory' as memory_type, activation_strength, 
            access_count, created_at FROM {{ ref('active_memories') }}
@@ -60,8 +60,7 @@ semantic_network_stats AS (
 system_health_metrics AS (
   SELECT
     -- Memory capacity utilization
-    (SELECT memory_count FROM memory_type_stats WHERE memory_type = 'working_memory') 
-    / {{ var('working_memory_capacity') }}.0 as working_memory_utilization,
+    {{ safe_divide('(SELECT memory_count FROM memory_type_stats WHERE memory_type = \'working_memory\')', var('working_memory_capacity') ~ '.0', '0.0') }} as working_memory_utilization,
     
     -- Consolidation efficiency
     COALESCE(cm.total_consolidating / NULLIF(

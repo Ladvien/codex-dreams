@@ -19,8 +19,7 @@
 {% macro normalize_activation(raw_activation, min_val, max_val) %}
   {# Min-max normalization for activation values with null safety #}
   COALESCE(
-    (COALESCE({{ raw_activation }}, 0.0) - COALESCE({{ min_val }}, 0.0)) / 
-    NULLIF(COALESCE({{ max_val }}, 1.0) - COALESCE({{ min_val }}, 0.0), 0),
+    {{ safe_divide('(COALESCE(' ~ raw_activation ~ ', 0.0) - COALESCE(' ~ min_val ~ ', 0.0))', 'NULLIF(COALESCE(' ~ max_val ~ ', 1.0) - COALESCE(' ~ min_val ~ ', 0.0), 0)', '0.0') }},
     0.0
   )
 {% endmacro %}
@@ -29,7 +28,7 @@
 {% macro recency_score(last_accessed_at, half_life_hours) %}
   {# Exponential decay score based on last access time with null safety #}
   COALESCE(
-    EXP(-LN(2) * {{ memory_age_seconds('COALESCE(' ~ last_accessed_at ~ ', NOW())') }} / (COALESCE({{ half_life_hours }}, 1.0) * 3600.0)),
+    EXP(-LN(2) * {{ safe_divide(memory_age_seconds('COALESCE(' ~ last_accessed_at ~ ', NOW())'), '(COALESCE(' ~ half_life_hours ~ ', 1.0) * 3600.0)', '1.0') }}),
     1.0
   )
 {% endmacro %}
@@ -38,7 +37,7 @@
 {% macro frequency_score(access_count) %}
   {# Logarithmic scaling for frequency to prevent dominance with null safety #}
   COALESCE(
-    LN(1 + GREATEST(COALESCE({{ access_count }}, 0), 0)) / LN(1 + 100),
+    {{ safe_divide('LN(1 + GREATEST(COALESCE(' ~ access_count ~ ', 0), 0))', 'LN(1 + 100)', '0.0') }},
     0.0
   )  -- Normalize to 0-1 range
 {% endmacro %}
@@ -72,7 +71,7 @@
   {# Generate placeholder embedding vector with null safety #}
   COALESCE(
     ARRAY[{% for i in range(embedding_dim) %}
-      ABS(HASHTEXT(COALESCE({{ text_content }}, 'empty_content') || '{{ i }}')::BIGINT % 10000) / 10000.0
+      {{ safe_divide('ABS(HASHTEXT(COALESCE(' ~ text_content ~ ', \'empty_content\') || \'' ~ i ~ '\')::BIGINT % 10000)', '10000.0', '0.1') }}
       {%- if not loop.last %},{% endif %}
     {% endfor %}]::FLOAT[],
     ARRAY[{% for i in range(embedding_dim) %}
@@ -111,7 +110,7 @@
   WITH batched_data AS (
     SELECT *,
       ROW_NUMBER() OVER (ORDER BY {{ batch_column }}) as row_num,
-      CEIL(ROW_NUMBER() OVER (ORDER BY {{ batch_column }}) / {{ batch_size }}.0) as batch_id
+      CEIL({{ safe_divide('ROW_NUMBER() OVER (ORDER BY ' ~ batch_column ~ ')', batch_size ~ '.0', '1.0') }}) as batch_id
     FROM ({{ source_query }})
   )
   SELECT * FROM batched_data

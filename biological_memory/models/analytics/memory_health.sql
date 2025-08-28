@@ -149,7 +149,7 @@ system_performance AS (
         -- Working memory capacity utilization (Miller's 7±2) - NULL SAFE
         COALESCE((SELECT total_memories FROM memory_distribution WHERE memory_type = 'working_memory'), 0) as wm_current_load,
         COALESCE({{ var('working_memory_capacity') }}, 7) as wm_max_capacity,
-        COALESCE((SELECT total_memories FROM memory_distribution WHERE memory_type = 'working_memory'), 0) * 100.0 / COALESCE({{ var('working_memory_capacity') }}, 7) as wm_utilization_pct,
+        {{ safe_divide('COALESCE((SELECT total_memories FROM memory_distribution WHERE memory_type = \'working_memory\'), 0) * 100.0', 'COALESCE(' ~ var('working_memory_capacity') ~ ', 7)', '0.0') }} as wm_utilization_pct,
         
         -- Short-term memory processing efficiency - NULL SAFE
         COALESCE((SELECT total_memories FROM memory_distribution WHERE memory_type = 'short_term_memory'), 0) as stm_current_count,

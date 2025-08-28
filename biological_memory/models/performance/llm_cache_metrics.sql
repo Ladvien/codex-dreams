@@ -26,7 +26,7 @@ cache_performance AS (
   SELECT 
     CASE 
       WHEN total_cache_hits > 0 THEN 
-        (total_cache_hits - total_cached_responses) * 100.0 / total_cache_hits
+        {{ safe_divide('(total_cache_hits - total_cached_responses) * 100.0', 'total_cache_hits', '0.0') }}
       ELSE 0.0 
     END as cache_hit_rate_percent,
     
@@ -52,7 +52,7 @@ SELECT
   -- Cache efficiency metrics
   CASE 
     WHEN cs.unique_prompts > 0 THEN 
-      cs.total_cached_responses * 1.0 / cs.unique_prompts
+      {{ safe_divide('cs.total_cached_responses * 1.0', 'cs.unique_prompts', '0.0') }}
     ELSE 0.0
   END as cache_efficiency_ratio,
   

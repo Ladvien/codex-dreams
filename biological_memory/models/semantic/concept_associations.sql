@@ -89,19 +89,19 @@ association_strength_calculation AS (
     -- Calculate association strength using multiple factors
     (
       -- Co-occurrence frequency (normalized) - NULL SAFE
-      LN(1 + COALESCE(co_occurrence_count, 1)) / LN(1 + 100) * 0.3 +
+      {{ safe_divide('LN(1 + COALESCE(co_occurrence_count, 1))', 'LN(1 + 100)', '0.0') }} * 0.3 +
       
       -- Average activation strength of shared memories
       COALESCE(avg_activation_strength, 0.1) * 0.25 +
       
       -- Recent activity bias
-      LEAST(1.0, COALESCE(recent_co_occurrences, 0) / 10.0) * 0.2 +
+      LEAST(1.0, {{ safe_divide('COALESCE(recent_co_occurrences, 0)', '10.0', '0.0') }}) * 0.2 +
       
       -- Semantic similarity
       GREATEST(0.0, COALESCE(semantic_similarity, 0.0)) * 0.15 +
       
       -- Shared memory diversity
-      LEAST(1.0, COALESCE(shared_memories, 1) / 20.0) * 0.1
+      LEAST(1.0, {{ safe_divide('COALESCE(shared_memories, 1)', '20.0', '0.0') }}) * 0.1
       
     ) as raw_association_strength,
     
@@ -109,7 +109,7 @@ association_strength_calculation AS (
     -- Strength = existing_strength + learning_rate * (pre * post)
     LEAST(1.0, 
       COALESCE(existing_strength, 0.1) + 
-      COALESCE({{ var('hebbian_learning_rate') }}, 0.01) * COALESCE(avg_activation_strength, 0.1) * (COALESCE(co_occurrence_count, 1) / 10.0)
+      COALESCE({{ var('hebbian_learning_rate') }}, 0.01) * COALESCE(avg_activation_strength, 0.1) * {{ safe_divide('COALESCE(co_occurrence_count, 1)', '10.0', '0.0') }}
     ) as hebbian_association_strength
     
   FROM co_occurrence_analysis coa
@@ -140,7 +140,7 @@ final_associations AS (
     CASE
       WHEN GREATEST(COALESCE(raw_association_strength, 0.1), COALESCE(hebbian_association_strength, 0.1)) > COALESCE({{ var('homeostasis_target') }}, 0.5) THEN
         GREATEST(COALESCE(raw_association_strength, 0.1), COALESCE(hebbian_association_strength, 0.1)) * 
-        (COALESCE({{ var('homeostasis_target') }}, 0.5) / GREATEST(COALESCE(raw_association_strength, 0.1), COALESCE(hebbian_association_strength, 0.1)))
+        {{ safe_divide('COALESCE(' ~ var('homeostasis_target') ~ ', 0.5)', 'GREATEST(COALESCE(raw_association_strength, 0.1), COALESCE(hebbian_association_strength, 0.1))', '1.0') }}
       ELSE GREATEST(COALESCE(raw_association_strength, 0.1), COALESCE(hebbian_association_strength, 0.1))
     END as association_strength,
     

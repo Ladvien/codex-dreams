@@ -144,10 +144,10 @@
   SELECT 
     COUNT(*) as active_connections,
     160 as max_connections,
-    ROUND(COUNT(*) * 100.0 / 160, 2) as utilization_percentage,
+    ROUND({{ safe_divide('COUNT(*) * 100.0', '160', '0.0') }}, 2) as utilization_percentage,
     CASE 
-      WHEN COUNT(*) / 160.0 > 0.8 THEN 'HIGH'
-      WHEN COUNT(*) / 160.0 > 0.6 THEN 'MEDIUM' 
+      WHEN {{ safe_divide('COUNT(*)', '160.0', '0.0') }} > 0.8 THEN 'HIGH'
+      WHEN {{ safe_divide('COUNT(*)', '160.0', '0.0') }} > 0.6 THEN 'MEDIUM' 
       ELSE 'LOW'
     END as utilization_status,
     CURRENT_TIMESTAMP as measured_at
@@ -221,7 +221,7 @@
   SELECT 
     table_name,
     estimated_size_bytes,
-    estimated_size_bytes / (1024*1024) as size_mb,
+    {{ safe_divide('estimated_size_bytes', '(1024*1024)', '0.0') }} as size_mb,
     row_count,
     ROUND(estimated_size_bytes / NULLIF(row_count, 0), 2) as bytes_per_row,
     last_analyzed
@@ -261,7 +261,7 @@
       '{{ query_name }}',
       {{ duration_ms }},
       {{ target_ms }},
-      {{ duration_ms }} / {{ target_ms }},
+      {{ safe_divide(duration_ms, target_ms, '0.0') }},
       CURRENT_TIMESTAMP
     );
     

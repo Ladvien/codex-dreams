@@ -65,7 +65,7 @@ stability_scoring AS (
     -- Calculate long-term stability score
     (
       LEAST(1.0, activation_strength) * 0.3 +
-      LEAST(1.0, semantic_associations / 10.0) * 0.2 +
+      LEAST(1.0, {{ safe_divide('semantic_associations', '10.0', '0.0') }}) * 0.2 +
       LEAST(1.0, avg_association_strength) * 0.2 +
       LEAST(1.0, network_centrality) * 0.15 +
       LEAST(1.0, access_rate_per_hour) * 0.15
@@ -80,7 +80,7 @@ stability_scoring AS (
     
     -- Decay resistance (ability to persist over time)
     EXP(-{{ var('synaptic_decay_rate') }} * 
-        {{ memory_age_seconds('created_at') }} / 86400.0  -- Days
+        {{ safe_divide(memory_age_seconds('created_at'), '86400.0', '1.0') }}  -- Days
     ) * stability_score as decay_resistance
   FROM semantic_enrichment
 )
