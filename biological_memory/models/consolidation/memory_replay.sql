@@ -40,44 +40,38 @@ WITH stm_memories AS (
 -- Simulate sharp-wave ripple patterns and memory reactivation
 replay_cycles AS (
     SELECT *,
-        -- Enhanced rule-based pattern completion 
-        -- TODO: Replace with LLM when Ollama endpoint is available
-        CASE 
-            WHEN level_0_goal LIKE '%Strategy%' OR level_0_goal LIKE '%Planning%'
-                THEN '{"related_patterns": ["strategic_thinking", "planning_processes", "goal_setting"], 
-                      "semantic_associations": ["objectives", "roadmap", "execution", "metrics"],
-                      "causal_relationships": ["planning_leads_to_execution", "strategy_drives_tactics"],
-                      "predictive_patterns": ["planning_predicts_success", "strategy_enables_coordination"]}'
-            WHEN level_0_goal LIKE '%Communication%' OR level_0_goal LIKE '%Collaboration%'
-                THEN '{"related_patterns": ["social_interaction", "information_sharing", "team_coordination"], 
-                      "semantic_associations": ["meeting", "discussion", "presentation", "feedback"],
-                      "causal_relationships": ["communication_improves_understanding", "collaboration_increases_quality"],
-                      "predictive_patterns": ["good_communication_predicts_project_success", "collaboration_reduces_errors"]}'
-            WHEN level_0_goal LIKE '%Financial%' OR level_0_goal LIKE '%Management%'
-                THEN '{"related_patterns": ["resource_allocation", "cost_management", "budget_planning"], 
-                      "semantic_associations": ["budget", "expenses", "revenue", "profitability"],
-                      "causal_relationships": ["budget_controls_spending", "cost_management_improves_margins"],
-                      "predictive_patterns": ["budget_adherence_predicts_financial_health", "cost_control_enables_growth"]}'
-            WHEN level_0_goal LIKE '%Project%' OR level_0_goal LIKE '%Execution%'
-                THEN '{"related_patterns": ["task_management", "timeline_tracking", "deliverable_completion"], 
-                      "semantic_associations": ["deadline", "milestone", "deliverable", "progress"],
-                      "causal_relationships": ["planning_enables_execution", "tracking_improves_delivery"],
-                      "predictive_patterns": ["early_planning_predicts_on_time_delivery", "regular_tracking_reduces_risks"]}'
-            WHEN level_0_goal LIKE '%Client%' OR level_0_goal LIKE '%Service%'
-                THEN '{"related_patterns": ["customer_service", "relationship_building", "satisfaction_improvement"], 
-                      "semantic_associations": ["client_needs", "service_quality", "satisfaction", "retention"],
-                      "causal_relationships": ["good_service_increases_satisfaction", "satisfaction_drives_retention"],
-                      "predictive_patterns": ["client_satisfaction_predicts_renewal", "service_quality_enables_growth"]}'
-            WHEN level_0_goal LIKE '%Operations%' OR level_0_goal LIKE '%Maintenance%'
-                THEN '{"related_patterns": ["system_maintenance", "operational_efficiency", "problem_resolution"], 
-                      "semantic_associations": ["maintenance", "repairs", "efficiency", "reliability"],
-                      "causal_relationships": ["maintenance_prevents_failures", "efficiency_reduces_costs"],
-                      "predictive_patterns": ["regular_maintenance_predicts_reliability", "efficiency_improvements_reduce_overhead"]}'
-            ELSE '{"related_patterns": ["general_processing", "task_completion", "workflow_management"], 
-                  "semantic_associations": ["task", "completion", "process", "workflow"],
-                  "causal_relationships": ["process_improves_efficiency", "completion_enables_progress"],
-                  "predictive_patterns": ["structured_process_predicts_success", "completion_tracking_improves_outcomes"]}'
-        END::JSON as replay_associations,
+        -- LLM-enhanced pattern completion with hippocampal replay simulation
+        -- Uses Ollama endpoint for semantic association and causal relationship extraction
+        COALESCE(
+            TRY_CAST(
+                prompt(
+                    'gpt-oss',
+                    'Extract memory patterns and associations for hippocampal replay. Goal: ' || level_0_goal || 
+                    '. Content: ' || LEFT(content, 500) ||
+                    '. Return JSON with keys: related_patterns (array), semantic_associations (array), ' ||
+                    'causal_relationships (array), predictive_patterns (array). Be specific to the goal context.',
+                    'http://{{ env_var("OLLAMA_URL") }}',
+                    300
+                )::VARCHAR AS JSON
+            ),
+            -- Fallback to rule-based if LLM fails
+            CASE 
+                WHEN level_0_goal LIKE '%Strategy%' OR level_0_goal LIKE '%Planning%'
+                    THEN '{"related_patterns": ["strategic_thinking", "planning_processes"], 
+                          "semantic_associations": ["objectives", "roadmap", "execution"],
+                          "causal_relationships": ["planning_leads_to_execution"],
+                          "predictive_patterns": ["planning_predicts_success"]}'
+                WHEN level_0_goal LIKE '%Communication%' OR level_0_goal LIKE '%Collaboration%'
+                    THEN '{"related_patterns": ["social_interaction", "team_coordination"], 
+                          "semantic_associations": ["meeting", "discussion", "feedback"],
+                          "causal_relationships": ["communication_improves_understanding"],
+                          "predictive_patterns": ["good_communication_predicts_project_success"]}'
+                ELSE '{"related_patterns": ["general_processing"], 
+                      "semantic_associations": ["task", "completion"],
+                      "causal_relationships": ["process_improves_efficiency"],
+                      "predictive_patterns": ["structured_process_predicts_success"]}'
+            END::JSON
+        ) as replay_associations,
         
         -- Hebbian learning: strengthen co-activated patterns (1.1x factor)
         hebbian_potential * 1.1 AS strengthened_weight,

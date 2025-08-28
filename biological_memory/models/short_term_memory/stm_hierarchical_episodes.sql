@@ -29,51 +29,88 @@ WITH working_memories AS (
     {% endif %}
 ),
 
--- Build hierarchical task structure via rule-based extraction  
--- TODO: Replace with LLM when Ollama endpoint is configured
+-- Build hierarchical task structure via LLM extraction
+-- Uses Ollama endpoint for semantic understanding and task decomposition
 hierarchical AS (
     SELECT *,
-        -- Enhanced goal extraction (high-level objectives)
-        CASE 
-            WHEN LOWER(content) LIKE '%launch%' OR LOWER(content) LIKE '%strategy%' OR LOWER(content) LIKE '%campaign%'
-                THEN 'Product Launch Strategy'
-            WHEN LOWER(content) LIKE '%presentation%' OR LOWER(content) LIKE '%meeting%' 
-                THEN 'Communication and Collaboration'
-            WHEN LOWER(content) LIKE '%budget%' OR LOWER(content) LIKE '%financial%' OR LOWER(content) LIKE '%cost%'
-                THEN 'Financial Planning and Management'
-            WHEN LOWER(content) LIKE '%project%' OR LOWER(content) LIKE '%deadline%' OR LOWER(content) LIKE '%timeline%'
-                THEN 'Project Management and Execution'
-            WHEN LOWER(content) LIKE '%client%' OR LOWER(content) LIKE '%customer%' 
-                THEN 'Client Relations and Service'
-            WHEN LOWER(content) LIKE '%maintenance%' OR LOWER(content) LIKE '%fix%' OR LOWER(content) LIKE '%repair%'
-                THEN 'Operations and Maintenance'
-            ELSE 'General Task Processing'
-        END as level_0_goal,
+        -- LLM-enhanced goal extraction (high-level objectives)
+        COALESCE(
+            TRY_CAST(
+                json_extract_string(
+                    prompt(
+                        'gpt-oss',
+                        'Extract the high-level goal from this content: ' || LEFT(content, 300) ||
+                        '. Return JSON with key "goal" containing one of: Product Launch Strategy, ' ||
+                        'Communication and Collaboration, Financial Planning and Management, ' ||
+                        'Project Management and Execution, Client Relations and Service, ' ||
+                        'Operations and Maintenance, or General Task Processing.',
+                        'http://{{ env_var("OLLAMA_URL") }}',
+                        300
+                    )::VARCHAR,
+                    '$.goal'
+                ) AS VARCHAR
+            ),
+            -- Fallback to rule-based extraction
+            CASE 
+                WHEN LOWER(content) LIKE '%launch%' OR LOWER(content) LIKE '%strategy%' 
+                    THEN 'Product Launch Strategy'
+                WHEN LOWER(content) LIKE '%presentation%' OR LOWER(content) LIKE '%meeting%' 
+                    THEN 'Communication and Collaboration'
+                WHEN LOWER(content) LIKE '%budget%' OR LOWER(content) LIKE '%financial%'
+                    THEN 'Financial Planning and Management'
+                WHEN LOWER(content) LIKE '%project%' OR LOWER(content) LIKE '%deadline%'
+                    THEN 'Project Management and Execution'
+                WHEN LOWER(content) LIKE '%client%' OR LOWER(content) LIKE '%customer%' 
+                    THEN 'Client Relations and Service'
+                WHEN LOWER(content) LIKE '%maintenance%' OR LOWER(content) LIKE '%fix%'
+                    THEN 'Operations and Maintenance'
+                ELSE 'General Task Processing'
+            END
+        ) as level_0_goal,
         
-        -- Mid-level tasks (steps to achieve goal)
-        CASE 
-            WHEN LOWER(content) LIKE '%schedule%' OR LOWER(content) LIKE '%appointment%'
-                THEN '["Schedule coordination", "Calendar management", "Time allocation"]'
-            WHEN LOWER(content) LIKE '%review%' OR LOWER(content) LIKE '%analysis%' OR LOWER(content) LIKE '%report%'
-                THEN '["Document review", "Data analysis", "Report generation"]'
-            WHEN LOWER(content) LIKE '%order%' OR LOWER(content) LIKE '%purchase%' OR LOWER(content) LIKE '%supplies%'
-                THEN '["Resource procurement", "Vendor coordination", "Supply management"]'
-            WHEN LOWER(content) LIKE '%update%' OR LOWER(content) LIKE '%modify%' OR LOWER(content) LIKE '%change%'
-                THEN '["System updates", "Process modification", "Status tracking"]'
-            WHEN LOWER(content) LIKE '%contact%' OR LOWER(content) LIKE '%call%' OR LOWER(content) LIKE '%email%'
-                THEN '["Communication outreach", "Follow-up coordination", "Relationship management"]'
-            ELSE '["Task execution", "Process completion", "Quality assurance"]'
-        END as level_1_tasks,
+        -- LLM-enhanced mid-level task extraction
+        COALESCE(
+            TRY_CAST(
+                prompt(
+                    'gpt-oss',
+                    'Extract mid-level tasks from this content: ' || LEFT(content, 300) ||
+                    '. Return JSON array of 3 specific tasks as strings.',
+                    'http://{{ env_var("OLLAMA_URL") }}',
+                    300
+                )::VARCHAR AS JSON
+            ),
+            -- Fallback to rule-based extraction
+            CASE 
+                WHEN LOWER(content) LIKE '%schedule%' OR LOWER(content) LIKE '%appointment%'
+                    THEN '["Schedule coordination", "Calendar management", "Time allocation"]'
+                WHEN LOWER(content) LIKE '%review%' OR LOWER(content) LIKE '%analysis%'
+                    THEN '["Document review", "Data analysis", "Report generation"]'
+                ELSE '["Task execution", "Process completion", "Quality assurance"]'
+            END::JSON
+        ) as level_1_tasks,
         
-        -- Atomic actions (specific behaviors)
-        ARRAY[
-            CASE WHEN LOWER(content) LIKE '%check%' THEN 'verify_status' ELSE NULL END,
-            CASE WHEN LOWER(content) LIKE '%send%' THEN 'transmit_information' ELSE NULL END,
-            CASE WHEN LOWER(content) LIKE '%create%' THEN 'generate_artifact' ELSE NULL END,
-            CASE WHEN LOWER(content) LIKE '%update%' THEN 'modify_record' ELSE NULL END,
-            CASE WHEN LOWER(content) LIKE '%review%' THEN 'evaluate_content' ELSE NULL END,
-            CASE WHEN LOWER(content) LIKE '%schedule%' THEN 'allocate_time' ELSE NULL END
-        ] as atomic_actions
+        -- LLM-enhanced atomic action extraction
+        COALESCE(
+            TRY_CAST(
+                prompt(
+                    'gpt-oss',
+                    'Extract atomic actions from this content: ' || LEFT(content, 200) ||
+                    '. Return JSON array of specific actions like: verify_status, transmit_information, ' ||
+                    'generate_artifact, modify_record, evaluate_content, allocate_time.',
+                    'http://{{ env_var("OLLAMA_URL") }}',
+                    300
+                )::VARCHAR AS JSON
+            ),
+            -- Fallback to rule-based extraction
+            ARRAY[
+                CASE WHEN LOWER(content) LIKE '%check%' THEN 'verify_status' ELSE NULL END,
+                CASE WHEN LOWER(content) LIKE '%send%' THEN 'transmit_information' ELSE NULL END,
+                CASE WHEN LOWER(content) LIKE '%create%' THEN 'generate_artifact' ELSE NULL END,
+                CASE WHEN LOWER(content) LIKE '%update%' THEN 'modify_record' ELSE NULL END,
+                CASE WHEN LOWER(content) LIKE '%review%' THEN 'evaluate_content' ELSE NULL END,
+                CASE WHEN LOWER(content) LIKE '%schedule%' THEN 'allocate_time' ELSE NULL END
+            ]
+        ) as atomic_actions
     FROM working_memories
 ),
 

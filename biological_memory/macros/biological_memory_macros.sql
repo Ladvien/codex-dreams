@@ -224,30 +224,34 @@
   creative_connections AS (
     SELECT 
       *,
-      -- Enhanced rule-based creative linking (TODO: Replace with LLM when available)
-      CASE 
-        WHEN (category_a = 'work_meeting' AND category_b = 'financial_planning') THEN
-          '{"creative_link": "Strategic business alignment between team coordination and resource allocation", 
-            "connection_type": "strategic_synthesis", "novelty_score": 0.8, "plausibility": 0.9}'
-        WHEN (category_a = 'technical_procedures' AND category_b = 'social_cognition') THEN
-          '{"creative_link": "Human-centered technical design bridging systematic processes with user empathy", 
-            "connection_type": "human_technology_interface", "novelty_score": 0.7, "plausibility": 0.8}'
-        WHEN (category_a = 'executive_function' AND category_b = 'interpersonal_skills') THEN
-          '{"creative_link": "Leadership synthesis combining strategic thinking with emotional intelligence", 
-            "connection_type": "executive_emotional_intelligence", "novelty_score": 0.6, "plausibility": 0.9}'
-        WHEN (category_a = 'quantitative_reasoning' AND category_b = 'temporal_sequencing') THEN
-          '{"creative_link": "Data-driven project management merging analytical insights with timeline execution", 
-            "connection_type": "analytical_project_management", "novelty_score": 0.7, "plausibility": 0.8}'
-        WHEN (gist_a ILIKE '%planning%' AND gist_b ILIKE '%communication%') THEN
-          '{"creative_link": "Communicative planning process integrating stakeholder engagement with strategic foresight", 
-            "connection_type": "communicative_strategy", "novelty_score": 0.6, "plausibility": 0.85}'
-        WHEN (gist_a ILIKE '%problem%' AND gist_b ILIKE '%collaboration%') THEN
-          '{"creative_link": "Collaborative problem-solving methodology combining individual analysis with group intelligence", 
-            "connection_type": "collective_problem_solving", "novelty_score": 0.8, "plausibility": 0.9}'
-        ELSE 
-          '{"creative_link": "Cross-domain pattern recognition connecting diverse cognitive processes", 
-            "connection_type": "general_synthesis", "novelty_score": 0.5, "plausibility": 0.7}'
-      END::JSON as creative_association,
+      -- LLM-enhanced creative linking with REM-like association generation
+      COALESCE(
+        TRY_CAST(
+          prompt(
+            'gpt-oss',
+            'Generate a creative association between these two memory concepts. ' ||
+            'Memory A (category: ' || category_a || '): ' || LEFT(gist_a, 100) || '. ' ||
+            'Memory B (category: ' || category_b || '): ' || LEFT(gist_b, 100) || '. ' ||
+            'Find novel connections that could lead to insights. Return JSON with keys: ' ||
+            'creative_link (string describing the connection), connection_type (string), ' ||
+            'novelty_score (0-1 float), plausibility (0-1 float).',
+            'http://{{ env_var("OLLAMA_URL") }}',
+            300
+          )::VARCHAR AS JSON
+        ),
+        -- Fallback to rule-based creative associations
+        CASE 
+          WHEN (category_a = 'work_meeting' AND category_b = 'financial_planning') THEN
+            '{"creative_link": "Strategic business alignment between team coordination and resource allocation", 
+              "connection_type": "strategic_synthesis", "novelty_score": 0.8, "plausibility": 0.9}'
+          WHEN (category_a = 'technical_procedures' AND category_b = 'social_cognition') THEN
+            '{"creative_link": "Human-centered technical design bridging systematic processes with user empathy", 
+              "connection_type": "human_technology_interface", "novelty_score": 0.7, "plausibility": 0.8}'
+          ELSE 
+            '{"creative_link": "Cross-domain pattern recognition connecting diverse cognitive processes", 
+              "connection_type": "general_synthesis", "novelty_score": 0.5, "plausibility": 0.7}'
+        END::JSON
+      ) as creative_association,
       
       -- Calculate creative association strength
       (strength_a * 0.4 + strength_b * 0.4 + 

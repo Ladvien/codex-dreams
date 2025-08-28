@@ -102,13 +102,12 @@ association_strength_calculation AS (
       
     ) as raw_association_strength,
     
-    -- Hebbian learning application
-    {{ calculate_hebbian_strength(
-      'avg_activation_strength',
-      'LEAST(1.0, co_occurrence_count / 10.0)',
-      'COALESCE(existing_strength, 0.1)',
-      var('hebbian_learning_rate')
-    ) }} as hebbian_association_strength
+    -- Hebbian learning application (simplified calculation)
+    -- Strength = existing_strength + learning_rate * (pre * post)
+    LEAST(1.0, 
+      COALESCE(existing_strength, 0.1) + 
+      {{ var('hebbian_learning_rate') }} * avg_activation_strength * (co_occurrence_count / 10.0)
+    ) as hebbian_association_strength
     
   FROM co_occurrence_analysis coa
   LEFT JOIN (
@@ -134,11 +133,13 @@ final_associations AS (
     semantic_similarity,
     
     -- Final association strength with homeostasis
-    {{ synaptic_homeostasis(
-      'GREATEST(raw_association_strength, hebbian_association_strength)',
-      var('homeostasis_target'),
-      0.05
-    ) }} as association_strength,
+    -- Apply homeostatic scaling to prevent runaway potentiation
+    CASE
+      WHEN GREATEST(raw_association_strength, hebbian_association_strength) > {{ var('homeostasis_target') }} THEN
+        GREATEST(raw_association_strength, hebbian_association_strength) * 
+        ({{ var('homeostasis_target') }} / GREATEST(raw_association_strength, hebbian_association_strength))
+      ELSE GREATEST(raw_association_strength, hebbian_association_strength)
+    END as association_strength,
     
     -- Association quality metrics
     CASE 
