@@ -227,17 +227,17 @@
       -- LLM-enhanced creative linking with REM-like association generation
       COALESCE(
         TRY_CAST(
-          prompt(
-            'gpt-oss',
+          llm_generate_json(
             'Generate a creative association between these two memory concepts. ' ||
             'Memory A (category: ' || category_a || '): ' || LEFT(gist_a, 100) || '. ' ||
             'Memory B (category: ' || category_b || '): ' || LEFT(gist_b, 100) || '. ' ||
             'Find novel connections that could lead to insights. Return JSON with keys: ' ||
             'creative_link (string describing the connection), connection_type (string), ' ||
             'novelty_score (0-1 float), plausibility (0-1 float).',
-            'http://{{ env_var("OLLAMA_URL") }}',
+            'gpt-oss',
+            '{{ env_var("OLLAMA_URL") }}',
             300
-          )::VARCHAR AS JSON
+          ) AS JSON
         ),
         -- Fallback to rule-based creative associations
         CASE 

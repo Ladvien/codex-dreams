@@ -44,15 +44,15 @@ replay_cycles AS (
         -- Uses Ollama endpoint for semantic association and causal relationship extraction
         COALESCE(
             TRY_CAST(
-                prompt(
-                    'gpt-oss',
+                llm_generate_json(
                     'Extract memory patterns and associations for hippocampal replay. Goal: ' || level_0_goal || 
                     '. Content: ' || LEFT(content, 500) ||
                     '. Return JSON with keys: related_patterns (array), semantic_associations (array), ' ||
                     'causal_relationships (array), predictive_patterns (array). Be specific to the goal context.',
-                    'http://{{ env_var("OLLAMA_URL") }}',
+                    'gpt-oss',
+                    '{{ env_var("OLLAMA_URL") }}',
                     300
-                )::VARCHAR AS JSON
+                ) AS JSON
             ),
             -- Fallback to rule-based if LLM fails
             CASE 

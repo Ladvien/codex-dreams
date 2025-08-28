@@ -37,16 +37,16 @@ hierarchical AS (
         COALESCE(
             TRY_CAST(
                 json_extract_string(
-                    prompt(
-                        'gpt-oss',
+                    llm_generate_json(
                         'Extract the high-level goal from this content: ' || LEFT(content, 300) ||
                         '. Return JSON with key "goal" containing one of: Product Launch Strategy, ' ||
                         'Communication and Collaboration, Financial Planning and Management, ' ||
                         'Project Management and Execution, Client Relations and Service, ' ||
                         'Operations and Maintenance, or General Task Processing.',
-                        'http://{{ env_var("OLLAMA_URL") }}',
+                        'gpt-oss',
+                        '{{ env_var("OLLAMA_URL") }}',
                         300
-                    )::VARCHAR,
+                    ),
                     '$.goal'
                 ) AS VARCHAR
             ),
@@ -71,13 +71,13 @@ hierarchical AS (
         -- LLM-enhanced mid-level task extraction
         COALESCE(
             TRY_CAST(
-                prompt(
-                    'gpt-oss',
+                llm_generate_json(
                     'Extract mid-level tasks from this content: ' || LEFT(content, 300) ||
                     '. Return JSON array of 3 specific tasks as strings.',
-                    'http://{{ env_var("OLLAMA_URL") }}',
+                    'gpt-oss',
+                    '{{ env_var("OLLAMA_URL") }}',
                     300
-                )::VARCHAR AS JSON
+                ) AS JSON
             ),
             -- Fallback to rule-based extraction
             CASE 
@@ -92,14 +92,14 @@ hierarchical AS (
         -- LLM-enhanced atomic action extraction
         COALESCE(
             TRY_CAST(
-                prompt(
-                    'gpt-oss',
+                llm_generate_json(
                     'Extract atomic actions from this content: ' || LEFT(content, 200) ||
                     '. Return JSON array of specific actions like: verify_status, transmit_information, ' ||
                     'generate_artifact, modify_record, evaluate_content, allocate_time.',
-                    'http://{{ env_var("OLLAMA_URL") }}',
+                    'gpt-oss',
+                    '{{ env_var("OLLAMA_URL") }}',
                     300
-                )::VARCHAR AS JSON
+                ) AS JSON
             ),
             -- Fallback to rule-based extraction
             ARRAY[

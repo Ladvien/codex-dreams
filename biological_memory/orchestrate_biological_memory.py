@@ -24,6 +24,11 @@ from error_handling import (
     with_error_handling, CircuitBreaker
 )
 
+# Import LLM integration service
+from llm_integration_service import (
+    initialize_llm_service, register_llm_functions, get_llm_service
+)
+
 
 class BiologicalMemoryOrchestrator:
     """
@@ -61,6 +66,9 @@ class BiologicalMemoryOrchestrator:
             ollama_timeout_seconds=self.ollama_timeout_seconds
         )
         
+        # Initialize LLM integration service
+        self._init_llm_service()
+        
         # Processing state
         self.is_wake_hours = False
         self.working_memory_thread = None
@@ -87,6 +95,40 @@ class BiologicalMemoryOrchestrator:
         }
         
         self.logger.info("Biological Memory Orchestrator initialized")
+
+    def _init_llm_service(self):
+        """Initialize LLM integration service with Ollama"""
+        try:
+            # Get Ollama URL from environment
+            ollama_url = os.getenv('OLLAMA_URL', 'http://192.168.1.110:11434')
+            
+            # Initialize LLM service with error handler
+            llm_service = initialize_llm_service(
+                ollama_url=ollama_url,
+                model_name="gpt-oss:20b",
+                cache_db_path=str(self.base_path / "dbs" / "llm_cache.duckdb"),
+                error_handler=self.error_handler
+            )
+            
+            # Test database connection and register UDF functions
+            db_path = self.base_path / 'dbs' / 'memory.duckdb'
+            with duckdb.connect(str(db_path)) as conn:
+                success = register_llm_functions(conn)
+                if success:
+                    self.logger.info("LLM UDF functions registered successfully")
+                    
+                    # Test LLM service connectivity
+                    health = llm_service.health_check()
+                    if health['status'] == 'healthy':
+                        self.logger.info(f"LLM service healthy: {ollama_url}")
+                    else:
+                        self.logger.warning(f"LLM service unhealthy: {health.get('error', 'Unknown error')}")
+                else:
+                    self.logger.error("Failed to register LLM UDF functions")
+                    
+        except Exception as e:
+            self.logger.error(f"Failed to initialize LLM service: {e}")
+            # Continue without LLM - fallbacks will handle this
 
     def setup_logging(self):
         """Set up comprehensive logging for biological rhythms"""
