@@ -42,12 +42,8 @@ consolidation_candidates AS (
       'COALESCE(importance_score, 0.5)'
     ) }} as consolidation_priority,
     
-    -- Apply synaptic homeostasis
-    {{ synaptic_homeostasis(
-      'activation_strength',
-      var('homeostasis_target'),
-      0.1
-    ) }} as homeostatic_strength,
+    -- Apply synaptic homeostasis (simplified calculation)
+    LEAST(1.0, activation_strength * (1.0 + ({{ var('homeostasis_target') }} - activation_strength) * 0.1)) as homeostatic_strength,
     
     -- Calculate interference from similar memories
     (

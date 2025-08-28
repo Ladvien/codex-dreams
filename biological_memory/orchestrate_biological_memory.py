@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Biological Memory Pipeline Orchestrator - BMP-008
-Implements biological rhythm scheduling with error handling and recovery
+Biological Memory Pipeline Orchestrator - BMP-008 Enhanced with BMP-013
+Implements biological rhythm scheduling with comprehensive error handling and recovery
 """
 
 import subprocess
@@ -11,11 +11,18 @@ import json
 import threading
 import signal
 import sys
+import os
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, Any, Optional
 import duckdb
 import schedule
+
+# Import BMP-013 error handling system
+from error_handling import (
+    BiologicalMemoryErrorHandler, ErrorType, ErrorEvent, 
+    with_error_handling, CircuitBreaker
+)
 
 
 class BiologicalMemoryOrchestrator:
@@ -25,6 +32,11 @@ class BiologicalMemoryOrchestrator:
     
     def __init__(self, base_path: str = "/Users/ladvien/codex-dreams/biological_memory", log_dir: Optional[str] = None):
         self.base_path = Path(base_path)
+        
+        # Environment variables for BMP-013
+        self.max_db_connections = int(os.getenv('MAX_DB_CONNECTIONS', '160'))
+        self.ollama_timeout_seconds = int(os.getenv('OLLAMA_GENERATION_TIMEOUT_SECONDS', '300'))
+        self.circuit_breaker_enabled = os.getenv('MCP_CIRCUIT_BREAKER_ENABLED', 'true').lower() == 'true'
         
         # Set log directory - default to /var/log/biological_memory, fallback to project logs
         if log_dir:
@@ -40,6 +52,14 @@ class BiologicalMemoryOrchestrator:
         
         # Set up logging
         self.setup_logging()
+        
+        # Initialize BMP-013 error handling system
+        self.error_handler = BiologicalMemoryErrorHandler(
+            base_path=str(self.base_path),
+            circuit_breaker_enabled=self.circuit_breaker_enabled,
+            max_db_connections=self.max_db_connections,
+            ollama_timeout_seconds=self.ollama_timeout_seconds
+        )
         
         # Processing state
         self.is_wake_hours = False
@@ -73,6 +93,9 @@ class BiologicalMemoryOrchestrator:
         self.logger = logging.getLogger('BiologicalMemory')
         self.logger.setLevel(logging.INFO)
         
+        # Ensure log directory exists
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        
         # Main log file
         main_handler = logging.FileHandler(self.log_dir / 'orchestrator.log')
         main_handler.setFormatter(
@@ -89,34 +112,48 @@ class BiologicalMemoryOrchestrator:
 
     def run_dbt_command(self, command: str, log_file: str, timeout: int = 300) -> bool:
         """
-        Execute dbt command with error handling and logging
+        Execute dbt command with comprehensive error handling and recovery - BMP-013 Enhanced
         """
         start_time = datetime.now()
         log_path = self.log_dir / log_file
+        operation_id = f"dbt_{int(time.time())}"
         
-        try:
-            self.logger.info(f"Starting dbt command: {command}")
-            
+        def execute_dbt():
             # Change to biological memory directory
             full_command = f"cd {self.base_path} && {command}"
+            
+            # Apply timeout from environment or default
+            effective_timeout = min(timeout, self.ollama_timeout_seconds) if 'llm' in command else timeout
             
             result = subprocess.run(
                 full_command,
                 shell=True,
                 capture_output=True,
                 text=True,
-                timeout=timeout
+                timeout=effective_timeout
+            )
+            return result
+        
+        try:
+            self.logger.info(f"Starting dbt command: {command}")
+            
+            # Execute with retry logic
+            result = self.error_handler.exponential_backoff_retry(
+                execute_dbt,
+                max_retries=3,
+                base_delay=2.0,
+                exceptions=(subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError)
             )
             
-            # Log output
-            with open(log_path, 'a') as f:
-                f.write(f"\n=== {datetime.now()} ===\n")
-                f.write(f"Command: {command}\n")
-                f.write(f"Return code: {result.returncode}\n")
-                f.write(f"STDOUT:\n{result.stdout}\n")
-                if result.stderr:
-                    f.write(f"STDERR:\n{result.stderr}\n")
-                f.write("="*50 + "\n")
+            # Enhanced logging with error context
+            self._safe_log_output(log_path, {
+                'command': command,
+                'return_code': result.returncode,
+                'stdout': result.stdout,
+                'stderr': result.stderr,
+                'timeout_used': timeout,
+                'execution_time': (datetime.now() - start_time).total_seconds()
+            })
             
             duration = (datetime.now() - start_time).total_seconds()
             
@@ -124,48 +161,157 @@ class BiologicalMemoryOrchestrator:
                 self.logger.info(f"dbt command completed successfully in {duration:.2f}s: {command}")
                 return True
             else:
-                self.logger.error(f"dbt command failed after {duration:.2f}s: {command}")
-                self.logger.error(f"Error: {result.stderr}")
+                # Enhanced error handling with dead letter queue
+                error_event = ErrorEvent(
+                    error_id=operation_id,
+                    error_type=ErrorType.SERVICE_UNAVAILABLE,
+                    timestamp=datetime.now(),
+                    component="dbt_executor",
+                    operation=command.split()[0],  # dbt subcommand
+                    error_message=result.stderr or "Command failed with no stderr",
+                    context={
+                        'command': command,
+                        'return_code': result.returncode,
+                        'duration_seconds': duration,
+                        'stdout_length': len(result.stdout) if result.stdout else 0
+                    }
+                )
+                self.error_handler.log_error_event(error_event)
+                
+                # Add to dead letter queue for critical operations
+                if any(critical in command for critical in ['consolidation', 'long_term', 'homeostasis']):
+                    self.error_handler.dead_letter_queue.enqueue(
+                        message_id=operation_id,
+                        operation=f"dbt_command_{command.split()[1] if len(command.split()) > 1 else 'unknown'}",
+                        memory_data={'command': command, 'log_file': log_file},
+                        error_type=ErrorType.SERVICE_UNAVAILABLE,
+                        error_message=result.stderr or "Command execution failed"
+                    )
+                
                 return False
                 
-        except subprocess.TimeoutExpired:
-            self.logger.error(f"dbt command timed out after {timeout}s: {command}")
+        except subprocess.TimeoutExpired as e:
+            error_event = ErrorEvent(
+                error_id=operation_id,
+                error_type=ErrorType.TIMEOUT,
+                timestamp=datetime.now(),
+                component="dbt_executor", 
+                operation="timeout",
+                error_message=f"Command timed out after {timeout}s",
+                context={'command': command, 'timeout_seconds': timeout}
+            )
+            self.error_handler.log_error_event(error_event)
             return False
+            
         except Exception as e:
-            self.logger.error(f"Exception running dbt command: {command}, Error: {e}")
+            error_event = ErrorEvent(
+                error_id=operation_id,
+                error_type=ErrorType.CONNECTION_FAILURE,
+                timestamp=datetime.now(),
+                component="dbt_executor",
+                operation="execute",
+                error_message=str(e),
+                context={'command': command}
+            )
+            self.error_handler.log_error_event(error_event)
             return False
+    
+    def _safe_log_output(self, log_path: Path, log_data: Dict[str, Any]):
+        """Safely log command output with error handling"""
+        try:
+            with open(log_path, 'a') as f:
+                f.write(f"\n=== {datetime.now()} ===\n")
+                for key, value in log_data.items():
+                    f.write(f"{key.upper()}: {value}\n")
+                f.write("="*50 + "\n")
+        except Exception as e:
+            self.logger.warning(f"Failed to write to log file {log_path}: {e}")
 
     def health_check(self) -> bool:
         """
-        Perform health check on the biological memory system
+        Perform comprehensive health check with enhanced error handling - BMP-013 Enhanced
         """
+        health_results = {
+            'database_accessible': False,
+            'system_resources': {},
+            'error_summary': {},
+            'timestamp': datetime.now().isoformat()
+        }
+        
         try:
-            # Test database connectivity
+            # Test database connectivity with retry
             db_path = self.base_path / 'dbs' / 'memory.duckdb'
-            conn = duckdb.connect(str(db_path))
+            conn = self.error_handler.get_database_connection(str(db_path), timeout=10)
             
             # Check if core tables exist
             tables = conn.execute("SELECT table_name FROM information_schema.tables").fetchall()
             table_names = [t[0] for t in tables]
             
-            conn.close()
-            
-            # Log health status
-            health_status = {
-                'timestamp': datetime.now().isoformat(),
+            # Enhanced health checks
+            health_results.update({
                 'database_accessible': True,
                 'table_count': len(table_names),
-                'tables': table_names
-            }
+                'tables': table_names,
+                'db_file_size_mb': (db_path.stat().st_size / 1024 / 1024) if db_path.exists() else 0
+            })
             
-            with open(self.log_dir / 'health_status.jsonl', 'a') as f:
-                f.write(json.dumps(health_status) + '\\n')
+            conn.close()
             
-            self.logger.info(f"Health check passed: {len(table_names)} tables found")
-            return True
+            # System resource monitoring
+            health_results['system_resources'] = self.error_handler.monitor_system_resources()
+            
+            # Error handling summary
+            health_results['error_summary'] = self.error_handler.get_error_summary()
+            
+            # Retry dead letter messages during health check
+            try:
+                self.error_handler.retry_dead_letter_messages()
+            except Exception as retry_error:
+                self.logger.warning(f"Dead letter retry during health check failed: {retry_error}")
+            
+            # Log comprehensive health status
+            self._safe_log_output(self.log_dir / 'health_status.jsonl', health_results)
+            
+            # Determine overall health
+            overall_healthy = (
+                health_results['database_accessible'] and
+                len(table_names) > 0 and
+                health_results['system_resources'].get('memory_percent', 100) < 95 and
+                health_results['system_resources'].get('disk_percent', 100) < 95
+            )
+            
+            if overall_healthy:
+                self.logger.info(
+                    f"Health check passed: {len(table_names)} tables, "
+                    f"Memory: {health_results['system_resources'].get('memory_percent', 0):.1f}%, "
+                    f"Disk: {health_results['system_resources'].get('disk_percent', 0):.1f}%"
+                )
+            else:
+                self.logger.warning("Health check detected issues - see health_status.jsonl for details")
+            
+            return overall_healthy
             
         except Exception as e:
-            self.logger.error(f"Health check failed: {e}")
+            # Enhanced error reporting
+            error_event = ErrorEvent(
+                error_id=f"health_check_{int(time.time())}",
+                error_type=ErrorType.CONNECTION_FAILURE,
+                timestamp=datetime.now(),
+                component="health_monitor",
+                operation="health_check",
+                error_message=str(e),
+                context=health_results
+            )
+            self.error_handler.log_error_event(error_event)
+            
+            health_results.update({
+                'health_check_failed': True,
+                'error_message': str(e)
+            })
+            
+            # Still try to log what we can
+            self._safe_log_output(self.log_dir / 'health_status.jsonl', health_results)
+            
             return False
 
     def working_memory_continuous(self):
