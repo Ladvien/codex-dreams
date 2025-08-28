@@ -458,3 +458,122 @@
     0.0
   )
 {% endmacro %}
+
+{# Create cortical-specific indexes for semantic network optimization #}
+{% macro create_cortical_indexes() %}
+  {# Post-hook macro to create optimized indexes for cortical minicolumn architecture #}
+  {% if execute %}
+    {{ log("Creating cortical minicolumn indexes for ltm_semantic_network", info=true) }}
+  {% endif %}
+  
+  {% set cortical_index_statements = [
+    "CREATE INDEX IF NOT EXISTS idx_" ~ this.name ~ "_cortical_minicolumn ON " ~ this ~ " (assigned_cortical_minicolumn)",
+    "CREATE INDEX IF NOT EXISTS idx_" ~ this.name ~ "_cortical_region ON " ~ this ~ " (cortical_region)",
+    "CREATE INDEX IF NOT EXISTS idx_" ~ this.name ~ "_semantic_category ON " ~ this ~ " (semantic_category)",
+    "CREATE INDEX IF NOT EXISTS idx_" ~ this.name ~ "_retrieval_strength ON " ~ this ~ " (retrieval_strength DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_" ~ this.name ~ "_network_centrality ON " ~ this ~ " (network_centrality_score DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_" ~ this.name ~ "_memory_age ON " ~ this ~ " (memory_age)",
+    "CREATE INDEX IF NOT EXISTS idx_" ~ this.name ~ "_consolidation_state ON " ~ this ~ " (consolidation_state)",
+    "CREATE INDEX IF NOT EXISTS idx_" ~ this.name ~ "_stability_score ON " ~ this ~ " (stability_score DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_" ~ this.name ~ "_composite ON " ~ this ~ " (semantic_category, cortical_region, retrieval_strength DESC)"
+  ] %}
+  
+  {% for statement in cortical_index_statements %}
+    {{ statement }};
+  {% endfor %}
+  
+  {{ log("Cortical indexing completed for ltm_semantic_network", info=true) }}
+{% endmacro %}
+
+{# Calculate network metrics for semantic graph analysis #}
+{% macro calculate_network_metrics() %}
+  {# Post-hook macro to calculate and update network-wide metrics #}
+  {% if execute %}
+    {{ log("Calculating semantic network metrics", info=true) }}
+  {% endif %}
+  
+  -- Create network health metrics view
+  CREATE OR REPLACE VIEW biological_memory.ltm_network_health AS
+  SELECT 
+    -- Cortical organization metrics
+    COUNT(*) as total_memories,
+    COUNT(DISTINCT assigned_cortical_minicolumn) as active_minicolumns,
+    COUNT(DISTINCT cortical_region) as active_regions,
+    COUNT(DISTINCT semantic_category) as active_categories,
+    
+    -- Network connectivity metrics
+    AVG(network_centrality_score) as avg_network_centrality,
+    AVG(degree_centrality) as avg_degree_centrality,
+    AVG(clustering_coefficient) as avg_clustering,
+    
+    -- Retrieval performance metrics
+    AVG(retrieval_strength) as avg_retrieval_strength,
+    AVG(retrieval_probability) as avg_retrieval_probability,
+    AVG(stability_score) as avg_stability,
+    
+    -- Memory age distribution
+    COUNT(CASE WHEN memory_age = 'recent' THEN 1 END) as recent_memories,
+    COUNT(CASE WHEN memory_age = 'week_old' THEN 1 END) as week_old_memories,
+    COUNT(CASE WHEN memory_age = 'month_old' THEN 1 END) as month_old_memories,
+    COUNT(CASE WHEN memory_age = 'remote' THEN 1 END) as remote_memories,
+    
+    -- Consolidation state distribution
+    COUNT(CASE WHEN consolidation_state = 'episodic' THEN 1 END) as episodic_memories,
+    COUNT(CASE WHEN consolidation_state = 'consolidating' THEN 1 END) as consolidating_memories,
+    COUNT(CASE WHEN consolidation_state = 'schematized' THEN 1 END) as schematized_memories,
+    
+    -- Memory quality metrics
+    COUNT(CASE WHEN memory_fidelity = 'high_fidelity' THEN 1 END) as high_fidelity_memories,
+    COUNT(CASE WHEN memory_fidelity = 'medium_fidelity' THEN 1 END) as medium_fidelity_memories,
+    COUNT(CASE WHEN memory_fidelity = 'low_fidelity' THEN 1 END) as low_fidelity_memories,
+    COUNT(CASE WHEN memory_fidelity = 'degraded' THEN 1 END) as degraded_memories,
+    
+    -- LTP/LTD effectiveness
+    AVG(ltp_enhanced_strength - activation_strength) as avg_ltp_enhancement,
+    AVG(activation_strength - ltd_weakened_strength) as avg_ltd_weakening,
+    AVG(metaplasticity_factor) as avg_metaplasticity,
+    
+    -- System health indicators
+    MAX(last_processed_at) as last_network_update,
+    CURRENT_TIMESTAMP as metrics_calculated_at
+  FROM {{ this }};
+  
+  -- Create semantic category connectivity matrix
+  CREATE OR REPLACE VIEW biological_memory.semantic_connectivity_matrix AS
+  WITH category_pairs AS (
+    SELECT 
+      a.semantic_category as source_category,
+      b.semantic_category as target_category,
+      COUNT(*) as connection_count,
+      AVG({{ semantic_similarity('a.concepts', 'b.concepts') }}) as avg_similarity
+    FROM {{ this }} a
+    CROSS JOIN {{ this }} b
+    WHERE a.memory_id != b.memory_id
+    AND a.semantic_category != b.semantic_category
+    GROUP BY a.semantic_category, b.semantic_category
+  )
+  SELECT *,
+    connection_count / (SELECT MAX(connection_count) FROM category_pairs) as normalized_connectivity
+  FROM category_pairs
+  WHERE connection_count > 0
+  ORDER BY connection_count DESC;
+  
+  -- Update network efficiency score
+  CREATE OR REPLACE VIEW biological_memory.network_efficiency AS
+  SELECT 
+    'ltm_semantic_network' as network_type,
+    (AVG(retrieval_strength) * AVG(network_centrality_score) * AVG(stability_score)) as efficiency_score,
+    CASE 
+      WHEN (AVG(retrieval_strength) * AVG(network_centrality_score) * AVG(stability_score)) > {{ var('high_quality_threshold') }}
+      THEN 'optimal'
+      WHEN (AVG(retrieval_strength) * AVG(network_centrality_score) * AVG(stability_score)) > {{ var('medium_quality_threshold') }}
+      THEN 'good'
+      WHEN (AVG(retrieval_strength) * AVG(network_centrality_score) * AVG(stability_score)) > 0.4
+      THEN 'fair'
+      ELSE 'poor'
+    END as network_health_status,
+    CURRENT_TIMESTAMP as assessed_at
+  FROM {{ this }};
+  
+  {{ log("Network metrics calculation completed", info=true) }}
+{% endmacro %}

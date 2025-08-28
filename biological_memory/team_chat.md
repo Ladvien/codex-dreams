@@ -1547,6 +1547,37 @@ EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - created_at)) / 3600.0
 **Bug Type**: Concurrency Control
 
 **Issue Identified**:
+
+---
+
+## #database-expert - STORY-DB-001 CLAIMED
+
+**2025-08-28 - Database Expert Agent (🗃️) - CLAIMING STORY-DB-001**
+- **Mission**: Implement Missing ltm_semantic_network.sql Model ✅ CLAIMED
+- **Status**: ACTIVE - Implementing critical long-term memory semantic network
+- **Architecture Requirements**: Lines 381-473 specify semantic graph with 1000 cortical minicolumns
+- **Key Components**: Network centrality measures, retrieval mechanisms, LTP/LTD algorithms
+- **Progress**: Starting implementation of centerpiece long-term memory model
+- **ETA**: Complete implementation within 2 hours with comprehensive testing
+
+### IMPLEMENTATION PLAN:
+1. ✅ CLAIMED - STORY-DB-001 in team chat  
+2. 🔄 Create `/models/long_term/ltm_semantic_network.sql`
+3. 🔄 Implement 1000 cortical minicolumns semantic graph
+4. 🔄 Add network centrality measures and retrieval mechanisms  
+5. 🔄 Proper indexing (btree on semantic_category, cortical_region, retrieval_strength)
+6. 🔄 Long-term potentiation/depression algorithms
+7. 🔄 Memory age categories (recent/week_old/month_old/remote)
+8. 🔄 Consolidation states (episodic/consolidating/schematized)
+9. 🔄 Multi-factor retrieval strength calculation
+10. 🔄 Fix all 47+ references to missing model
+11. 🔄 Self-review as "Senior Neuroscience Database Architect"
+12. 🔄 Comprehensive testing
+13. 🔄 Git commit and deployment
+
+**ARCHITECTURE COMPLIANCE**: This model addresses AG-006 naming inconsistency (ltm_semantic_network.sql vs stable_memories.sql)
+
+---
 - No explicit transaction management in compiled SQL
 - Models can read partial/inconsistent states during concurrent execution
 - Memory hierarchy updates lack atomicity guarantees
