@@ -24,7 +24,7 @@ WITH memory_type_stats AS (
     AVG({{ safe_divide(memory_age_seconds('created_at'), '3600.0', '0.0') }}) as avg_age_hours
   FROM (
     SELECT memory_id, 'working_memory' as memory_type, activation_strength, 
-           access_count, created_at FROM {{ ref('active_memories') }}
+           access_count, created_at FROM {{ ref('wm_active_context') }}
     UNION ALL
     SELECT memory_id, 'short_term_memory' as memory_type, activation_strength,
            access_count, created_at FROM {{ ref('consolidating_memories') }}
@@ -92,7 +92,7 @@ performance_trends AS (
     AVG(activation_strength) as avg_hourly_activation
   FROM (
     SELECT memory_id, 'working_memory' as memory_type, activation_strength, created_at 
-    FROM {{ ref('active_memories') }}
+    FROM {{ ref('wm_active_context') }}
     WHERE created_at > CURRENT_TIMESTAMP - INTERVAL '{{ var('recent_activity_window') }} HOURS'
     UNION ALL
     SELECT memory_id, 'short_term_memory' as memory_type, activation_strength, created_at

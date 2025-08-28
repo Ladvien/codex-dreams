@@ -17,7 +17,7 @@
 
 WITH source_memories AS (
   SELECT *
-  FROM {{ ref('active_memories') }}
+  FROM {{ ref('wm_active_context') }}
   
   {{ get_incremental_window('last_accessed_at', 2) }}
 ),

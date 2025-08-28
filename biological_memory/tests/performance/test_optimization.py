@@ -170,7 +170,7 @@ class PerformanceOptimizationTests(unittest.TestCase):
         """Test working memory queries meet <100ms target"""
         print("\n🔍 Testing working memory query performance...")
         
-        # Test the active_memories query performance
+        # Test the wm_active_context query performance
         query = """
             WITH current_working_set AS (
               SELECT 

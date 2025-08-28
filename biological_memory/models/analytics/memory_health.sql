@@ -25,7 +25,7 @@ WITH memory_distribution AS (
         AVG(COALESCE(activation_strength, 0.1)) as avg_activation_strength,
         AVG(COALESCE(hebbian_strength, 0.1)) as avg_hebbian_strength,
         MAX(COALESCE(processed_at, NOW())) as last_updated
-    FROM {{ ref('active_memories') }}
+    FROM {{ ref('wm_active_context') }}
     
     UNION ALL
     
@@ -70,7 +70,7 @@ memory_age_analysis AS (
     FROM (
         -- Working memory (always recent)
         SELECT 'recent' as age_category
-        FROM {{ ref('active_memories') }}
+        FROM {{ ref('wm_active_context') }}
         
         UNION ALL
         
@@ -135,7 +135,7 @@ access_frequency_stats AS (
         COUNT(CASE WHEN access_frequency >= 3 THEN 1 END) as highly_accessed_memories,
         SUM(access_frequency) as total_access_events
     FROM (
-        SELECT access_count as access_frequency FROM {{ ref('active_memories') }}
+        SELECT access_count as access_frequency FROM {{ ref('wm_active_context') }}
         UNION ALL
         SELECT co_activation_count as access_frequency FROM {{ ref('stm_hierarchical_episodes') }}
         UNION ALL  

@@ -70,7 +70,7 @@ def test_schema_consistency():
         
         # Define expected schema mappings
         source_tables = ["raw_memories", "memory_similarities", "semantic_associations", "network_centrality"]
-        model_tables = ["active_memories", "consolidating_memories", "stable_memories", "concept_associations"]
+        model_tables = ["wm_active_context", "consolidating_memories", "stable_memories", "concept_associations"]
         
         for compiled_file in compiled_files:
             with open(compiled_file) as f:
@@ -137,7 +137,7 @@ def test_cross_schema_joins():
     # For now, we verify the structural consistency
     expected_patterns = [
         # Source table in public, model table in main
-        ('FROM "memory"."public"."raw_memories"', 'JOIN "memory"."main"."active_memories"'),
+        ('FROM "memory"."public"."raw_memories"', 'JOIN "memory"."main"."wm_active_context"'),
         ('FROM "memory"."public"."memory_similarities"', 'WHERE target_memory_id IN (SELECT memory_id FROM "memory"."main"'),
     ]
     

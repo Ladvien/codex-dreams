@@ -99,7 +99,7 @@ python3 tests/dbt/test_biological_accuracy.py
 ## Model Descriptions
 
 ### Working Memory (`working_memory/`)
-- **active_memories.sql**: Real-time view of 7±2 most active memories
+- **wm_active_context.sql**: Real-time view of 7±2 most active memories
 - **Materialization**: VIEW (for speed)
 - **Updates**: Real-time with each query
 

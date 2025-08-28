@@ -53,9 +53,9 @@ class TestMemoryHealthAnalytics:
     def _create_test_schema(self, conn: duckdb.DuckDBPyConnection):
         """Create test tables matching biological memory schema."""
         
-        # Working memory (active_memories)
+        # Working memory (wm_active_context)
         conn.execute("""
-            CREATE TABLE active_memories (
+            CREATE TABLE wm_active_context (
                 memory_id VARCHAR PRIMARY KEY,
                 content TEXT,
                 concepts VARCHAR[],
@@ -174,7 +174,7 @@ class TestMemoryHealthAnalytics:
         
         for i, (mem_id, content, concepts, strength, created) in enumerate(working_memories):
             conn.execute("""
-                INSERT INTO active_memories VALUES (?, ?, ?, ?, ?, ?, ?, 'working_memory', ?, ?, ?, ?, ?, ?)
+                INSERT INTO wm_active_context VALUES (?, ?, ?, ?, ?, ?, ?, 'working_memory', ?, ?, ?, ?, ?, ?)
             """, [
                 mem_id, content, concepts, strength, created, created, i+2,
                 int((base_time - created).total_seconds()), 
@@ -246,7 +246,7 @@ class TestMemoryHealthAnalytics:
             CREATE VIEW memory_health AS
             WITH memory_distribution AS (
                 SELECT 'working_memory' as memory_type, COUNT(*) as total_memories
-                FROM active_memories
+                FROM wm_active_context
                 UNION ALL
                 SELECT 'short_term_memory', COUNT(*) FROM stm_hierarchical_episodes  
                 UNION ALL
@@ -284,7 +284,7 @@ class TestMemoryHealthAnalytics:
                     WHEN COUNT(*) * 100.0 / 7 > 80 THEN 'HIGH_LOAD'
                     ELSE 'NORMAL'
                 END as capacity_status
-            FROM active_memories
+            FROM wm_active_context
         """)
         
         result = test_db.execute("SELECT * FROM wm_utilization").fetchone()
@@ -304,7 +304,7 @@ class TestMemoryHealthAnalytics:
                          WHEN EXTRACT(EPOCH FROM (NOW() - created_at)) <= 604800 THEN 'week_old'
                          WHEN EXTRACT(EPOCH FROM (NOW() - created_at)) <= 2592000 THEN 'month_old'
                          ELSE 'remote' END as age_category
-                FROM active_memories
+                FROM wm_active_context
                 UNION ALL
                 SELECT 
                     CASE WHEN EXTRACT(EPOCH FROM (NOW() - timestamp)) <= 86400 THEN 'recent'
@@ -401,7 +401,7 @@ class TestMemoryHealthAnalytics:
                      FROM memory_replay) as consolidation_success_rate,
                     (SELECT COUNT(DISTINCT semantic_category) FROM memory_replay WHERE semantic_category IS NOT NULL) as semantic_diversity,
                     (SELECT AVG(consolidated_strength) FROM memory_replay) as avg_consolidation_strength
-                FROM active_memories
+                FROM wm_active_context
             )
             SELECT 
                 wm_utilization_pct,
@@ -435,7 +435,7 @@ class TestMemoryHealthAnalytics:
                     (SELECT COUNT(CASE WHEN consolidation_fate IN ('cortical_transfer', 'hippocampal_retention') THEN 1 END) * 100.0 / COUNT(*) 
                      FROM memory_replay) as consolidation_success_rate,
                     (SELECT AVG(consolidated_strength) FROM memory_replay) as avg_consolidation_strength
-                FROM active_memories
+                FROM wm_active_context
             )
             SELECT 
                 CASE 
@@ -484,14 +484,14 @@ class TestMemoryHealthAnalytics:
         """Test edge cases, null values, and boundary conditions."""
         
         # Test empty memory scenario
-        test_db.execute("DELETE FROM active_memories")
+        test_db.execute("DELETE FROM wm_active_context")
         
         test_db.execute("""
             CREATE VIEW edge_case_analysis AS
             SELECT 
-                COALESCE((SELECT COUNT(*) FROM active_memories), 0) as wm_count,
+                COALESCE((SELECT COUNT(*) FROM wm_active_context), 0) as wm_count,
                 CASE 
-                    WHEN (SELECT COUNT(*) FROM active_memories) = 0 THEN 'NO_WORKING_MEMORY'
+                    WHEN (SELECT COUNT(*) FROM wm_active_context) = 0 THEN 'NO_WORKING_MEMORY'
                     ELSE 'NORMAL'
                 END as empty_wm_status,
                 -- Test division by zero protection
@@ -557,7 +557,7 @@ class TestMemoryHealthAnalytics:
                 (SELECT AVG(stability_score) FROM stable_memories) as avg_ltm_stability,
                 
                 -- Verify no negative values in critical metrics
-                (SELECT COUNT(*) FROM active_memories WHERE activation_strength < 0) as negative_wm_activation,
+                (SELECT COUNT(*) FROM wm_active_context WHERE activation_strength < 0) as negative_wm_activation,
                 (SELECT COUNT(*) FROM memory_replay WHERE consolidated_strength < 0) as negative_consolidation,
                 (SELECT COUNT(*) FROM stable_memories WHERE stability_score < 0) as negative_ltm_stability
         """)

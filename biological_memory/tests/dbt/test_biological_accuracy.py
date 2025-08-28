@@ -141,7 +141,7 @@ class TestDataLineage:
     def test_model_dependency_order(self):
         """Test models follow logical dependency order"""
         # Working memory should be base (no dependencies)
-        working_memory_file = self.models_dir / "working_memory" / "active_memories.sql"
+        working_memory_file = self.models_dir / "working_memory" / "wm_active_context.sql"
         with open(working_memory_file, 'r') as f:
             wm_content = f.read()
             

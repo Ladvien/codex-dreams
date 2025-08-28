@@ -23,7 +23,7 @@
 
 WITH working_memories AS (
     -- Reference the working memory model (BMP-004 dependency)
-    SELECT * FROM {{ ref('active_memories') }}
+    SELECT * FROM {{ ref('wm_active_context') }}
     {% if is_incremental() %}
     WHERE last_accessed_at > (SELECT MAX(processed_at) FROM {{ this }})
     {% endif %}
