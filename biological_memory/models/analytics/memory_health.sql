@@ -249,6 +249,13 @@ SELECT
         ELSE 'System performing optimally'
     END as optimization_recommendation,
     
+    -- BMP-007 Integration Status (for future enhancement)
+    CASE 
+        WHEN NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ltm_semantic_network')
+        THEN 'BMP-007 semantic network model not yet available - using consolidation data'
+        ELSE 'Full semantic network integration active'
+    END as ltm_integration_status,
+    
     -- Biological rhythm indicators
     EXTRACT(HOUR FROM CURRENT_TIMESTAMP) as current_hour,
     CASE 

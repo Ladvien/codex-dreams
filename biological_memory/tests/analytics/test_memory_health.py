@@ -34,10 +34,10 @@ class TestMemoryHealthAnalytics:
     def test_db(self):
         """Create isolated test database with sample biological memory data."""
         # Create temporary database
-        temp_db = tempfile.NamedTemporaryFile(suffix='.duckdb', delete=False)
-        temp_db.close()
+        temp_dir = tempfile.mkdtemp()
+        temp_db_path = os.path.join(temp_dir, 'test_memory_health.duckdb')
         
-        conn = duckdb.connect(temp_db.name)
+        conn = duckdb.connect(temp_db_path)
         
         # Create test schema with sample data
         self._create_test_schema(conn)
@@ -47,7 +47,8 @@ class TestMemoryHealthAnalytics:
         
         # Cleanup
         conn.close()
-        os.unlink(temp_db.name)
+        import shutil
+        shutil.rmtree(temp_dir)
     
     def _create_test_schema(self, conn: duckdb.DuckDBPyConnection):
         """Create test tables matching biological memory schema."""
