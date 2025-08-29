@@ -8,7 +8,7 @@ import time
 import json
 from unittest.mock import Mock, patch, MagicMock
 import pytest
-from tests.infrastructure.test_environment import (
+from src.infrastructure.environment import (
     EnvironmentConfig, PostgreSQLConnection, OllamaConnection, ConnectionRetry
 )
 
