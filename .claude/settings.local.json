@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(psql:*)",
+      "Read(/Users/ladvien/.dbt/**)",
+      "Read(/Users/ladvien/.dbt/**)",
+      "Bash(dbt ls:*)",
+      "Bash(export:*)",
+      "Bash(ollama list:*)",
+      "Bash(ollama pull:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

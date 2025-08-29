@@ -32,6 +32,10 @@ def test_duckdb() -> Generator[duckdb.DuckDBPyConnection, None, None]:
     with tempfile.NamedTemporaryFile(delete=False, suffix='.duckdb') as f:
         db_path = f.name
     
+    # Make sure the file is removed if it exists
+    if os.path.exists(db_path):
+        os.unlink(db_path)
+    
     conn = duckdb.connect(db_path)
     
     # Install required extensions
