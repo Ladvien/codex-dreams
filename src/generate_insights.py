@@ -213,5 +213,10 @@ def process_memories():
     duck_conn.close()
 
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the script"""
     process_memories()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,50 @@
+[Unit]
+Description=Codex Dreams Insights Generation Daemon
+Documentation=https://github.com/ladvien/codex-dreams
+After=network.target network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=codex-dreams
+Group=codex-dreams
+
+# Service configuration
+ExecStart=/usr/bin/python3 -m src.daemon.scheduler --daemon
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=always
+RestartSec=10
+TimeoutStartSec=0
+
+# Working directory
+WorkingDirectory=/opt/codex-dreams
+
+# Environment
+Environment=PYTHONPATH=/opt/codex-dreams
+EnvironmentFile=-/etc/codex-dreams/daemon.env
+
+# Security settings
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/codex-dreams /var/log/codex-dreams /var/lib/codex-dreams
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictNamespaces=true
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=codex-dreams-daemon
+
+[Install]
+WantedBy=multi-user.target
