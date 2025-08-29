@@ -11,13 +11,13 @@ from datetime import datetime
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from src import generate_insights
+from src.generate_insights import call_ollama, extract_tags, generate_insight, process_memories
 
 
 class TestOllamaIntegration:
     """Test Ollama API integration"""
     
-    @patch('generate_insights.requests.post')
+    @patch('src.generate_insights.requests.post')
     def test_call_ollama_success(self, mock_post):
         """Test successful Ollama API call"""
         mock_response = MagicMock()
@@ -25,7 +25,7 @@ class TestOllamaIntegration:
         mock_response.json.return_value = {'response': 'Test insight'}
         mock_post.return_value = mock_response
         
-        result = generate_insights.call_ollama('Test prompt')
+        result = call_ollama('Test prompt')
         
         assert result == 'Test insight'
         mock_post.assert_called_once()
@@ -33,23 +33,23 @@ class TestOllamaIntegration:
         assert 'http://localhost:11434/api/generate' in call_args[0][0]
         assert call_args[1]['json']['prompt'] == 'Test prompt'
     
-    @patch('generate_insights.requests.post')
+    @patch('src.generate_insights.requests.post')
     def test_call_ollama_error(self, mock_post):
         """Test Ollama API error handling"""
         mock_response = MagicMock()
         mock_response.status_code = 500
         mock_post.return_value = mock_response
         
-        result = generate_insights.call_ollama('Test prompt')
+        result = call_ollama('Test prompt')
         
         assert result == ""
     
-    @patch('generate_insights.requests.post')
+    @patch('src.generate_insights.requests.post')
     def test_call_ollama_exception(self, mock_post):
         """Test Ollama API exception handling"""
         mock_post.side_effect = Exception("Connection error")
         
-        result = generate_insights.call_ollama('Test prompt')
+        result = call_ollama('Test prompt')
         
         assert result == ""
 
@@ -57,33 +57,33 @@ class TestOllamaIntegration:
 class TestTagExtraction:
     """Test tag extraction functionality"""
     
-    @patch('generate_insights.call_ollama')
+    @patch('src.generate_insights.call_ollama')
     def test_extract_tags_success(self, mock_ollama):
         """Test successful tag extraction"""
         mock_ollama.return_value = "memory, test, processing, data, analysis"
         
-        tags = generate_insights.extract_tags("Test memory content")
+        tags = extract_tags("Test memory content")
         
         assert len(tags) == 5
         assert 'memory' in tags
         assert 'test' in tags
         assert all(isinstance(tag, str) for tag in tags)
     
-    @patch('generate_insights.call_ollama')
+    @patch('src.generate_insights.call_ollama')
     def test_extract_tags_empty_response(self, mock_ollama):
         """Test tag extraction with empty response"""
         mock_ollama.return_value = ""
         
-        tags = generate_insights.extract_tags("Test memory content")
+        tags = extract_tags("Test memory content")
         
         assert tags == []
     
-    @patch('generate_insights.call_ollama')
+    @patch('src.generate_insights.call_ollama')
     def test_extract_tags_filters_invalid(self, mock_ollama):
         """Test tag extraction filters invalid tags"""
         mock_ollama.return_value = "good-tag, , very-long-tag-that-exceeds-limit, @invalid, valid"
         
-        tags = generate_insights.extract_tags("Test memory content")
+        tags = extract_tags("Test memory content")
         
         assert 'good-tag' in tags
         assert 'valid' in tags
@@ -94,41 +94,41 @@ class TestTagExtraction:
 class TestInsightGeneration:
     """Test insight generation functionality"""
     
-    @patch('generate_insights.call_ollama')
-    @patch('generate_insights.extract_tags')
+    @patch('src.generate_insights.call_ollama')
+    @patch('src.generate_insights.extract_tags')
     def test_generate_insight_basic(self, mock_tags, mock_ollama):
         """Test basic insight generation"""
         mock_ollama.return_value = "This is a test insight about the memory"
         mock_tags.return_value = ['test', 'memory']
         
-        insight = generate_insights.generate_insight("Test memory content")
+        insight = generate_insight("Test memory content")
         
         assert insight['content'] == "This is a test insight about the memory"
         assert insight['type'] == 'pattern'
         assert insight['tags'] == ['test', 'memory']
         assert insight['confidence'] == 0.7
     
-    @patch('generate_insights.call_ollama')
-    @patch('generate_insights.extract_tags')
+    @patch('src.generate_insights.call_ollama')
+    @patch('src.generate_insights.extract_tags')
     def test_generate_insight_with_related(self, mock_tags, mock_ollama):
         """Test insight generation with related memories"""
         mock_ollama.return_value = "Connected memory pattern detected"
         mock_tags.return_value = ['connection', 'pattern']
         
         related = [str(uuid.uuid4()), str(uuid.uuid4())]
-        insight = generate_insights.generate_insight("Test memory", related)
+        insight = generate_insight("Test memory", related)
         
         assert insight['type'] == 'connection'
         assert 'Connected memory pattern' in insight['content']
     
-    @patch('generate_insights.call_ollama')
-    @patch('generate_insights.extract_tags')
+    @patch('src.generate_insights.call_ollama')
+    @patch('src.generate_insights.extract_tags')
     def test_generate_insight_fallback(self, mock_tags, mock_ollama):
         """Test insight generation fallback when LLM fails"""
         mock_ollama.return_value = ""  # Empty response
         mock_tags.return_value = []
         
-        insight = generate_insights.generate_insight("Test memory content that is longer than usual")
+        insight = generate_insight("Test memory content that is longer than usual")
         
         assert insight['content'].startswith("Memory recorded about:")
         assert insight['type'] == 'pattern'
@@ -138,8 +138,8 @@ class TestInsightGeneration:
 class TestDatabaseOperations:
     """Test database operation mocking"""
     
-    @patch('generate_insights.psycopg2.connect')
-    @patch('generate_insights.duckdb.connect')
+    @patch('src.generate_insights.psycopg2.connect')
+    @patch('src.generate_insights.duckdb.connect')
     def test_database_connections(self, mock_duckdb, mock_pg):
         """Test that database connections are established"""
         # Setup mocks
@@ -154,7 +154,7 @@ class TestDatabaseOperations:
         mock_pg.return_value = mock_pg_conn
         
         # Run the function
-        generate_insights.process_memories()
+        process_memories()
         
         # Verify connections were made
         mock_duckdb.assert_called_once()
@@ -166,10 +166,10 @@ class TestDatabaseOperations:
 class TestFullPipeline:
     """Test the full pipeline integration"""
     
-    @patch('generate_insights.psycopg2.connect')
-    @patch('generate_insights.duckdb.connect')
-    @patch('generate_insights.call_ollama')
-    @patch('generate_insights.extract_tags')
+    @patch('src.generate_insights.psycopg2.connect')
+    @patch('src.generate_insights.duckdb.connect')
+    @patch('src.generate_insights.call_ollama')
+    @patch('src.generate_insights.extract_tags')
     def test_process_memories_integration(self, mock_tags, mock_ollama, mock_duckdb, mock_pg):
         """Test full memory processing pipeline"""
         # Setup memory data
@@ -200,7 +200,7 @@ class TestFullPipeline:
         mock_tags.return_value = ['test', 'tag']
         
         # Run the pipeline
-        generate_insights.process_memories()
+        process_memories()
         
         # Verify insight was inserted
         mock_pg_cursor.execute.assert_called()

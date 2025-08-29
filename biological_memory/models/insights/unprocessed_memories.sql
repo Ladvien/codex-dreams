@@ -1,31 +1,36 @@
 {{
   config(
     materialized='view',
-    tags=['insights', 'mvp'],
-    description='MVP Memory Insights - Prepares memories for insight generation'
+    tags=['insights', 'production'],
+    description='Memories that need insight generation - skips already processed'
   )
 }}
 
--- MVP Memory Insights View
--- Prepares memories for processing through Ollama
--- This view will be consumed by a Python script that calls Ollama and writes back to PostgreSQL
+-- Production Memory Insights View
+-- Only returns memories that don't have recent insights
 
 WITH recent_memories AS (
-    -- Pull recent memories from PostgreSQL
+    -- Pull memories that need processing
     SELECT 
-        id as memory_id,
-        content,
-        content_hash,
-        tier,
-        tags,
-        created_at,
-        updated_at,
-        summary,
-        context
-    FROM codex_db.public.memories
-    WHERE created_at > CURRENT_DATE - INTERVAL '30 days'
-    ORDER BY created_at DESC
-    LIMIT 20  -- Process recent 20 memories for MVP
+        m.id as memory_id,
+        m.content,
+        m.content_hash,
+        m.tier,
+        m.importance_score,
+        m.created_at,
+        m.updated_at,
+        m.metadata
+    FROM codex_db.public.memories m
+    WHERE m.status = 'active'
+      -- Only get memories without insights in the last 24 hours
+      AND NOT EXISTS (
+          SELECT 1 
+          FROM codex_db.public.insights i
+          WHERE m.id = ANY(i.source_memory_ids)
+            AND i.created_at > CURRENT_TIMESTAMP - INTERVAL '24 hours'
+      )
+    ORDER BY m.created_at DESC
+    LIMIT 20
 ),
 
 -- Analyze memory patterns

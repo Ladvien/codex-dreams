@@ -72,7 +72,7 @@ def generate_insight(content: str, related_memories: List[str] = None) -> Dict[s
     
     # Build context with related memories if available
     context = content
-    if related_memories:
+    if related_memories is not None and len(related_memories) > 0:
         context += f"\n\nRelated memories exist with IDs: {', '.join(map(str, related_memories[:3]))}"
     
     # Generate insight
@@ -94,7 +94,7 @@ Insight:"""
     
     # Determine insight type based on content
     insight_type = 'pattern'  # Default
-    if related_memories and len(related_memories) > 1:
+    if related_memories is not None and len(related_memories) > 1:
         insight_type = 'connection'
     elif 'learn' in content.lower() or 'understand' in content.lower():
         insight_type = 'learning'
@@ -151,7 +151,7 @@ def process_memories():
     for _, row in memories_df.iterrows():
         memory_id = row['memory_id']
         content = row['content']
-        related_memories = row['related_memories'] if row['related_memories'] else []
+        related_memories = row['related_memories'] if row['related_memories'] is not None and len(row['related_memories']) > 0 else []
         
         print(f"\nProcessing memory {str(memory_id)[:8]}...")
         
@@ -183,7 +183,7 @@ def process_memories():
                         'model': OLLAMA_MODEL,
                         'generated_at': datetime.now().isoformat(),
                         'pipeline': 'mvp_insights',
-                        'related_memories': [str(m) for m in related_memories[:5]] if related_memories else []
+                        'related_memories': [str(m) for m in related_memories[:5]] if related_memories is not None and len(related_memories) > 0 else []
                     }),
                     insight['tags'],
                     'working',
