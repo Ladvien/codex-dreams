@@ -27,7 +27,7 @@ WITH consolidated_memories AS (
     hebbian_strength,
     consolidation_priority,
     consolidated_at
-  FROM {{ ref('consolidating_memories') }}
+  FROM {{ ref('stm_hierarchical_episodes') }}
   WHERE 
     -- Only memories that meet long-term storage criteria
     activation_strength > {{ var('long_term_memory_threshold') }}

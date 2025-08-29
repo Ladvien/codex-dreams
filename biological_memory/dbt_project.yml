@@ -147,6 +147,11 @@ models:
       +pre-hook: "SET enable_index_scan = true"
       +tags: ["analytics", "dashboard", "reporting"]
       
+    # Insights models (for MVP pipeline)
+    insights:
+      +materialized: view
+      +tags: ["insights", "mvp"]
+      
     # Performance models (ephemeral for real-time monitoring)
     performance:
       +materialized: ephemeral
