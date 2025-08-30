@@ -13,7 +13,7 @@ LOAD fts;
 LOAD json;
 
 -- Create PostgreSQL connection for codex_db using postgres_scanner
--- Connection to PostgreSQL server at 192.168.1.104
+-- Connection to PostgreSQL server (configured via environment)
 -- IMPORTANT: Use environment variables for production
 CREATE OR REPLACE SECRET codex_db_connection (
     TYPE POSTGRES,
@@ -25,7 +25,7 @@ CREATE OR REPLACE SECRET codex_db_connection (
 );
 
 -- Note: Set these environment variables in your .env file:
--- POSTGRES_HOST=192.168.1.104
+-- POSTGRES_HOST=192.168.1.104  # Or use 'postgres' if using Docker/hostname
 -- POSTGRES_DB=codex_db
 -- POSTGRES_USER=codex_user
 -- POSTGRES_PASSWORD=your_password_here

@@ -2,6 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Rules
+- Always save insights, learnings, observations, or other important notes to codex memory.
+
 ## Project Overview
 
 This is a biologically-inspired memory management system implementing hierarchical episodic memory, spatial representations, and Hebbian consolidation patterns. Built entirely with DuckDB, dbt Core, and Ollama for LLM processing. The system models human cognitive memory systems including working memory capacity limits, hippocampal consolidation, and cortical semantic networks.
@@ -30,8 +33,8 @@ cp .env.example .env
 ```
 
 Required variables (see `.env.example`):
-- `POSTGRES_DB_URL`: PostgreSQL connection string (source data at 192.168.1.104)
-- `OLLAMA_URL`: Ollama server endpoint (192.168.1.110:11434)
+- `POSTGRES_DB_URL`: PostgreSQL connection string (default: 192.168.1.104:5432)
+- `OLLAMA_URL`: Ollama server endpoint (default: 192.168.1.110:11434)
 - `OLLAMA_MODEL`: LLM model name (gpt-oss:20b)
 - `EMBEDDING_MODEL`: Embedding model (nomic-embed-text)
 - `DUCKDB_PATH`: Local DuckDB database path

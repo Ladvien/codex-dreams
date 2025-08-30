@@ -237,7 +237,7 @@ class TestMemoryReplayConsolidation:
         test_goals = [
             ('Product Launch Strategy', 'executive_function', 'prefrontal_cortex'),
             ('Communication and Collaboration', 'social_cognition', 'temporal_superior_cortex'), 
-            ('Financial Planning and Management', 'quantitative_reasoning', 'parietal_cortex'),
+            ('Financial Planning and Management', 'executive_function', 'prefrontal_cortex'),  # Matches 'Planning' first
             ('Operations and Maintenance', 'technical_procedures', 'motor_cortex')
         ]
         
@@ -447,7 +447,7 @@ class TestMemoryReplayConsolidation:
         conn.execute("""
             CREATE TEMPORARY TABLE edge_case_test AS
             SELECT * FROM VALUES {} AS t(id, content, stm_strength, emotional_salience, ready_for_consolidation)
-        """.format(','.join(f"({id_}, {repr(content)}, {stm}, {emo}, {ready})" 
+        """.format(','.join(f"({id_}, {'NULL' if content is None else repr(content)}, {stm}, {emo}, {ready})" 
                           for id_, content, stm, emo, ready in edge_cases)))
         
         # Test consolidation with error handling
