@@ -230,3 +230,20 @@ test_*.duckdb
 *.swp
 *.swo
 *~
+
+# DuckDB query output files
+json
+*.json.tmp
+*.txt.tmp
+
+# Backup files
+*.bak
+*.backup
+
+# Editor files
+*.orig
+.vscode/settings.json
+
+# Test output files
+*.test.out
+test_results.json
