@@ -38,11 +38,11 @@ class TestSTMHierarchicalEpisodesEnhanced:
         try:
             # Create source table for raw memories
             conn.execute("""
-                CREATE SCHEMA IF NOT EXISTS self_sensored
+                CREATE SCHEMA IF NOT EXISTS codex_db
             """)
             
             conn.execute("""
-                CREATE TABLE self_sensored.raw_memories (
+                CREATE TABLE codex_db.raw_memories (
                     memory_id VARCHAR PRIMARY KEY,
                     content TEXT,
                     concepts VARCHAR[],
@@ -637,9 +637,9 @@ if __name__ == "__main__":
         conn = duckdb.connect(':memory:')
         
         # Setup basic tables
-        conn.execute("CREATE SCHEMA IF NOT EXISTS self_sensored")
+        conn.execute("CREATE SCHEMA IF NOT EXISTS codex_db")
         conn.execute("""
-            CREATE TABLE self_sensored.raw_memories (
+            CREATE TABLE codex_db.raw_memories (
                 memory_id VARCHAR PRIMARY KEY,
                 content TEXT,
                 concepts VARCHAR[],

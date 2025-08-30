@@ -54,9 +54,9 @@ semantic_enrichment AS (
       '0.0'
     ) }} as access_rate_per_hour
   FROM consolidated_memories cm
-  LEFT JOIN {{ source('self_sensored', 'semantic_associations') }} sa
+  LEFT JOIN -- REMOVED: semantic_associations table not available in codex_db sa
     ON cm.memory_id = sa.memory_id
-  LEFT JOIN {{ source('self_sensored', 'network_centrality') }} nc
+  LEFT JOIN -- REMOVED: network_centrality table not available in codex_db nc
     ON cm.memory_id = nc.memory_id
 ),
 

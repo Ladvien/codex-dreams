@@ -34,8 +34,6 @@ CREATE OR REPLACE SECRET codex_db_connection (
 -- This allows DuckDB to query the memories table directly from PostgreSQL
 ATTACH '' AS codex_db (TYPE POSTGRES, SECRET codex_db_connection);
 
--- Legacy connection for backward compatibility (if self_sensored database exists)
--- ATTACH 'postgresql://localhost:5432/self_sensored' AS source_memories (TYPE POSTGRES);
 
 -- Alternative using the secret (recommended approach)
 -- ATTACH '' AS source_memories (TYPE POSTGRES, SECRET postgres_connection);

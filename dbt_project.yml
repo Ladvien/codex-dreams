@@ -57,4 +57,4 @@ vars:
   
   # PostgreSQL source
   postgres_db_url: "{{ env_var('POSTGRES_DB_URL') }}"
-  source_db: 'self_sensored'
+  source_db: 'codex_db'

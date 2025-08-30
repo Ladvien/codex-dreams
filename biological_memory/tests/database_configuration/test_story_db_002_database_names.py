@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 STORY-DB-002: Database Name Configuration Tests
-Tests to verify that all database references have been updated from 'codex_db' to 'self_sensored'
+Tests to verify that all database references have been updated from 'codex_db' to 'codex_db'
 """
 
 import pytest
@@ -29,17 +29,17 @@ class TestDatabaseNameConfiguration(unittest.TestCase):
             content = f.read()
             sources_data = yaml.safe_load(content)
         
-        # Verify source name is 'self_sensored'
+        # Verify source name is 'codex_db'
         sources = sources_data.get('sources', [])
         self.assertTrue(len(sources) > 0, "No sources defined in sources.yml")
         
         source = sources[0]
-        self.assertEqual(source['name'], 'self_sensored', 
-                        "Source name should be 'self_sensored'")
+        self.assertEqual(source['name'], 'codex_db', 
+                        "Source name should be 'codex_db'")
         
         # Verify description mentions correct database
-        self.assertIn('self_sensored', source['description'], 
-                     "Source description should mention self_sensored database")
+        self.assertIn('codex_db', source['description'], 
+                     "Source description should mention codex_db database")
     
     def test_no_codex_db_references(self):
         """Test that no files contain 'codex_db' references"""
@@ -78,12 +78,12 @@ class TestDatabaseNameConfiguration(unittest.TestCase):
         with open(setup_file, 'r') as f:
             content = f.read()
         
-        # Verify self_sensored is used in database configuration
-        self.assertIn("DATABASE 'self_sensored'", content,
-                     "setup_duckdb.sql should reference self_sensored database")
+        # Verify codex_db is used in database configuration
+        self.assertIn("DATABASE 'codex_db'", content,
+                     "setup_duckdb.sql should reference codex_db database")
         
-        self.assertIn("postgresql://localhost:5432/self_sensored", content,
-                     "setup_duckdb.sql should use self_sensored in connection string")
+        self.assertIn("postgresql://localhost:5432/codex_db", content,
+                     "setup_duckdb.sql should use codex_db in connection string")
         
         # Verify no references to old database names
         self.assertNotIn('biological_memory_source', content,
@@ -96,12 +96,12 @@ class TestDatabaseNameConfiguration(unittest.TestCase):
         with open(profiles_example, 'r') as f:
             content = f.read()
         
-        # Verify self_sensored is used in example configuration
-        self.assertIn("database: 'self_sensored'", content,
-                     "profiles.yml.example should reference self_sensored database")
+        # Verify codex_db is used in example configuration
+        self.assertIn("database: 'codex_db'", content,
+                     "profiles.yml.example should reference codex_db database")
         
-        self.assertIn('export POSTGRES_DATABASE="self_sensored"', content,
-                     "profiles.yml.example should show self_sensored in environment variable example")
+        self.assertIn('export POSTGRES_DATABASE="codex_db"', content,
+                     "profiles.yml.example should show codex_db in environment variable example")
     
     def test_model_source_references(self):
         """Test that all model files use the correct source name"""
@@ -115,7 +115,7 @@ class TestDatabaseNameConfiguration(unittest.TestCase):
                     
                 matches = source_pattern.findall(content)
                 for match in matches:
-                    if match not in ['self_sensored']:
+                    if match not in ['codex_db']:
                         incorrect_sources.append({
                             'file': str(sql_file),
                             'source': match
@@ -134,15 +134,15 @@ class TestDatabaseNameConfiguration(unittest.TestCase):
             with open(profiles_file, 'r') as f:
                 content = f.read()
             
-            # Should reference self_sensored in PostgreSQL connection
-            self.assertIn('self_sensored', content,
-                         "profiles.yml should contain reference to self_sensored database")
+            # Should reference codex_db in PostgreSQL connection
+            self.assertIn('codex_db', content,
+                         "profiles.yml should contain reference to codex_db database")
     
     def test_dbt_parse_with_environment_variables(self):
         """Test that dbt can parse the project with proper environment variables"""
         env = os.environ.copy()
         env['OLLAMA_URL'] = 'http://localhost:11434'
-        env['POSTGRES_DB_URL'] = 'postgresql://localhost:5432/self_sensored'
+        env['POSTGRES_DB_URL'] = 'postgresql://localhost:5432/codex_db'
         
         try:
             result = subprocess.run(
@@ -156,8 +156,8 @@ class TestDatabaseNameConfiguration(unittest.TestCase):
             
             # Parse should succeed (return code 0) even if PostgreSQL connection fails
             # The important thing is that the configuration is valid
-            self.assertIn('self_sensored', result.stdout + result.stderr,
-                         "dbt parse output should reference self_sensored database")
+            self.assertIn('codex_db', result.stdout + result.stderr,
+                         "dbt parse output should reference codex_db database")
             
         except subprocess.TimeoutExpired:
             self.fail("dbt parse command timed out")
@@ -175,7 +175,7 @@ class TestConfigurationConsistency(unittest.TestCase):
     def test_all_database_references_consistent(self):
         """Test that all database references are consistent across the project"""
         database_references = {
-            'self_sensored': 0,
+            'codex_db': 0,
             'codex_db': 0,
             'biological_memory_source': 0
         }
@@ -198,9 +198,9 @@ class TestConfigurationConsistency(unittest.TestCase):
                 except:
                     pass
         
-        # Should have references to self_sensored, none to old names
-        self.assertGreater(database_references['self_sensored'], 0,
-                          "Should have references to 'self_sensored' database")
+        # Should have references to codex_db, none to old names
+        self.assertGreater(database_references['codex_db'], 0,
+                          "Should have references to 'codex_db' database")
         self.assertEqual(database_references['codex_db'], 0,
                         "Should have no references to 'codex_db'")
         self.assertEqual(database_references['biological_memory_source'], 0,
@@ -237,7 +237,7 @@ if __name__ == '__main__':
     # Print configuration status
     print(f"\n{'='*80}")
     print("DATABASE NAME CONFIGURATION STATUS:")
-    print("✅ Database references updated from 'codex_db' to 'self_sensored'")
+    print("✅ Database references updated from 'codex_db' to 'codex_db'")
     print("✅ PostgreSQL connection strings updated")
     print("✅ sources.yml updated with correct database name")
     print("✅ Model source references updated")

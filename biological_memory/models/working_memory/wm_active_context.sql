@@ -25,7 +25,7 @@ WITH current_working_set AS (
     {{ memory_age_seconds('COALESCE(created_at, NOW())') }} as age_seconds,
     {{ recency_score('COALESCE(last_accessed_at, NOW())', 1) }} as recency_score,
     {{ frequency_score('COALESCE(access_count, 0)') }} as frequency_score
-  FROM {{ source('self_sensored', 'raw_memories') }}
+  FROM {{ source('codex_db', 'memories') }}
   WHERE 
     -- Only recent, highly active memories in working memory - NULL SAFE
     COALESCE(created_at, '1900-01-01'::TIMESTAMP) > CURRENT_TIMESTAMP - INTERVAL '{{ var("short_term_memory_duration") }} SECONDS'

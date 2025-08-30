@@ -12,13 +12,13 @@
 -- Current month partition for high-performance queries
 WITH current_month_memories AS (
   SELECT *
-  FROM {{ source('self_sensored', 'raw_memories') }}
+  FROM {{ source('codex_db', 'memories') }}
   WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_TIMESTAMP)
 ),
 
 previous_month_memories AS (
   SELECT *
-  FROM {{ source('self_sensored', 'raw_memories') }}
+  FROM {{ source('codex_db', 'memories') }}
   WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_TIMESTAMP) - INTERVAL '1 MONTH'
 ),
 
