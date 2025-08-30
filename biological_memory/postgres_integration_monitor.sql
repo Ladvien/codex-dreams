@@ -6,14 +6,14 @@
 LOAD postgres_scanner;
 LOAD json;
 
--- Create PostgreSQL connection secret
+-- Create PostgreSQL connection secret using environment variables
 CREATE OR REPLACE SECRET codex_db_connection (
     TYPE POSTGRES,
-    HOST '192.168.1.104',
+    HOST getenv('POSTGRES_HOST', '192.168.1.104'),
     PORT 5432,
-    DATABASE 'codex_db',
-    USER 'codex_user',
-    PASSWORD 'MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a'
+    DATABASE getenv('POSTGRES_DB', 'codex_db'),
+    USER getenv('POSTGRES_USER', 'codex_user'),
+    PASSWORD getenv('POSTGRES_PASSWORD')
 );
 
 -- Attach PostgreSQL database

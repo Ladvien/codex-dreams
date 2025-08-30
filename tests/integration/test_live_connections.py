@@ -16,11 +16,11 @@ class LiveConnectionTester:
     """Test live connections for DuckDB extensions."""
     
     def __init__(self):
-        self.db_path = '/Users/ladvien/biological_memory/dbs/memory.duckdb'
-        self.postgres_url = 'postgresql://codex_user:MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a@192.168.1.104:5432/codex_db'
-        self.ollama_url = 'http://192.168.1.110:11434'
-        self.ollama_model = 'gpt-oss:20b'
-        self.embedding_model = 'nomic-embed-text'
+        self.db_path = os.getenv('DUCKDB_PATH', '/Users/ladvien/biological_memory/dbs/memory.duckdb')
+        self.postgres_url = os.getenv('POSTGRES_DB_URL', 'postgresql://codex_user:password@192.168.1.104:5432/codex_db')
+        self.ollama_url = os.getenv('OLLAMA_URL', 'http://192.168.1.110:11434')
+        self.ollama_model = os.getenv('OLLAMA_MODEL', 'gpt-oss:20b')
+        self.embedding_model = os.getenv('EMBEDDING_MODEL', 'nomic-embed-text')
         
     def get_connection_with_extensions(self):
         """Get a database connection with all extensions loaded."""

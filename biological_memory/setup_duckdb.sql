@@ -14,24 +14,21 @@ LOAD json;
 
 -- Create PostgreSQL connection for codex_db using postgres_scanner
 -- Connection to PostgreSQL server at 192.168.1.104
+-- IMPORTANT: Use environment variables for production
 CREATE OR REPLACE SECRET codex_db_connection (
     TYPE POSTGRES,
-    HOST '192.168.1.104',
+    HOST getenv('POSTGRES_HOST', '192.168.1.104'),
     PORT 5432,
-    DATABASE 'codex_db',
-    USER 'codex_user',
-    PASSWORD 'MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a'
+    DATABASE getenv('POSTGRES_DB', 'codex_db'),
+    USER getenv('POSTGRES_USER', 'codex_user'),
+    PASSWORD getenv('POSTGRES_PASSWORD')
 );
 
--- Alternative: Create connection using environment variables (recommended for production)
--- CREATE OR REPLACE SECRET codex_db_connection (
---     TYPE POSTGRES,
---     HOST getenv('HOST'),
---     PORT 5432,
---     DATABASE getenv('DB_NAME'),
---     USER getenv('DB_USER'),
---     PASSWORD getenv('DB_PASS')
--- );
+-- Note: Set these environment variables in your .env file:
+-- POSTGRES_HOST=192.168.1.104
+-- POSTGRES_DB=codex_db
+-- POSTGRES_USER=codex_user
+-- POSTGRES_PASSWORD=your_password_here
 
 -- Attach PostgreSQL database for cross-database queries
 -- This allows DuckDB to query the memories table directly from PostgreSQL

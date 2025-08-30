@@ -22,9 +22,9 @@ class TestDuckDBAdvanced:
     
     @classmethod
     def setup_class(cls):
-        cls.db_path = '/Users/ladvien/biological_memory/dbs/memory.duckdb'
-        cls.postgres_url = 'postgresql://codex_user:MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a@192.168.1.104:5432/codex_db'
-        cls.ollama_url = 'http://192.168.1.110:11434'
+        cls.db_path = os.getenv('DUCKDB_PATH', '/Users/ladvien/biological_memory/dbs/memory.duckdb')
+        cls.postgres_url = os.getenv('POSTGRES_DB_URL', 'postgresql://codex_user:password@192.168.1.104:5432/codex_db')
+        cls.ollama_url = os.getenv('OLLAMA_URL', 'http://192.168.1.110:11434')
         
     def _get_connection_with_extensions(self):
         """Get a database connection with all extensions loaded."""

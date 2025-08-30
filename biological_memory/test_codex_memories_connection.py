@@ -22,13 +22,24 @@ def test_postgresql_connection():
     print("="*60)
     
     try:
-        # Connection parameters from .env
+        # Connection parameters from environment variables
+        postgres_url = os.getenv('POSTGRES_DB_URL', '')
+        if not postgres_url:
+            raise ValueError("POSTGRES_DB_URL not set in environment")
+        
+        # Parse connection string
+        # Format: postgresql://username:password@host:port/database
+        import re
+        match = re.match(r'postgresql://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)', postgres_url)
+        if not match:
+            raise ValueError(f"Invalid POSTGRES_DB_URL format: {postgres_url}")
+        
         conn_params = {
-            'host': '192.168.1.104',
-            'port': 5432,
-            'database': 'codex_db',
-            'user': 'codex_user',
-            'password': 'MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a'
+            'user': match.group(1),
+            'password': match.group(2),
+            'host': match.group(3),
+            'port': int(match.group(4)),
+            'database': match.group(5)
         }
         
         # Attempt connection
@@ -85,14 +96,19 @@ def test_duckdb_postgres_scanner():
         
         # Create secret for PostgreSQL connection
         print("Creating PostgreSQL connection secret...")
-        conn.execute("""
+        # Get password from environment
+        postgres_password = os.getenv('POSTGRES_PASSWORD', '')
+        if not postgres_password:
+            raise ValueError("POSTGRES_PASSWORD not set in environment")
+        
+        conn.execute(f"""
             CREATE OR REPLACE SECRET codex_db_connection (
                 TYPE POSTGRES,
                 HOST '192.168.1.104',
                 PORT 5432,
                 DATABASE 'codex_db',
                 USER 'codex_user',
-                PASSWORD 'MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a'
+                PASSWORD '{postgres_password}'
             )
         """)
         print("✅ Connection secret created")
@@ -144,14 +160,19 @@ def test_dbt_source_query():
         # Setup postgres_scanner
         conn.execute("INSTALL postgres_scanner")
         conn.execute("LOAD postgres_scanner")
-        conn.execute("""
+        # Get password from environment
+        postgres_password = os.getenv('POSTGRES_PASSWORD', '')
+        if not postgres_password:
+            raise ValueError("POSTGRES_PASSWORD not set in environment")
+        
+        conn.execute(f"""
             CREATE OR REPLACE SECRET codex_db_connection (
                 TYPE POSTGRES,
                 HOST '192.168.1.104',
                 PORT 5432,
                 DATABASE 'codex_db',
                 USER 'codex_user',
-                PASSWORD 'MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a'
+                PASSWORD '{postgres_password}'
             )
         """)
         conn.execute("ATTACH '' AS codex_db (TYPE POSTGRES, SECRET codex_db_connection)")

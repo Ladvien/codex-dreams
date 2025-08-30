@@ -92,7 +92,7 @@ class TestHealthIndicators:
         avg_strength = sum(retrieval_strengths) / len(retrieval_strengths)
         
         assert 0.4 <= avg_strength <= 0.8, "Average retrieval strength should be reasonable"
-        assert avg_strength == 0.625, "Should calculate average correctly"
+        assert abs(avg_strength - 0.625) < 0.001, "Should calculate average correctly"
         
         # Test health thresholds
         if avg_strength >= 0.7:

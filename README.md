@@ -1,281 +1,288 @@
-# Biological Memory Pipeline - Codex Dreams
+# Codex Dreams 🧠
 
-A biologically-inspired memory management system implementing hierarchical episodic memory, spatial representations, and Hebbian consolidation patterns. Built with DuckDB, dbt Core, and Ollama for LLM processing.
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![dbt version](https://img.shields.io/badge/dbt-1.10.0+-green.svg)](https://www.getdbt.com/)
 
-## 🧠 System Overview
+A biologically-inspired memory management system that models human cognitive processes through hierarchical episodic memory, spatial representations, and Hebbian consolidation patterns.
 
-This system models human cognitive memory systems including:
-- **Working Memory**: 5-minute attention window with 7±2 item capacity limits
-- **Short-Term Memory**: Hierarchical goal-task-action episodes
-- **Memory Consolidation**: Hippocampal replay with Hebbian learning
-- **Long-Term Semantic Memory**: Cortical organization and retrieval networks
+## 🌟 Overview
 
-## 🚀 Environment Setup (BMP-001)
+Codex Dreams implements a sophisticated memory pipeline that simulates biological memory systems, processing memories through stages that mirror human cognitive processes. Built with DuckDB, dbt Core, and Ollama LLM integration, it provides a unique approach to memory management and insight generation.
+
+### Key Features
+
+- **🧬 Biological Memory Modeling**: Implements working memory capacity limits (Miller's 7±2), hippocampal consolidation, and cortical semantic networks
+- **🔄 Multi-Stage Processing**: Four-stage pipeline from working memory through long-term storage
+- **🤖 AI-Powered Insights**: Ollama LLM integration for semantic extraction and insight generation
+- **⚡ Real-Time Processing**: Continuous memory ingestion with configurable biological rhythms
+- **🛠️ Cross-Platform Service**: Daemon service with CLI interface for Windows, macOS, and Linux
+- **📊 Performance Optimized**: Incremental processing with DuckDB analytical engine
+
+## 🏗️ Architecture
+
+```mermaid
+graph TD
+    A[PostgreSQL Source] -->|Raw Memories| B[DuckDB Processing]
+    B -->|Enrichment| C[Ollama LLM]
+    C -->|Insights| D[PostgreSQL Insights]
+    B -->|Stage 1| E[Working Memory]
+    E -->|Stage 2| F[Short-Term Memory]
+    F -->|Stage 3| G[Consolidation]
+    G -->|Stage 4| H[Long-Term Memory]
+```
+
+### Memory Processing Stages
+
+1. **Working Memory** (30-second window)
+   - Attention window with 7±2 item capacity
+   - LLM enrichment for entity/topic extraction
+   - Emotional salience calculation
+
+2. **Short-Term Memory** (30-minute buffer)
+   - Hierarchical episode construction
+   - Goal-task-action decomposition
+   - Spatial memory representations
+
+3. **Memory Consolidation** (Hourly)
+   - Hippocampal replay simulation
+   - Hebbian learning patterns
+   - Synaptic strengthening/weakening
+
+4. **Long-Term Memory** (Permanent)
+   - Semantic network organization
+   - Cortical column mapping
+   - Retrieval mechanism implementation
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Python 3.11+
-- Access to PostgreSQL server (192.168.1.104:5432)
-- Access to Ollama server (192.168.1.110:11434) with models:
-  - `gpt-oss:20b` (LLM generation)
-  - `nomic-embed-text` (embeddings)
+- Python 3.8+
+- PostgreSQL database (local or remote)
+- Ollama server with models:
+  - `qwen2.5:0.5b` (local development - available)
+  - `llama2` or `mistral` (production alternatives)
+  - Note: Some models in .env.example may not be available in Ollama
 
 ### Installation
 
-1. **Clone Repository**
-   ```bash
-   git clone https://github.com/your-repo/codex-dreams.git
-   cd codex-dreams
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/Ladvien/codex-dreams.git
+cd codex-dreams
 
-2. **Install Dependencies**
-   ```bash
-   pip install -r requirements.txt
-   # Or manually install core dependencies:
-   pip install psycopg2-binary requests pytest python-dotenv dbt-duckdb
-   ```
+# Install the package
+pip install -e .
 
-3. **Configure Environment**
-   ```bash
-   # Copy example environment file
-   cp .env.example .env
-   
-   # Edit .env with your actual values
-   nano .env
-   ```
+# Configure environment
+cp .env.example .env
+# Edit .env with your database and Ollama server details
+```
 
-### Environment Configuration
-
-The `.env` file must contain these variables:
+### Basic Usage
 
 ```bash
-# PostgreSQL Connection (192.168.1.104:5432)
-POSTGRES_DB_URL="postgresql://username:password@192.168.1.104:5432/database_name"
-TEST_DATABASE_URL="postgresql://test_user:test_pass@192.168.1.104:5432/test_database"
+# Initialize the service
+cdx init
 
-# Ollama Configuration (192.168.1.110:11434)
-OLLAMA_URL="http://192.168.1.110:11434"
-OLLAMA_MODEL="gpt-oss:20b"
-EMBEDDING_MODEL="nomic-embed-text"
+# Start the background service
+cdx start
 
+# Check service status
+cdx status
+
+# View logs
+cdx logs
+
+# Run a one-time insight generation
+cdx run
+
+# Stop the service
+cdx stop
+```
+
+## ⚙️ Configuration
+
+### Environment Variables
+
+Create a `.env` file with:
+
+```bash
 # Database Configuration
-DUCKDB_PATH="/path/to/biological_memory/dbs/memory.duckdb"
+POSTGRES_DB_URL=postgresql://username@localhost:5432/codex_db  # or 'codex' to match .env.example
+DUCKDB_PATH=/Users/ladvien/biological_memory/dbs/memory.duckdb
+
+# Ollama Configuration
+OLLAMA_URL=http://localhost:11434  # .env.example uses 192.168.1.110:11434
+OLLAMA_MODEL=qwen2.5:0.5b  # .env.example has gpt-oss:20b (not available)
+EMBEDDING_MODEL=nomic-embed-text
+
+# Additional Configuration
 MAX_DB_CONNECTIONS=160
-
-# dbt Configuration
-DBT_PROFILES_DIR="~/.dbt"
-DBT_PROJECT_DIR="/path/to/biological_memory"
+DBT_PROFILES_DIR=/Users/ladvien/.dbt
+DBT_PROJECT_DIR=/Users/ladvien/codex-dreams/biological_memory
+OLLAMA_TIMEOUT=300
 ```
 
-### Connection Pool Configuration
+**Note**: Biological parameters are configured in `biological_memory/dbt_project.yml`, not as environment variables.
 
-The system is configured for production load with:
-- **MAX_DB_CONNECTIONS**: 160 (32% of PostgreSQL server capacity)
-- **Connection Pool Split**: 80 main / 80 background connections
-- **Retry Logic**: Exponential backoff with 3 attempts
-- **Timeout Handling**: 300s for LLM operations
-
-## 🧪 Testing Environment Setup
-
-### Run Connection Tests
-
-Test all live connections and configuration:
+### Interactive Configuration
 
 ```bash
-# Test with live servers (when available)
-python3 run_env_tests.py
+# Open interactive configuration editor
+cdx config
 
-# Test connection logic with mocks (offline)
-python3 -m pytest tests/infrastructure/test_environment_mock.py -v
-
-# Test specific components
-PYTHONPATH=$(pwd) python3 -m pytest tests/infrastructure/test_environment.py::test_env_variables_loaded -v
+# Switch between environments
+cdx env local
+cdx env production
 ```
 
-### Test Results Validation
+## 🧪 Development
 
-Successful tests will validate:
-- ✅ All environment variables loaded correctly
-- ✅ PostgreSQL connection to 192.168.1.104:5432
-- ✅ Connection pool configured for 160 max connections
-- ✅ Ollama server accessible at 192.168.1.110:11434
-- ✅ Models available: gpt-oss:20b, nomic-embed-text
-- ✅ Generation and embedding endpoints working
-- ✅ Retry logic with exponential backoff
-- ✅ Error handling and graceful degradation
-
-### Network Access Requirements
-
-The live servers require network access to:
-```bash
-# PostgreSQL Server
-192.168.1.104:5432  # Main database server
-
-# Ollama Server  
-192.168.1.110:11434 # LLM and embedding service
-```
-
-If servers are not accessible (different network), the mock tests will validate connection logic without requiring live endpoints.
-
-## 📊 Connection Monitoring
-
-### Health Check Commands
-
-```bash
-# Quick PostgreSQL connection test
-python3 -c "
-from tests.infrastructure.test_environment import *
-config = EnvironmentConfig()
-postgres = PostgreSQLConnection(config)
-result = postgres.test_connection()
-print(f'PostgreSQL: {result[\"status\"]} - {result[\"database\"]} as {result[\"user\"]}')
-"
-
-# Quick Ollama connection test  
-python3 -c "
-from tests.infrastructure.test_environment import *
-config = EnvironmentConfig()
-ollama = OllamaConnection(config)
-result = ollama.test_connection()
-print(f'Ollama: {result[\"status\"]} - {len(result[\"available_models\"])} models')
-"
-```
-
-### Performance Metrics
-
-Expected performance benchmarks:
-- **PostgreSQL Connection**: < 100ms
-- **Connection Pool Setup**: < 500ms
-- **Ollama Health Check**: < 2s
-- **LLM Generation**: 10-60s (depending on model/prompt)
-- **Embedding Generation**: 1-5s
-
-## 🔧 Troubleshooting
-
-### Common Issues
-
-1. **Connection Timeout to PostgreSQL**
-   ```bash
-   # Check network connectivity
-   ping 192.168.1.104
-   telnet 192.168.1.104 5432
-   
-   # Verify credentials in .env
-   psql -h 192.168.1.104 -U codex_user -d codex_db
-   ```
-
-2. **Ollama Server Unreachable**
-   ```bash
-   # Check Ollama server status
-   curl http://192.168.1.110:11434/api/tags
-   
-   # Verify models are pulled
-   curl http://192.168.1.110:11434/api/tags | jq '.models[].name'
-   ```
-
-3. **Missing Models on Ollama**
-   ```bash
-   # Pull required models on Ollama server
-   ollama pull gpt-oss:20b
-   ollama pull nomic-embed-text
-   ```
-
-4. **Connection Pool Exhaustion**
-   ```bash
-   # Check active PostgreSQL connections
-   psql -h 192.168.1.104 -U codex_user -d codex_db -c "
-   SELECT count(*), state FROM pg_stat_activity 
-   WHERE datname = 'codex_db' GROUP BY state;
-   "
-   ```
-
-### Environment Validation
-
-Run the comprehensive environment validation:
-
-```bash
-# Full test suite with detailed output
-python3 run_env_tests.py 2>&1 | tee environment_test_results.log
-
-# Check test results
-echo "Test Summary:"
-echo "============="
-grep -E "(✅|❌)" environment_test_results.log
-```
-
-## 📁 Project Structure
+### Project Structure
 
 ```
 codex-dreams/
-├── .env                    # Environment configuration (not in git)
-├── .env.example           # Environment template
-├── README.md              # This file
-├── run_env_tests.py       # Environment test runner
-├── tests/
-│   ├── __init__.py
-│   └── infrastructure/
-│       ├── __init__.py
-│       ├── test_environment.py      # Live connection tests
-│       └── test_environment_mock.py # Mock connection tests
-├── BACKLOG.md             # Epic user stories
-├── ARCHITECTURE.md        # Technical architecture
-└── team_chat.md           # Agent communication log
+├── src/                    # Python source code
+│   ├── generate_insights.py
+│   ├── codex_cli.py
+│   ├── codex_service.py
+│   └── codex_scheduler.py
+├── biological_memory/      # dbt project
+│   ├── models/            # SQL transformations
+│   ├── macros/            # Reusable SQL functions
+│   └── tests/             # dbt tests
+├── tests/                 # Python tests
+├── docs/                  # Documentation
+└── sql/                   # Database setup scripts
 ```
 
-## 🔗 Integration Points
+### Running Tests
 
-### PostgreSQL Source Data
-- **Database**: codex_db on 192.168.1.104:5432
-- **Table**: raw_memories (expected schema)
-- **Access**: Read-only via postgres_scanner DuckDB extension
+```bash
+# Set up environment first
+source .env
 
-### Ollama LLM Services
-- **Base URL**: http://192.168.1.110:11434
-- **Generation Model**: gpt-oss:20b
-- **Embedding Model**: nomic-embed-text
-- **API Endpoints**: /api/generate, /api/embeddings
+# Run all tests
+pytest tests/ -v
 
-### DuckDB Local Storage
-- **Path**: Configured in DUCKDB_PATH
-- **Extensions**: httpfs, postgres, json
-- **Purpose**: Local processing and pipeline materialization
+# Run with coverage (Note: May have issues with concurrent tests)
+pytest tests/ --cov=src --cov-report=term-missing --tb=short
 
-## 📈 Next Steps
+# Run dbt tests (requires OLLAMA_URL environment variable)
+dbt test
+```
 
-After successful BMP-001 environment setup:
+### Building dbt Models
 
-1. **BMP-002**: DuckDB Extension and Configuration Setup
-2. **BMP-003**: dbt Project Configuration  
-3. **BMP-004**: Working Memory Implementation
-4. **BMP-005**: Short-Term Memory with Hierarchical Episodes
+```bash
+# Run all models (no need to cd into biological_memory)
+dbt run
 
-See `BACKLOG.md` for complete epic breakdown.
+# Run specific stage
+dbt run --select stage:working_memory
+dbt run --select stage:consolidation
 
-## 🛡️ Security Notes
+# Generate documentation
+dbt docs generate
+dbt docs serve
+```
 
-- Never commit `.env` file to version control
-- PostgreSQL credentials are stored in environment variables only
-- Test database uses separate credentials from production
-- Connection pooling prevents resource exhaustion attacks
-- Retry logic includes exponential backoff to prevent DoS
+**Note**: Ensure environment variables are set before running dbt commands.
 
-## 📝 Logging and Monitoring
+## 📊 Monitoring
 
-All connection tests include:
-- Structured logging with timestamps
-- Performance metrics collection
-- Error context and stack traces
-- Retry attempt logging
-- Connection pool utilization metrics
+### Service Health
 
-Monitor logs for:
-- Connection failures or timeouts
-- Model unavailability warnings
-- Pool exhaustion alerts
-- Performance degradation
+```bash
+# Check service status
+cdx status
+
+# View recent logs
+cdx logs --lines 100
+
+# Note: 'cdx stats' command does not exist - use 'cdx status' instead
+```
+
+### Database Monitoring
+
+The system includes built-in monitoring views:
+- `memory_dashboard`: Overall memory system analytics
+- `memory_health`: System health metrics and alerts
+- Biological parameter monitoring via dbt macros
+
+## 🔬 Biological Parameters
+
+Key configurable parameters that control memory processing:
+
+| Parameter | Default | Description | Location |
+|-----------|---------|-------------|----------|
+| `working_memory_capacity` | 7 | Miller's magic number (7±2) | dbt_project.yml |
+| `short_term_memory_duration` | 30 | STM duration in seconds | dbt_project.yml |
+| `consolidation_threshold` | 0.6 | Minimum strength for consolidation | dbt_project.yml |
+| `hebbian_learning_rate` | 0.1 | Synaptic strengthening rate | dbt_project.yml |
+| `gradual_forgetting_rate` | 0.9 | Memory retention factor | dbt_project.yml |
+| `replay_frequency`* | 90 min | Consolidation replay interval | Architecture docs |
+
+*Note: replay_frequency is a conceptual parameter documented in architecture but not yet configurable in dbt_project.yml
+
+## ⚠️ Known Issues & Requirements
+
+### Configuration Requirements
+- **Environment Variables**: Many commands require setting environment variables first (`source .env`)
+- **Ollama Models**: Some models in configuration may not be available - use `ollama list` to check
+- **Database Names**: Ensure consistency between `codex` and `codex_db` in configurations
+
+### Known Issues
+- **Test Coverage**: Running coverage with `--cov` may cause crashes with concurrent database tests
+- **High Test Failure Rate**: Many tests require specific environment setup to pass
+- **Missing CLI Commands**: `cdx stats` doesn't exist - use `cdx status` instead
+- **Biological Parameters**: Located in `dbt_project.yml`, not environment variables
+
+## 🛡️ Security
+
+- Database credentials stored in environment variables
+- No hardcoded secrets in codebase
+- SQL injection protection via parameterized queries
+- Connection pooling with configurable limits
+
+## 📚 Documentation
+
+- [Architecture Overview](docs/architecture/ARCHITECTURE.md) - Detailed technical architecture
+- [Daemon Setup](docs/DAEMON_README.md) - Cross-platform service configuration
+- [API Reference](docs/api/) - Component API documentation
+- [Biological Models](docs/bmps/) - Memory model specifications
+
+## 🤝 Contributing
+
+Contributions are welcome! Please read our contributing guidelines and submit pull requests to the `main` branch.
+
+### Development Workflow
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Inspired by neuroscience research on human memory systems
+- Built with [dbt Core](https://www.getdbt.com/) for data transformations
+- Powered by [DuckDB](https://duckdb.org/) analytical database
+- AI capabilities via [Ollama](https://ollama.ai/) local LLM server
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/Ladvien/codex-dreams/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Ladvien/codex-dreams/discussions)
+- **Documentation**: [Wiki](https://github.com/Ladvien/codex-dreams/wiki)
 
 ---
 
-**BMP-001 Status**: ✅ COMPLETED  
-**Environment**: Validated and ready for biological memory pipeline implementation  
-**Last Updated**: 2025-08-28 00:52:25 UTC
+*"Memory is the treasury and guardian of all things." - Cicero*

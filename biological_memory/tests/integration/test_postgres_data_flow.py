@@ -26,13 +26,37 @@ class PostgresDataFlowTests(unittest.TestCase):
     
     def setUp(self):
         """Set up test environment and connections"""
-        self.pg_config = {
-            'host': '192.168.1.104',
-            'port': 5432,
-            'database': 'codex_db',
-            'user': 'codex_user',
-            'password': 'MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a'
-        }
+        # Get PostgreSQL config from environment or use defaults
+        postgres_url = os.getenv('POSTGRES_DB_URL', '')
+        if postgres_url:
+            import re
+            match = re.match(r'postgresql://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)', postgres_url)
+            if match:
+                self.pg_config = {
+                    'user': match.group(1),
+                    'password': match.group(2),
+                    'host': match.group(3),
+                    'port': int(match.group(4)),
+                    'database': match.group(5)
+                }
+            else:
+                # Fallback without hardcoded password
+                self.pg_config = {
+                    'host': '192.168.1.104',
+                    'port': 5432,
+                    'database': 'codex_db',
+                    'user': 'codex_user',
+                    'password': os.getenv('POSTGRES_PASSWORD', 'password')
+                }
+        else:
+            # Fallback without hardcoded password
+            self.pg_config = {
+                'host': '192.168.1.104',
+                'port': 5432,
+                'database': 'codex_db',
+                'user': 'codex_user',
+                'password': os.getenv('POSTGRES_PASSWORD', 'password')
+            }
         
         # Create DuckDB connection for testing
         self.duck_conn = duckdb.connect(':memory:')

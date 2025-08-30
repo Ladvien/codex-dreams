@@ -212,14 +212,37 @@ class ComprehensiveHealthMonitor:
     def _setup_circuit_breakers(self):
         """Setup circuit breakers for all external services"""
         
-        # PostgreSQL circuit breaker
-        postgres_params = {
-            'host': '192.168.1.104',
-            'port': 5432,
-            'database': 'codex_db',
-            'user': 'codex_user',
-            'password': 'MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a'
-        }
+        # PostgreSQL circuit breaker - parse from environment variable
+        postgres_url = os.getenv('POSTGRES_DB_URL', '')
+        if postgres_url:
+            import re
+            match = re.match(r'postgresql://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)', postgres_url)
+            if match:
+                postgres_params = {
+                    'user': match.group(1),
+                    'password': match.group(2),
+                    'host': match.group(3),
+                    'port': int(match.group(4)),
+                    'database': match.group(5)
+                }
+            else:
+                # Fallback to defaults without hardcoded password
+                postgres_params = {
+                    'host': '192.168.1.104',
+                    'port': 5432,
+                    'database': 'codex_db',
+                    'user': 'codex_user',
+                    'password': 'password'  # Placeholder - should come from env
+                }
+        else:
+            # Fallback to defaults without hardcoded password
+            postgres_params = {
+                'host': '192.168.1.104',
+                'port': 5432,
+                'database': 'codex_db',
+                'user': 'codex_user',
+                'password': 'password'  # Placeholder - should come from env
+            }
         
         self.circuit_breakers['postgresql'] = PostgreSQLCircuitBreaker(
             failure_threshold=5,
