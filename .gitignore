@@ -212,8 +212,21 @@ __marimo__/
 *.duckdb.wal
 *.db
 *.sqlite
+memory.duckdb
 
 # dbt
 target/
 dbt_packages/
 logs/
+
+# Build artifacts
+codex_dreams.egg-info/
+
+# Test databases
+test_*.duckdb
+
+# Temporary files
+.DS_Store
+*.swp
+*.swo
+*~
