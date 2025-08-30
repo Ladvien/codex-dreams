@@ -430,5 +430,52 @@ def generate_test_memory_id():
 def cleanup_test_environment():
     """Automatic cleanup of test environment after session"""
     yield
-    # Any session-level cleanup can be added here
+    # Clean up any test schemas that were created
+    try:
+        import psycopg2
+        postgres_url = os.getenv('POSTGRES_DB_URL', '')
+        
+        if postgres_url:
+            import re
+            match = re.match(r'postgresql://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)', postgres_url)
+            if match:
+                conn = psycopg2.connect(
+                    user=match.group(1),
+                    password=match.group(2),
+                    host=match.group(3),
+                    port=int(match.group(4)),
+                    database=match.group(5)
+                )
+            else:
+                conn = psycopg2.connect(
+                    host='localhost',
+                    database='codex_db'
+                )
+        else:
+            conn = psycopg2.connect(
+                host='localhost',
+                database='codex_db'
+            )
+        
+        with conn.cursor() as cur:
+            # Find all test schemas
+            cur.execute("""
+                SELECT schema_name 
+                FROM information_schema.schemata 
+                WHERE schema_name LIKE 'test_schema_%'
+            """)
+            test_schemas = cur.fetchall()
+            
+            # Drop each test schema
+            for (schema_name,) in test_schemas:
+                logger.info(f"Cleaning up test schema: {schema_name}")
+                cur.execute(f"DROP SCHEMA IF EXISTS {schema_name} CASCADE")
+            
+            conn.commit()
+        
+        conn.close()
+        logger.info(f"Cleaned up {len(test_schemas)} test schema(s)")
+    except Exception as e:
+        logger.warning(f"Failed to clean up test schemas: {e}")
+    
     logger.info("Test session cleanup completed")

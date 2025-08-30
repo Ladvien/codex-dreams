@@ -546,3 +546,43 @@ TEST_STM_DURATION = 30  # minutes
 TEST_CONSOLIDATION_THRESHOLD = 0.5
 TEST_HEBBIAN_RATE = 0.1
 TEST_FORGETTING_RATE = 0.05
+
+
+# Session-level cleanup
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_session():
+    """Clean up test schemas after all tests complete."""
+    yield
+    
+    # Clean up any leftover test schemas
+    try:
+        import psycopg2
+        import os
+        
+        conn = psycopg2.connect(
+            host=os.getenv('POSTGRES_HOST', 'localhost'),
+            database=os.getenv('POSTGRES_DB', 'codex_db'),
+            user=os.getenv('POSTGRES_USER', os.getenv('USER')),
+            password=os.getenv('POSTGRES_PASSWORD', '')
+        )
+        
+        with conn.cursor() as cur:
+            # Find and drop all test schemas
+            cur.execute("""
+                SELECT schema_name 
+                FROM information_schema.schemata 
+                WHERE schema_name LIKE 'test_schema_%'
+            """)
+            schemas = cur.fetchall()
+            
+            for (schema,) in schemas:
+                cur.execute(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
+            
+            conn.commit()
+        
+        conn.close()
+        
+        if schemas:
+            print(f"\nCleaned up {len(schemas)} test schema(s)")
+    except Exception as e:
+        print(f"\nWarning: Could not clean up test schemas: {e}")
