@@ -84,22 +84,22 @@ cp .env.example .env
 
 ```bash
 # Initialize the service
-cdx init
+codex init
 
 # Start the background service
-cdx start
+codex start
 
 # Check service status
-cdx status
+codex status
 
 # View logs
-cdx logs
+codex logs
 
 # Run a one-time insight generation
-cdx run
+codex run
 
 # Stop the service
-cdx stop
+codex stop
 ```
 
 ## ⚙️ Configuration
@@ -131,11 +131,11 @@ OLLAMA_TIMEOUT=300
 
 ```bash
 # Open interactive configuration editor
-cdx config
+codex config
 
 # Switch between environments
-cdx env local
-cdx env production
+codex env local
+codex env production
 ```
 
 ## 🧪 Development
@@ -197,12 +197,12 @@ dbt docs serve
 
 ```bash
 # Check service status
-cdx status
+codex status
 
 # View recent logs
-cdx logs --lines 100
+codex logs --lines 100
 
-# Note: 'cdx stats' command does not exist - use 'cdx status' instead
+# Note: 'codex stats' command does not exist - use 'codex status' instead
 ```
 
 ### Database Monitoring
@@ -237,7 +237,7 @@ Key configurable parameters that control memory processing:
 ### Known Issues
 - **Test Coverage**: Running coverage with `--cov` may cause crashes with concurrent database tests
 - **High Test Failure Rate**: Many tests require specific environment setup to pass
-- **Missing CLI Commands**: `cdx stats` doesn't exist - use `cdx status` instead
+- **Missing CLI Commands**: `codex stats` doesn't exist - use `codex status` instead
 - **Biological Parameters**: Located in `dbt_project.yml`, not environment variables
 
 ## 🛡️ Security

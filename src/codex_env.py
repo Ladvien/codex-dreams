@@ -110,8 +110,8 @@ def show_environments():
         print(f"    Model: gpt-oss:20b")
     
     print("\n💡 To switch environments:")
-    print("   cdx env local       # Use local services")
-    print("   cdx env production  # Use production services")
+    print("   codex env local       # Use local services")
+    print("   codex env production  # Use production services")
     print()
 
 
@@ -151,7 +151,7 @@ def main():
             switch_env(env)
     else:
         print(f"❌ Unknown command: {env}")
-        print("Usage: cdx env [local|production|show]")
+        print("Usage: codex env [local|production|show]")
 
 
 if __name__ == "__main__":

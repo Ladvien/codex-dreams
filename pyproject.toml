@@ -47,8 +47,8 @@ dev = [
 ]
 
 [project.scripts]
+codex = "src.codex_cli:main"
 codex-dreams = "src.codex_cli:main"
-cdx = "src.codex_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
