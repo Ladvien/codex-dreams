@@ -3,8 +3,12 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![dbt version](https://img.shields.io/badge/dbt-1.10.0+-green.svg)](https://www.getdbt.com/)
+[![Status](https://img.shields.io/badge/Status-Operational-brightgreen.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.2.1-blue.svg)]()
 
 A biologically-inspired memory management system that models human cognitive processes through hierarchical episodic memory, spatial representations, and Hebbian consolidation patterns.
+
+**System Status**: ✅ OPERATIONAL - Connected to PostgreSQL at 192.168.1.104:codex_db with 314 memories
 
 ## 🌟 Overview
 
@@ -501,12 +505,6 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 - **Hebbian Theory**: Donald Hebb's synaptic plasticity principles
 - **Technologies**: [dbt Core](https://www.getdbt.com/), [DuckDB](https://duckdb.org/), [Ollama](https://ollama.ai/)
 
-## 📞 Support & Community
-
-- **Bug Reports**: [GitHub Issues](https://github.com/Ladvien/codex-dreams/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/Ladvien/codex-dreams/discussions)
-- **Documentation**: [Project Wiki](https://github.com/Ladvien/codex-dreams/wiki)
-- **Email**: codex-dreams@example.com
 
 ---
 
