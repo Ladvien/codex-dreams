@@ -22,7 +22,8 @@
     tags=['consolidation', 'hippocampal_replay', 'memory_consolidation'],
     pre_hook="SET memory_limit = '10GB'",
     post_hook=[
-        "VACUUM ANALYZE {{ this }}",
+        -- PostgreSQL VACUUM ANALYZE not supported in DuckDB - DuckDB handles optimization automatically
+        -- "VACUUM ANALYZE {{ this }}",
         "DELETE FROM {{ this }} WHERE consolidated_strength < {{ var('weak_connection_threshold') }}"
     ]
 ) }}

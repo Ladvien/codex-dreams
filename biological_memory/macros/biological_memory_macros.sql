@@ -358,7 +358,8 @@
     "CREATE INDEX IF NOT EXISTS idx_" ~ this.name ~ "_activation ON " ~ this ~ " (activation_strength DESC)",
     "CREATE INDEX IF NOT EXISTS idx_" ~ this.name ~ "_timestamp ON " ~ this ~ " (created_at, last_accessed_at)",
     "CREATE INDEX IF NOT EXISTS idx_" ~ this.name ~ "_type ON " ~ this ~ " (memory_type)",
-    "CREATE INDEX IF NOT EXISTS idx_" ~ this.name ~ "_concepts ON " ~ this ~ " USING GIN(concepts)"
+    -- PostgreSQL GIN index syntax not supported in DuckDB - using regular index instead
+    "CREATE INDEX IF NOT EXISTS idx_" ~ this.name ~ "_concepts ON " ~ this ~ " (concepts)"
   ] %}
   
   {% for statement in index_statements %}
@@ -373,8 +374,8 @@
     {{ log("Updating semantic knowledge graph", info=true) }}
   {% endif %}
   
-  -- Refresh materialized view of semantic connections
-  REFRESH MATERIALIZED VIEW IF EXISTS {{ this.schema }}.semantic_graph_view;
+  -- PostgreSQL REFRESH MATERIALIZED VIEW not supported in DuckDB - using regular view
+  -- REFRESH MATERIALIZED VIEW IF EXISTS {{ this.schema }}.semantic_graph_view;
   
   -- Update graph centrality measures
   UPDATE {{ this.schema }}.semantic_concepts 

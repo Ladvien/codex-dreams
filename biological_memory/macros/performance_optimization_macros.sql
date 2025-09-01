@@ -203,8 +203,10 @@
     "CREATE INDEX IF NOT EXISTS idx_" ~ table_name ~ "_memory_type ON " ~ table_name ~ " (memory_type)",
     "CREATE INDEX IF NOT EXISTS idx_" ~ table_name ~ "_access_count ON " ~ table_name ~ " (access_count DESC)",
     "CREATE INDEX IF NOT EXISTS idx_" ~ table_name ~ "_compound ON " ~ table_name ~ " (memory_type, activation_strength DESC, created_at DESC)",
-    "CREATE INDEX IF NOT EXISTS idx_" ~ table_name ~ "_concepts_gin ON " ~ table_name ~ " USING gin(concepts)",
-    "CREATE INDEX IF NOT EXISTS idx_" ~ table_name ~ "_content_fts ON " ~ table_name ~ " USING fts(content)"
+    -- PostgreSQL GIN index syntax not supported in DuckDB - using regular index instead
+    "CREATE INDEX IF NOT EXISTS idx_" ~ table_name ~ "_concepts ON " ~ table_name ~ " (concepts)",
+    -- PostgreSQL FTS syntax not supported in DuckDB - will need custom FTS implementation
+    -- "CREATE INDEX IF NOT EXISTS idx_" ~ table_name ~ "_content_fts ON " ~ table_name ~ " USING fts(content)"
   ] %}
   
   {% for index_sql in indexes %}

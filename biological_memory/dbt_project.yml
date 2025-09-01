@@ -108,7 +108,8 @@ models:
       +post-hook: [
         "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_memory_id ON {{ this }} (memory_id)",
         "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_created_at ON {{ this }} (created_at DESC)",
-        "ANALYZE {{ this }}"
+        -- PostgreSQL ANALYZE not supported in DuckDB - DuckDB auto-analyzes
+        -- "ANALYZE {{ this }}"
       ]
       +tags: ["performance_optimized", "incremental"]
       
@@ -118,9 +119,11 @@ models:
       +pre-hook: "SET memory_limit = '6GB'"
       +post-hook: [
         "{{ create_memory_indexes() }}",
-        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_semantic_search ON {{ this }} USING gin(concepts)",
+        -- PostgreSQL GIN index syntax not supported in DuckDB
+        -- "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_semantic_search ON {{ this }} USING gin(concepts)",
         "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_stability ON {{ this }} (stability_score DESC, created_at DESC)",
-        "ANALYZE {{ this }}"
+        -- PostgreSQL ANALYZE not supported in DuckDB - DuckDB auto-analyzes
+        -- "ANALYZE {{ this }}"
       ]
       +tags: ["core", "memory", "production", "indexed"]
       
@@ -137,7 +140,8 @@ models:
         "{{ update_semantic_graph() }}",
         "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_source_target ON {{ this }} (source_concept, target_concept)",
         "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_similarity ON {{ this }} (similarity_score DESC)",
-        "ANALYZE {{ this }}"
+        -- PostgreSQL ANALYZE not supported in DuckDB - DuckDB auto-analyzes
+        -- "ANALYZE {{ this }}"
       ]
       +tags: ["semantic", "performance_intensive"]
       
@@ -169,7 +173,8 @@ models:
         "SET enable_parallel_aggregation = true"
       ]
       +post-hook: [
-        "VACUUM ANALYZE {{ this }}",
+        -- PostgreSQL VACUUM ANALYZE not supported in DuckDB - DuckDB handles optimization automatically
+        -- "VACUUM ANALYZE {{ this }}",
         "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_consolidated_strength ON {{ this }} (consolidated_strength DESC)",
         "DELETE FROM {{ this }} WHERE consolidated_strength < {{ var('weak_connection_threshold') }}"
       ]
