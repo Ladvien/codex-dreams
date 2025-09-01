@@ -526,6 +526,55 @@ def llm_metrics() -> str:
         return json.dumps({"error": str(e)})
 
 
+def prompt(
+    prompt_text: str,
+    model: str = "ollama",
+    base_url: str = "",
+    model_name: str = "",
+    timeout: int = 300
+) -> str:
+    """
+    DuckDB UDF function implementing the prompt() function per ARCHITECTURE.md
+    
+    This function provides the interface described in ARCHITECTURE.md lines 199-207:
+    SELECT prompt(
+        'Extract key insight from: ' || content,
+        model := 'ollama',
+        base_url := 'http://localhost:11434',
+        model_name := 'gpt-oss'
+    ) as insight
+    
+    Args:
+        prompt_text: The input prompt text
+        model: Model type (always 'ollama' for this implementation)
+        base_url: Ollama base URL (uses environment default if empty)
+        model_name: Ollama model name (uses environment default if empty)
+        timeout: Request timeout in seconds
+        
+    Returns:
+        Generated text response or empty string on error
+    """
+    if not _llm_service:
+        # Initialize with environment defaults or provided values
+        ollama_url = base_url if base_url else os.getenv('OLLAMA_URL', 'http://192.168.1.110:11434')
+        model_to_use = model_name if model_name else os.getenv('OLLAMA_MODEL', 'gpt-oss:20b')
+        
+        initialize_llm_service(
+            ollama_url=ollama_url,
+            model_name=model_to_use
+        )
+    
+    if not _llm_service:
+        return ""
+    
+    try:
+        response = _llm_service.generate_response(prompt_text, timeout)
+        return response.content if not response.error else ""
+    except Exception as e:
+        logging.error(f"Prompt UDF error: {e}")
+        return ""
+
+
 def llm_generate_embedding(text: str, model: str = "nomic-embed-text", dimension: int = 768) -> List[float]:
     """
     DuckDB UDF function for generating embeddings
@@ -567,20 +616,39 @@ def llm_generate_embedding(text: str, model: str = "nomic-embed-text", dimension
 # Register UDF functions with DuckDB
 def register_llm_functions(connection: duckdb.DuckDBPyConnection):
     """Register LLM UDF functions with a DuckDB connection"""
+    success_count = 0
+    total_functions = 0
+    
+    # List of functions to register with their names
+    functions_to_register = [
+        ("llm_generate", llm_generate),
+        ("llm_generate_json", llm_generate_json),
+        ("llm_health_check", llm_health_check),
+        ("llm_metrics", llm_metrics),
+        ("prompt", prompt),  # ARCHITECTURE.md compliant function
+    ]
+    
+    # Register string-returning functions first
+    for func_name, func in functions_to_register:
+        try:
+            total_functions += 1
+            connection.create_function(func_name, func)
+            success_count += 1
+            logging.info(f"Successfully registered function: {func_name}")
+        except Exception as e:
+            logging.warning(f"Failed to register function {func_name}: {e}")
+    
+    # Register embedding function separately (returns list)
     try:
-        # Register the UDF functions
-        connection.create_function("llm_generate", llm_generate)
-        connection.create_function("llm_generate_json", llm_generate_json) 
+        total_functions += 1
         connection.create_function("llm_generate_embedding", llm_generate_embedding)
-        connection.create_function("llm_health_check", llm_health_check)
-        connection.create_function("llm_metrics", llm_metrics)
-        
-        logging.info("Successfully registered LLM UDF functions with DuckDB (including embedding generation)")
-        return True
-        
+        success_count += 1
+        logging.info("Successfully registered function: llm_generate_embedding")
     except Exception as e:
-        logging.error(f"Failed to register LLM UDF functions: {e}")
-        return False
+        logging.warning(f"Failed to register function llm_generate_embedding: {e}")
+    
+    logging.info(f"Registered {success_count}/{total_functions} LLM UDF functions with DuckDB")
+    return success_count > 0  # Return True if at least some functions registered
 
 
 if __name__ == "__main__":
