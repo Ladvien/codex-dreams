@@ -4,17 +4,17 @@ Cross-platform service management for codex-dreams daemon.
 Handles installation, uninstallation, and management of system services.
 """
 
-import os
-import sys
-import subprocess
-import shutil
-from pathlib import Path
-from typing import Optional, Dict, Any
 import logging
+import os
 import platform
+import shutil
+import subprocess
+import sys
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, Optional
 
-from .config import DaemonConfig, load_config, get_default_config_path
+from .config import DaemonConfig, get_default_config_path, load_config
 
 
 @dataclass

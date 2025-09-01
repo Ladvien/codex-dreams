@@ -4,19 +4,19 @@ Cross-platform daemon scheduler for codex-dreams insights generation.
 Supports Windows, macOS, and Linux with configurable scheduling.
 """
 
-import os
-import sys
-import time
-import signal
-import threading
-import logging
 import json
+import logging
+import os
+import signal
+import subprocess
+import sys
+import threading
+import time
 import traceback
+from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional, Dict, Any, Callable
-import subprocess
-from collections import defaultdict
+from typing import Any, Callable, Dict, Optional
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -354,6 +354,7 @@ class DaemonScheduler:
 def main():
     """Main entry point for daemon scheduler"""
     import argparse
+
     from .config import get_default_config_path, load_config
 
     parser = argparse.ArgumentParser(description="Codex Dreams Daemon Scheduler")

@@ -4,12 +4,12 @@ Simple scheduler for Codex Dreams insights generation.
 Runs generate_insights.py on a schedule.
 """
 
-import time
 import logging
 import subprocess
 import sys
-from pathlib import Path
+import time
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
 from .codex_config import CodexConfig
@@ -29,7 +29,7 @@ class CodexScheduler:
         # Set up logging
         self._setup_logging()
 
-    def _setup_logging(self):
+    def _setup_logging(self) -> None:
         """Set up logging to file"""
         self.config.log_file.parent.mkdir(parents=True, exist_ok=True)
 

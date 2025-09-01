@@ -4,15 +4,16 @@ MVP Insights Generator
 Processes memories through Ollama and writes insights back to PostgreSQL
 """
 
-import os
 import json
-import requests
-import psycopg2
-from psycopg2.extras import Json, register_uuid
-import duckdb
-from datetime import datetime
+import os
 import uuid
-from typing import List, Dict, Any
+from datetime import datetime
+from typing import Any, Dict, List
+
+import duckdb
+import psycopg2
+import requests
+from psycopg2.extras import Json, register_uuid
 
 # Register UUID adapter for psycopg2
 register_uuid()
@@ -23,8 +24,13 @@ if not POSTGRES_URL:
     raise ValueError("POSTGRES_DB_URL environment variable is required")
 
 # Validate that default/insecure passwords are not being used
-if "defaultpassword" in POSTGRES_URL or "password" in POSTGRES_URL.split("://")[1].split("@")[0].split(":")[1]:
-    raise ValueError("Default or insecure password detected. Please use a secure password in POSTGRES_DB_URL")
+if (
+    "defaultpassword" in POSTGRES_URL
+    or "password" in POSTGRES_URL.split("://")[1].split("@")[0].split(":")[1]
+):
+    raise ValueError(
+        "Default or insecure password detected. Please use a secure password in POSTGRES_DB_URL"
+    )
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gpt-oss:20b")
 DUCKDB_PATH = os.getenv("DUCKDB_PATH", "/Users/ladvien/biological_memory/dbs/memory.duckdb")
@@ -35,7 +41,7 @@ def call_ollama(prompt: str, temperature: float = 0.7, max_tokens: int = 150) ->
     try:
         print(f"  → Calling Ollama at {OLLAMA_URL} with model {OLLAMA_MODEL}")
         print(f"    Prompt length: {len(prompt)} chars, max_tokens: {max_tokens}")
-        
+
         start_time = datetime.now()
         response = requests.post(
             f"{OLLAMA_URL}/api/generate",
@@ -47,7 +53,7 @@ def call_ollama(prompt: str, temperature: float = 0.7, max_tokens: int = 150) ->
             },
             timeout=120,  # Increased from 30 to 120 seconds for larger models
         )
-        
+
         elapsed = (datetime.now() - start_time).total_seconds()
         print(f"    Response received in {elapsed:.1f} seconds")
 
@@ -104,10 +110,10 @@ What is the key insight or pattern? (1-2 sentences):"""
     # If LLM fails, use rule-based fallback
     if not insight_content or len(insight_content) < 10:
         print("  ⚠ Using fallback insight generation (LLM response empty)")
-        
+
         # Create more meaningful fallback insights based on content analysis
         content_lower = content.lower()
-        
+
         if "test" in content_lower or "debug" in content_lower:
             insight_content = f"Testing activity detected: {content[:80]}..."
             insight_type = "testing"
@@ -142,10 +148,22 @@ What is the key insight or pattern? (1-2 sentences):"""
         print("  ⚠ Using fallback tag extraction")
         words = content.lower().split()
         # Filter for meaningful words (longer than 3 chars, not common words)
-        common_words = {'the', 'and', 'for', 'with', 'this', 'that', 'from', 'have', 'will', 'been', 'after'}
+        common_words = {
+            "the",
+            "and",
+            "for",
+            "with",
+            "this",
+            "that",
+            "from",
+            "have",
+            "will",
+            "been",
+            "after",
+        }
         tags = []
         for word in words:
-            clean_word = ''.join(c for c in word if c.isalnum())
+            clean_word = "".join(c for c in word if c.isalnum())
             if len(clean_word) > 3 and clean_word not in common_words and clean_word not in tags:
                 tags.append(clean_word)
                 if len(tags) >= 5:
@@ -159,7 +177,7 @@ What is the key insight or pattern? (1-2 sentences):"""
     }
 
 
-def process_memories():
+def process_memories() -> None:
     """Main processing function"""
 
     print("=" * 60)
@@ -223,7 +241,11 @@ def process_memories():
         related_memories = []
 
         print(f"\n[{idx + 1}/{len(memories_df)}] Processing memory {str(memory_id)[:8]}...")
-        print(f"  Content preview: {content[:100]}..." if len(content) > 100 else f"  Content: {content}")
+        print(
+            f"  Content preview: {content[:100]}..."
+            if len(content) > 100
+            else f"  Content: {content}"
+        )
 
         # Generate insight
         insight = generate_insight(content, related_memories)
@@ -292,7 +314,7 @@ def process_memories():
     duck_conn.close()
 
 
-def main():
+def main() -> None:
     """Main entry point for the script"""
     process_memories()
 

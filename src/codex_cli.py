@@ -4,21 +4,22 @@ Simple CLI interface for Codex Dreams.
 The ONE command interface that users interact with.
 """
 
-import sys
 import argparse
+import sys
 from pathlib import Path
+from typing import Any
 
-from .codex_config import CodexConfig, get_config, create_default_config
-from .codex_service import CodexService, format_uptime, format_time_until
+from .codex_config import CodexConfig, create_default_config, get_config
 from .codex_config_editor import (
+    first_time_setup,
     interactive_config_editor,
     quick_schedule_change,
     show_config,
-    first_time_setup,
 )
+from .codex_service import CodexService, format_time_until, format_uptime
 
 
-def cmd_init(args):
+def cmd_init(args: Any) -> int:
     """Initialize Codex Dreams with interactive setup"""
     config_path = Path.home() / ".codex" / "config.yaml"
 
@@ -42,7 +43,7 @@ def cmd_init(args):
         return 1
 
 
-def cmd_start(args):
+def cmd_start(args: Any) -> int:
     """Start the Codex Dreams service"""
     try:
         config = get_config()
@@ -71,7 +72,7 @@ def cmd_start(args):
         return 1
 
 
-def cmd_stop(args):
+def cmd_stop(args: Any) -> int:
     """Stop the Codex Dreams service"""
     try:
         config = get_config()
@@ -82,7 +83,7 @@ def cmd_stop(args):
         return 1
 
 
-def cmd_restart(args):
+def cmd_restart(args: Any) -> int:
     """Restart the Codex Dreams service"""
     try:
         config = get_config()
@@ -93,7 +94,7 @@ def cmd_restart(args):
         return 1
 
 
-def cmd_status(args):
+def cmd_status(args: Any) -> int:
     """Show detailed status of Codex Dreams"""
     try:
         config = get_config()
@@ -152,7 +153,7 @@ def cmd_status(args):
         return 1
 
 
-def cmd_config(args):
+def cmd_config(args: Any) -> int:
     """Configure Codex Dreams"""
     try:
         config = get_config()
@@ -199,7 +200,7 @@ def cmd_config(args):
         return 1
 
 
-def cmd_run(args):
+def cmd_run(args: Any) -> int:
     """Run insights generation once (for testing)"""
     try:
         config = get_config()
@@ -231,7 +232,7 @@ def cmd_run(args):
         return 1
 
 
-def cmd_env(args):
+def cmd_env(args: Any) -> int:
     """Manage environment configurations"""
     from .codex_env import show_environments, switch_env
 
@@ -275,7 +276,7 @@ def cmd_env(args):
     return 0
 
 
-def cmd_logs(args):
+def cmd_logs(args: Any) -> int:
     """Show recent logs"""
     try:
         config = get_config()
@@ -311,7 +312,7 @@ def cmd_logs(args):
         return 1
 
 
-def main():
+def main() -> int:
     """Main CLI entry point"""
     parser = argparse.ArgumentParser(
         description="Codex Dreams - Biologically-inspired memory insights",

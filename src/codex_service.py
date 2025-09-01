@@ -5,12 +5,13 @@ Handles starting/stopping the background process.
 """
 
 import os
-import sys
-import time
 import signal
 import subprocess
+import sys
+import time
 from pathlib import Path
 from typing import Optional
+
 import psutil
 
 from .codex_config import CodexConfig

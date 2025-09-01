@@ -129,8 +129,8 @@ def main():
     if env in ["show", "list", "status"]:
         show_environments()
     elif env in ["local", "dev", "production", "prod"]:
-        from .codex_service import CodexService
         from .codex_config import get_config
+        from .codex_service import CodexService
 
         # Check if service is running
         config = get_config()

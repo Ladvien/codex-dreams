@@ -6,9 +6,10 @@ Single source of truth: ~/.codex/config.yaml
 
 import os
 import re
-from pathlib import Path
 from dataclasses import dataclass
-from typing import Dict, Any, Optional
+from pathlib import Path
+from typing import Any, Dict, Optional
+
 import yaml
 
 
@@ -53,21 +54,33 @@ class CodexConfig:
     def _validate_credentials(self) -> None:
         """Validate that credentials are secure and not using defaults"""
         if not self.db_password:
-            raise ValueError("Database password is required. Set POSTGRES_PASSWORD environment variable.")
-        
+            raise ValueError(
+                "Database password is required. Set POSTGRES_PASSWORD environment variable."
+            )
+
         # Check for default/insecure passwords
         insecure_passwords = [
-            "password", "defaultpassword", "123456", "admin", "root", 
-            "codex", "test", "demo", "default", "changeme"
+            "password",
+            "defaultpassword",
+            "123456",
+            "admin",
+            "root",
+            "codex",
+            "test",
+            "demo",
+            "default",
+            "changeme",
         ]
-        
+
         if self.db_password.lower() in insecure_passwords:
-            raise ValueError(f"Insecure password detected: '{self.db_password}'. Use a strong, unique password.")
-        
+            raise ValueError(
+                f"Insecure password detected: '{self.db_password}'. Use a strong, unique password."
+            )
+
         # Check minimum password complexity
         if len(self.db_password) < 8:
             raise ValueError("Database password must be at least 8 characters long.")
-    
+
     def _get_required_env(self, key: str) -> str:
         """Get required environment variable with validation"""
         value = os.getenv(key)
@@ -84,17 +97,17 @@ class CodexConfig:
         db_port = int(os.getenv("POSTGRES_PORT", str(self.db_port)))
         db_name = os.getenv("POSTGRES_DB") or self.db_name
         db_user = os.getenv("POSTGRES_USER") or self.db_user
-        
+
         # Temporarily set password for validation
         original_password = self.db_password
         self.db_password = db_password
-        
+
         try:
             self._validate_credentials()
         finally:
             # Restore original password
             self.db_password = original_password
-        
+
         if db_password:
             return f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
         else:
