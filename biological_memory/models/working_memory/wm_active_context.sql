@@ -58,8 +58,7 @@ SELECT
   COALESCE(frequency_score, 0.0) as frequency_score,
   COALESCE(memory_rank, 1) as memory_rank,
   -- Hebbian strength calculation for active processing - NULL SAFE
-  LEAST(1.0, COALESCE(activation_strength, 0.1) * {{ var('hebbian_learning_rate') }} + 
-    COALESCE(previous_strength, 0.1)) as hebbian_strength,
+  LEAST(1.0, COALESCE(activation_strength, 0.1) * (1.0 + {{ var('hebbian_learning_rate') }})) as hebbian_strength,
   CURRENT_TIMESTAMP as processed_at
 FROM ranked_memories
 WHERE COALESCE(memory_rank, 1) <= {{ var('working_memory_capacity') }}
