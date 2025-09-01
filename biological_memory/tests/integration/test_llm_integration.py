@@ -321,7 +321,7 @@ class TestLLMIntegrationEndToEnd(unittest.TestCase):
         try:
             import requests
             # Try both localhost and the configured endpoint
-            for url in ["http://127.0.0.1:11434/api/tags", "http://192.168.1.110:11434/api/tags"]:
+            for url in ["http://127.0.0.1:11434/api/tags", "http://localhost:11434/api/tags"]:
                 try:
                     response = requests.get(url, timeout=5)
                     if response.status_code == 200:
@@ -339,7 +339,7 @@ class TestLLMIntegrationEndToEnd(unittest.TestCase):
         
         # Initialize real LLM service with correct endpoint
         service = initialize_llm_service(
-            ollama_url="http://192.168.1.110:11434",
+            ollama_url="http://localhost:11434",
             model_name="gpt-oss:20b"
         )
         

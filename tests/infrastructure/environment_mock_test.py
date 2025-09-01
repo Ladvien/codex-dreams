@@ -26,7 +26,7 @@ def test_environment_config_validation():
     # Test with all required variables
     env_vars = {
         "POSTGRES_DB_URL": "postgresql://test:test@host:5432/db",
-        "OLLAMA_URL": "http://192.168.1.110:11434",
+        "OLLAMA_URL": "http://localhost:11434",
         "OLLAMA_MODEL": "gpt-oss:20b",
         "EMBEDDING_MODEL": "nomic-embed-text",
         "DUCKDB_PATH": "/tmp/test.duckdb",
@@ -36,7 +36,7 @@ def test_environment_config_validation():
 
     with patch.dict(os.environ, env_vars, clear=True):
         config = EnvironmentConfig()
-        assert config.get("OLLAMA_URL") == "http://192.168.1.110:11434"
+        assert config.get("OLLAMA_URL") == "http://localhost:11434"
         assert config.get("MAX_DB_CONNECTIONS") == "160"
 
 
@@ -92,8 +92,8 @@ def test_postgres_connection_mock(mock_connect):
 
     # Test environment config
     env_vars = {
-        "POSTGRES_DB_URL": "postgresql://codex_user:pass@192.168.1.104:5432/codex_db",
-        "OLLAMA_URL": "http://192.168.1.110:11434",
+        "POSTGRES_DB_URL": "postgresql://codex_user:pass@localhost:5432/codex_db",
+        "OLLAMA_URL": "http://localhost:11434",
         "OLLAMA_MODEL": "gpt-oss:20b",
         "EMBEDDING_MODEL": "nomic-embed-text",
         "DUCKDB_PATH": "/tmp/test.duckdb",
@@ -110,7 +110,7 @@ def test_postgres_connection_mock(mock_connect):
         # Verify connection was called with correct URL
         mock_connect.assert_called_once()
         args, kwargs = mock_connect.call_args
-        assert args[0] == "postgresql://codex_user:pass@192.168.1.104:5432/codex_db"
+        assert args[0] == "postgresql://codex_user:pass@localhost:5432/codex_db"
         assert "cursor_factory" in kwargs
 
         assert result["status"] == "connected"
@@ -178,7 +178,7 @@ def test_ollama_connection_mock(mock_post, mock_get):
     mock_post.return_value.raise_for_status = Mock()
 
     env_vars = {
-        "OLLAMA_URL": "http://192.168.1.110:11434",
+        "OLLAMA_URL": "http://localhost:11434",
         "OLLAMA_MODEL": "gpt-oss:20b",
         "EMBEDDING_MODEL": "nomic-embed-text",
         "POSTGRES_DB_URL": "postgresql://test:test@host:5432/db",
@@ -194,7 +194,7 @@ def test_ollama_connection_mock(mock_post, mock_get):
         # Test connection
         result = ollama.test_connection()
         assert result["status"] == "connected"
-        assert result["base_url"] == "http://192.168.1.110:11434"
+        assert result["base_url"] == "http://localhost:11434"
         assert "gpt-oss:20b" in result["available_models"]
 
         # Test model availability
@@ -219,7 +219,7 @@ def test_ollama_embeddings_mock(mock_post):
     mock_post.return_value.raise_for_status = Mock()
 
     env_vars = {
-        "OLLAMA_URL": "http://192.168.1.110:11434",
+        "OLLAMA_URL": "http://localhost:11434",
         "EMBEDDING_MODEL": "nomic-embed-text",
         "POSTGRES_DB_URL": "postgresql://test:test@host:5432/db",
         "OLLAMA_MODEL": "gpt-oss:20b",
@@ -243,13 +243,13 @@ def test_ollama_embeddings_mock(mock_post):
 def test_environment_variables_validation():
     """Test specific environment variable validation from BMP-001 acceptance criteria."""
     env_vars = {
-        "POSTGRES_DB_URL": "postgresql://codex_user:pass@192.168.1.104:5432/codex_db",
-        "OLLAMA_URL": "http://192.168.1.110:11434",
+        "POSTGRES_DB_URL": "postgresql://codex_user:pass@localhost:5432/codex_db",
+        "OLLAMA_URL": "http://localhost:11434",
         "OLLAMA_MODEL": "gpt-oss:20b",
         "EMBEDDING_MODEL": "nomic-embed-text",
         "DUCKDB_PATH": "/Users/test/biological_memory/dbs/memory.duckdb",
         "MAX_DB_CONNECTIONS": "160",
-        "TEST_DATABASE_URL": "postgresql://test_user:test_pass@192.168.1.104:5432/test_db",
+        "TEST_DATABASE_URL": "postgresql://test_user:test_pass@localhost:5432/test_db",
     }
 
     with patch.dict(os.environ, env_vars, clear=True):
@@ -257,7 +257,7 @@ def test_environment_variables_validation():
 
         # Test BMP-001 acceptance criteria
         assert config.get("POSTGRES_DB_URL") is not None
-        assert config.get("OLLAMA_URL") == "http://192.168.1.110:11434"
+        assert config.get("OLLAMA_URL") == "http://localhost:11434"
         assert config.get("OLLAMA_MODEL") == "gpt-oss:20b"
         assert config.get("EMBEDDING_MODEL") == "nomic-embed-text"
         assert config.get("DUCKDB_PATH") is not None
@@ -265,7 +265,7 @@ def test_environment_variables_validation():
 
         # Test PostgreSQL URL format
         postgres_url = config.get("POSTGRES_DB_URL")
-        assert "192.168.1.104:5432" in postgres_url
+        assert "localhost:5432" in postgres_url
 
         # Test MAX_DB_CONNECTIONS
         max_connections = config.get("MAX_DB_CONNECTIONS")

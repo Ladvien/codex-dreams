@@ -106,7 +106,7 @@ class DatabasePathValidator:
                 issues.append("orchestrate_biological_memory.py should use OLLAMA_URL environment variable")
                 
             # Should not have hardcoded localhost fallback for production
-            if "192.168.1.110" in content:
+            if "localhost" in content:
                 issues.append("orchestrate_biological_memory.py contains hardcoded IP address")
         
         return issues

@@ -37,7 +37,7 @@ class TestStoryDB003Configuration(unittest.TestCase):
         self.project_root = Path(__file__).parent.parent.parent
         
         # Ensure test environment variables
-        os.environ.setdefault('OLLAMA_URL', 'http://192.168.1.110:11434')
+        os.environ.setdefault('OLLAMA_URL', 'http://localhost:11434')
         os.environ.setdefault('POSTGRES_DB_URL', 'postgresql://user:pass@localhost:5432/test')
         os.environ.setdefault('TEST_DATABASE_URL', 'postgresql://user:pass@localhost:5432/test_db')
         
@@ -171,7 +171,7 @@ class TestStoryDB003Configuration(unittest.TestCase):
         """Test that dbt debug reports configuration as valid"""
         # Set environment variables for the test
         env = os.environ.copy()
-        env['OLLAMA_URL'] = 'http://192.168.1.110:11434'
+        env['OLLAMA_URL'] = 'http://localhost:11434'
         env['POSTGRES_DB_URL'] = 'postgresql://test:test@localhost:5432/test'
         
         # Run dbt debug and capture output
@@ -214,7 +214,7 @@ class TestStoryDB003Configuration(unittest.TestCase):
         """Test that Ollama endpoint is accessible"""
         import requests
         
-        ollama_url = os.getenv('OLLAMA_URL', 'http://192.168.1.110:11434')
+        ollama_url = os.getenv('OLLAMA_URL', 'http://localhost:11434')
         
         try:
             response = requests.get(f"{ollama_url}/api/tags", timeout=10)

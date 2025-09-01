@@ -179,7 +179,7 @@ class TestDuckDBPerformanceConfig(unittest.TestCase):
             conn = duckdb.connect(':memory:')
             # This would typically fail in test environment, but we're testing the SQL syntax
             postgres_sql = """
-            ATTACH 'dbname=codex_db host=192.168.1.104 user=test password=test' AS codex_db (TYPE postgres);
+            ATTACH 'dbname=codex_db host=localhost user=test password=test' AS codex_db (TYPE postgres);
             """
             # We can't actually execute this without a real PostgreSQL server,
             # but we can verify the SQL is syntactically correct

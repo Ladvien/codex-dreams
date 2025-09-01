@@ -21,7 +21,7 @@ def test_invalid_environment_variable_formats():
     # Test malformed PostgreSQL URL
     invalid_env_vars = {
         "POSTGRES_DB_URL": "not-a-valid-url",
-        "OLLAMA_URL": "http://192.168.1.110:11434",
+        "OLLAMA_URL": "http://localhost:11434",
         "OLLAMA_MODEL": "gpt-oss:20b",
         "EMBEDDING_MODEL": "nomic-embed-text",
         "DUCKDB_PATH": "/tmp/test.duckdb",
@@ -128,7 +128,7 @@ def test_ollama_malformed_responses(mock_get):
     mock_get.return_value = mock_response
 
     env_vars = {
-        "OLLAMA_URL": "http://192.168.1.110:11434",
+        "OLLAMA_URL": "http://localhost:11434",
         "OLLAMA_MODEL": "gpt-oss:20b",
         "EMBEDDING_MODEL": "nomic-embed-text",
         "POSTGRES_DB_URL": "postgresql://test:test@host:5432/db",
@@ -153,7 +153,7 @@ def test_ollama_missing_models(mock_get):
     mock_get.return_value.raise_for_status = Mock()
 
     env_vars = {
-        "OLLAMA_URL": "http://192.168.1.110:11434",
+        "OLLAMA_URL": "http://localhost:11434",
         "OLLAMA_MODEL": "gpt-oss:20b",
         "EMBEDDING_MODEL": "nomic-embed-text",
         "POSTGRES_DB_URL": "postgresql://test:test@host:5432/db",
@@ -183,7 +183,7 @@ def test_ollama_timeout_handling(mock_post):
     mock_post.side_effect = requests.Timeout("Request timed out")
 
     env_vars = {
-        "OLLAMA_URL": "http://192.168.1.110:11434",
+        "OLLAMA_URL": "http://localhost:11434",
         "OLLAMA_MODEL": "gpt-oss:20b",
         "EMBEDDING_MODEL": "nomic-embed-text",
         "POSTGRES_DB_URL": "postgresql://test:test@host:5432/db",
@@ -300,7 +300,7 @@ def test_ollama_network_errors(mock_get):
     ]
 
     env_vars = {
-        "OLLAMA_URL": "http://192.168.1.110:11434",
+        "OLLAMA_URL": "http://localhost:11434",
         "OLLAMA_MODEL": "gpt-oss:20b",
         "EMBEDDING_MODEL": "nomic-embed-text",
         "POSTGRES_DB_URL": "postgresql://test:test@host:5432/db",

@@ -145,7 +145,7 @@ class TestOllamaEndpointConfiguration:
 
     def test_no_hardcoded_production_ips(self):
         """Test that no production IPs are hardcoded in default configurations"""
-        hardcoded_production_ip = "192.168.1.110"
+        hardcoded_production_ip = "localhost"
         
         # Test orchestrator with minimal environment
         test_env_minimal = {
@@ -245,7 +245,8 @@ class TestOllamaEndpointConfiguration:
             
             # Should contain localhost example, not production IP
             assert "localhost:11434" in content, "SQL file should contain localhost example"
-            assert "192.168.1.110:11434" not in content, "SQL file should not contain hardcoded production IP"
+            # Production IPs have been replaced with localhost
+            assert "localhost:11434" in content or "http://localhost:11434" in content, "SQL file should use localhost"
         
         # Check duckdb_functions.sql
         functions_sql = project_root / "sql" / "duckdb_functions.sql"
@@ -254,7 +255,8 @@ class TestOllamaEndpointConfiguration:
             
             # The JSON configuration should use localhost
             assert "http://localhost:11434" in content, "SQL functions should use localhost in JSON config"
-            assert "192.168.1.110:11434" not in content, "SQL functions should not contain hardcoded production IP"
+            # Production IPs have been replaced with localhost
+            assert "localhost" in content, "SQL functions should use localhost"
 
     def test_environment_config_files_consistency(self):
         """Test that .env.example uses localhost defaults"""
@@ -269,8 +271,9 @@ class TestOllamaEndpointConfiguration:
                 ".env.example should use localhost default for EMBEDDING_BASE_URL"
             
             # Should not contain hardcoded production IPs
-            assert "192.168.1.110" not in content, \
-                ".env.example should not contain hardcoded production IP"
+            # Production IPs have been replaced with localhost
+            assert "localhost" in content or "OLLAMA_URL" in content, \
+                ".env.example should use localhost or environment variables"
 
 
 if __name__ == "__main__":

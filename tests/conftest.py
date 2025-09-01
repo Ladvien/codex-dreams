@@ -11,6 +11,13 @@ from unittest.mock import Mock, patch
 from typing import Generator, Dict, Any
 import json
 from datetime import datetime, timezone
+from pathlib import Path
+
+# Load test environment file if it exists
+test_env_path = Path(__file__).parent.parent / '.env.test'
+if test_env_path.exists():
+    from dotenv import load_dotenv
+    load_dotenv(test_env_path)
 
 
 @pytest.fixture(scope="session")
@@ -18,14 +25,14 @@ def test_env_vars() -> Dict[str, str]:
     """Load test environment variables."""
     return {
         "POSTGRES_DB_URL": os.getenv(
-            "TEST_DATABASE_URL", "postgresql://test:test@localhost:5432/test_biological_memory"
+            "TEST_DATABASE_URL", "postgresql://codex_user:test_password@localhost:5432/test_codex_db"
         ),
-        "OLLAMA_URL": "http://localhost:11434",
-        "OLLAMA_MODEL": "gpt-oss:20b",
-        "EMBEDDING_MODEL": "nomic-embed-text",
-        "DUCKDB_PATH": "/tmp/test_memory.duckdb",
+        "OLLAMA_URL": os.getenv("OLLAMA_URL", "http://localhost:11434"),
+        "OLLAMA_MODEL": os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b"),
+        "EMBEDDING_MODEL": os.getenv("EMBEDDING_MODEL", "nomic-embed-text"),
+        "DUCKDB_PATH": os.getenv("DUCKDB_PATH", "./test_biological_memory.duckdb"),
         "MAX_DB_CONNECTIONS": "160",
-        "OLLAMA_TIMEOUT": "300",
+        "OLLAMA_TIMEOUT": "30",
     }
 
 

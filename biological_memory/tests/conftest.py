@@ -23,7 +23,14 @@ import shutil
 import logging
 from datetime import datetime, timedelta
 import uuid
+import os
 
+# Load test environment file if it exists
+test_env_path = Path(__file__).parent.parent.parent / '.env.test'
+if test_env_path.exists():
+    from dotenv import load_dotenv
+    load_dotenv(test_env_path)
+    
 # Setup logging for test diagnostics
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
