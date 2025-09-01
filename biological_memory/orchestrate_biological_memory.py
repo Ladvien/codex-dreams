@@ -12,9 +12,11 @@ import threading
 import signal
 import sys
 import os
+import shlex
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import duckdb
 import schedule
 
@@ -124,6 +126,9 @@ class BiologicalMemoryOrchestrator:
             'last_homeostasis': None
         }
         
+        # Security: Initialize command validation patterns
+        self._init_command_security()
+        
         self.logger.info("Biological Memory Orchestrator initialized")
 
     def _validate_environment_variables(self):
@@ -155,6 +160,122 @@ class BiologicalMemoryOrchestrator:
                     print(f"Created directory: {duckdb_parent}")
                 except Exception as e:
                     print(f"Warning: Could not create DuckDB directory {duckdb_parent}: {e}")
+    
+    def _init_command_security(self):
+        """Initialize security patterns for command validation"""
+        # Allowlist of safe dbt commands and their permitted arguments
+        self.allowed_dbt_commands = {
+            'run': ['--select', '--exclude', '--quiet', '--full-refresh', '--vars'],
+            'run-operation': ['--quiet', '--vars'],
+            'test': ['--select', '--exclude', '--quiet'],
+            'compile': ['--select', '--exclude', '--quiet'],
+            'debug': ['--quiet'],
+            'deps': [],
+            'clean': [],
+        }
+        
+        # Allowlist patterns for safe argument values
+        self.safe_argument_patterns = {
+            '--select': re.compile(r'^[a-zA-Z0-9_:+.-]+$'),  # Model/tag names
+            '--exclude': re.compile(r'^[a-zA-Z0-9_:+.-]+$'),  # Model/tag names
+            '--vars': re.compile(r'^[a-zA-Z0-9_:{},"\s-]+$'),  # JSON-like vars
+            'operation_name': re.compile(r'^[a-zA-Z0-9_]+$'),  # Operation names
+        }
+        
+        # Dangerous characters that should never appear in commands
+        self.dangerous_chars = ['&', '|', ';', '$', '`', '>', '<', '(', ')', '{', '}', '[', ']']
+        
+    def _validate_dbt_command(self, command: str) -> bool:
+        """
+        Validate that a dbt command is safe to execute.
+        Returns True if safe, False if potentially malicious.
+        """
+        try:
+            # Parse command into components
+            parts = shlex.split(command)
+            
+            if len(parts) < 2 or parts[0] != 'dbt':
+                self.logger.error(f"Invalid command format: {command}")
+                return False
+            
+            dbt_subcommand = parts[1]
+            
+            # Check if subcommand is in allowlist
+            if dbt_subcommand not in self.allowed_dbt_commands:
+                self.logger.error(f"Disallowed dbt subcommand: {dbt_subcommand}")
+                return False
+            
+            # Validate all arguments
+            allowed_args = self.allowed_dbt_commands[dbt_subcommand]
+            i = 2
+            while i < len(parts):
+                arg = parts[i]
+                
+                # Handle run-operation specially (operation name follows subcommand)
+                if dbt_subcommand == 'run-operation' and i == 2:
+                    if not self.safe_argument_patterns['operation_name'].match(arg):
+                        self.logger.error(f"Invalid operation name: {arg}")
+                        return False
+                    i += 1
+                    continue
+                
+                # Check if argument is in allowlist
+                if arg.startswith('--'):
+                    if arg not in allowed_args:
+                        self.logger.error(f"Disallowed argument: {arg}")
+                        return False
+                    
+                    # Validate argument value if present
+                    if i + 1 < len(parts) and not parts[i + 1].startswith('--'):
+                        arg_value = parts[i + 1]
+                        pattern = self.safe_argument_patterns.get(arg)
+                        if pattern and not pattern.match(arg_value):
+                            self.logger.error(f"Invalid value for {arg}: {arg_value}")
+                            return False
+                        i += 2
+                    else:
+                        i += 1
+                else:
+                    self.logger.error(f"Unexpected argument format: {arg}")
+                    return False
+            
+            # Check for dangerous characters in entire command
+            for char in self.dangerous_chars:
+                if char in command:
+                    self.logger.error(f"Dangerous character '{char}' found in command: {command}")
+                    return False
+            
+            return True
+            
+        except ValueError as e:
+            self.logger.error(f"Command parsing failed: {e}")
+            return False
+        except Exception as e:
+            self.logger.error(f"Command validation error: {e}")
+            return False
+    
+    def _sanitize_command_for_logging(self, command: str) -> str:
+        """
+        Sanitize command for safe logging (remove potential injection attempts).
+        """
+        # Replace dangerous characters with [FILTERED]
+        sanitized = command
+        for char in self.dangerous_chars:
+            if char in sanitized:
+                sanitized = sanitized.replace(char, '[FILTERED]')
+        return sanitized
+    
+    def _build_safe_command_list(self, dbt_command: str) -> List[str]:
+        """
+        Build a safe command list for subprocess execution without shell=True.
+        """
+        # Parse the dbt command into components
+        dbt_parts = shlex.split(dbt_command)
+        
+        # Build the full command as a list
+        command_list = ['bash', '-c', f'cd "{self.base_path}" && {" ".join(dbt_parts)}']
+        
+        return command_list
 
     def _init_llm_service(self):
         """Initialize LLM integration service with Ollama"""
@@ -271,24 +392,32 @@ class BiologicalMemoryOrchestrator:
     def run_dbt_command(self, command: str, log_file: str, timeout: int = 300) -> bool:
         """
         Execute dbt command with comprehensive error handling and recovery - BMP-013 Enhanced
+        SECURITY: Fixed shell injection vulnerability by removing shell=True and adding validation
         """
         start_time = datetime.now()
         log_path = self.log_dir / log_file
         operation_id = f"dbt_{int(time.time())}"
         
+        # SECURITY: Validate command before execution
+        if not self._validate_dbt_command(command):
+            self.logger.error(f"Security: Rejected potentially malicious command: {self._sanitize_command_for_logging(command)}")
+            return False
+        
         def execute_dbt():
-            # Change to biological memory directory
-            full_command = f"cd {self.base_path} && {command}"
+            # SECURITY: Build safe command list instead of using shell=True
+            command_list = self._build_safe_command_list(command)
             
             # Apply timeout from environment or default
             effective_timeout = min(timeout, self.ollama_timeout_seconds) if 'llm' in command else timeout
             
+            # SECURITY: Execute without shell=True to prevent injection
             result = subprocess.run(
-                full_command,
-                shell=True,
+                command_list,
+                shell=False,  # SECURITY: Prevents shell injection
                 capture_output=True,
                 text=True,
-                timeout=effective_timeout
+                timeout=effective_timeout,
+                cwd=None  # Working directory handled in command_list
             )
             return result
         
