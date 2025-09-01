@@ -7,7 +7,7 @@
   Key Features:
   - Hippocampal replay simulation with pattern completion
   - LLM-based semantic associations and causal relationships  
-  - Hebbian learning (1.1x strengthening factor)
+  - Hebbian learning with STDP (0.1 learning rate, biologically accurate)
   - Competitive forgetting (0.8x weak, 1.2x strong memories)
   - Cortical transfer for memories with strength >{{ var('stability_threshold') }}
   - Semantic gist generation for long-term neocortical storage
@@ -96,8 +96,11 @@ replay_cycles AS (
             END::JSON
         ) as replay_associations,
         
-        -- Hebbian learning: strengthen co-activated patterns (1.1x factor) - NULL SAFE
-        COALESCE(hebbian_potential, 0.1) * {{ var('strong_memory_boost_factor') }} AS strengthened_weight,
+        -- Hebbian learning: strengthen co-activated patterns using proper Hebbian formula - NULL SAFE
+        -- Formula: new_weight = old_weight + learning_rate * (pre_activity * post_activity - old_weight)
+        -- Implements spike-timing dependent plasticity (STDP) with weight normalization
+        COALESCE(hebbian_potential, 0.1) * (1.0 + {{ var('hebbian_learning_rate') }} * 
+            (COALESCE(stm_strength, 0.1) * COALESCE(co_activation_count, 1.0) / 10.0)) AS strengthened_weight,
         
         -- Competitive forgetting: Apply differential strengthening - NULL SAFE
         CASE 
