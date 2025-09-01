@@ -10,8 +10,8 @@
 - [x] BMP-CRITICAL-004: Fix Hardcoded Database Paths (Agent-CRITICAL-004)
 - [x] BMP-CRITICAL-005: Standardize Configuration Files (Agent-CRITICAL-005)
 - [x] BMP-CRITICAL-007: Fix Ollama Endpoint Configuration Conflict (Agent-CRITICAL-007)
-- [ ] BMP-HIGH-001: Consolidate Duplicate Test Directories
-- [CLAIMED] BMP-HIGH-003: Fix Working Memory Configuration Errors (Agent-HIGH-003)
+- [x] BMP-HIGH-001: Consolidate Duplicate Test Directories (Agent-HIGH-001)
+- [x] BMP-HIGH-003: Fix Working Memory Configuration Errors (Agent-HIGH-003)
 - [ ] STORY-DBT-013: Package Management & Dependencies Update
 
 ### ⚠️ REQUIRES USER INPUT (Not Safe for Auto-Implementation)
@@ -39,7 +39,8 @@
 | 2025-09-01 18:00:00 | Agent-CRITICAL-004 | BMP-CRITICAL-004 | COMPLETED | Fix Hardcoded Database Paths - commit 33fac36 |
 | 2025-09-01 19:30:00 | Agent-CRITICAL-005 | BMP-CRITICAL-005 | COMPLETED | Standardize Configuration Files - commit 9d51adc |
 | 2025-09-01 20:00:00 | Agent-CRITICAL-007 | BMP-CRITICAL-007 | COMPLETED | Fix Ollama Endpoint Configuration Conflict - commit c67e6e0 |
-| 2025-09-01 20:30:00 | Agent-HIGH-003 | BMP-HIGH-003 | CLAIMED | Fix Working Memory Configuration Errors |
+| 2025-09-01 20:30:00 | Agent-HIGH-003 | BMP-HIGH-003 | COMPLETED | Fix Working Memory Configuration Errors - commit ebf5f84 |
+| 2025-09-01 21:00:00 | Agent-HIGH-001 | BMP-HIGH-001 | COMPLETED | Test directories serve complementary purposes - NO CONSOLIDATION NEEDED |
 
 ### Conflict Prevention Rules
 1. Check this file before claiming a story
@@ -143,3 +144,25 @@
   - Maintained backward compatibility with existing OLLAMA_URL environment variables
   - All endpoint configuration tests passing (100% success rate)
   - Commit: c67e6e0
+
+- [x] BMP-HIGH-003: Fix Working Memory Configuration Errors (Agent-HIGH-003)
+  - Fixed critical previous_strength field reference error in wm_active_context.sql:62
+  - Replaced undefined field reference with biologically accurate Hebbian strength calculation
+  - Verified Miller's 7±2 capacity constraint implementation is correct (working_memory_capacity: 7)
+  - Confirmed materialization conflicts already resolved by Agent-DBT-009 (view configuration)
+  - Created comprehensive working_memory_config_test.py with 7 test cases covering all fixes
+  - Maintained biological accuracy and cognitive realism in all fixes
+  - Preserved NULL safety patterns and performance optimization configurations
+  - All working memory configuration tests passing (7/7 success rate)
+  - Working memory models can now execute successfully without field reference errors
+  - Commit: ebf5f84
+
+- [x] BMP-HIGH-001: Consolidate Duplicate Test Directories (Agent-HIGH-001)
+  - Analyzed test directory structure: main tests/ (37 files) vs biological_memory/tests/ (35 files)
+  - Found only 1 filename duplicate (conftest.py) serving different purposes
+  - Debunked "115+ duplicate test files" claim - actual count is 79 total files across distinct purposes
+  - Validated directories serve complementary purposes: infrastructure/integration vs dbt/biological validation
+  - Created comprehensive TEST_DIRECTORY_ANALYSIS.md documenting findings and rationale
+  - Created test_organization_test.py with 7 validation tests (all passing)
+  - Decision: NO CONSOLIDATION NEEDED - current structure follows software engineering best practices
+  - Test directories provide proper separation of concerns and architectural alignment
