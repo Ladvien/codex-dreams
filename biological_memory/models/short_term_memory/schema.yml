@@ -1,0 +1,327 @@
+version: 2
+
+models:
+  - name: stm_hierarchical_episodes
+    description: >
+      Short-Term Memory Hierarchical Episodes - Implements biologically accurate
+      hierarchical episodic memory with Miller's Law enforcement (7±2 capacity),
+      episode clustering, and temporal binding. Models the critical WM→STM→CONSOLIDATION→LTM
+      memory hierarchy bridge with proper STM organization.
+    
+    columns:
+      - name: id
+        description: "Unique identifier for the hierarchical episode memory"
+        tests:
+          - not_null
+          - unique
+
+      - name: content
+        description: "Raw textual content of the memory episode"
+        tests:
+          - not_null
+
+      - name: timestamp
+        description: "Timestamp of the episode occurrence"
+        tests:
+          - not_null
+
+      - name: metadata
+        description: "Metadata array containing concepts and extracted information"
+        tests:
+          - not_null
+
+      - name: level_0_goal
+        description: "High-level goal classification (e.g., Product Launch Strategy, Communication)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: 
+                - 'Product Launch Strategy'
+                - 'Communication and Collaboration'  
+                - 'Financial Planning and Management'
+                - 'Project Management and Execution'
+                - 'Client Relations and Service'
+                - 'Operations and Maintenance'
+                - 'General Task Processing'
+
+      - name: level_1_tasks
+        description: "Mid-level tasks extracted from content as JSON array"
+        tests:
+          - not_null
+
+      - name: atomic_actions
+        description: "Atomic actions extracted from content as JSON array"
+        tests:
+          - not_null
+
+      - name: episode_cluster_name
+        description: "Name of the episode cluster this memory belongs to"
+        tests:
+          - not_null
+
+      - name: episode_cluster_id
+        description: "Numeric ID of the episode cluster"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+      - name: episode_sequence_position
+        description: "Position within the episode sequence"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+
+      - name: episode_coherence
+        description: "Quality of episode coherence (high/medium/low_coherence)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['high_coherence', 'medium_coherence', 'low_coherence']
+
+      - name: temporal_gap_seconds
+        description: "Time gap in seconds between this and previous related episode"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+      - name: capacity_status
+        description: "Miller's Law capacity status (core/standard/extended/exceeds_capacity)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['core_capacity', 'standard_capacity', 'extended_capacity', 'exceeds_capacity']
+
+      - name: stm_admission_rank
+        description: "Rank for STM admission based on biological criteria"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 11  # 7+2+2 buffer
+
+      - name: stm_competition_score
+        description: "Competition score for STM resource allocation"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: proactive_interference_strength
+        description: "Strength of proactive interference from older memories"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: retroactive_interference_strength
+        description: "Strength of retroactive interference from newer memories" 
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: episode_competition_score
+        description: "Competition score within episode cluster"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: interference_adjusted_strength
+        description: "Activation strength adjusted for interference effects"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: spatial_extraction
+        description: "Spatial-temporal context extraction as JSON"
+        tests:
+          - not_null
+
+      - name: phantom_objects
+        description: "Episode-aware phantom objects with affordances as JSON"
+        tests:
+          - not_null
+
+      - name: stm_strength
+        description: "Calculated STM strength with interference resolution"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: hebbian_potential
+        description: "Co-activation count for Hebbian learning potential"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+      - name: ready_for_consolidation
+        description: "Boolean flag indicating readiness for consolidation"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [true, false]
+
+      - name: activation_strength
+        description: "Current activation strength (interference adjusted)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: recency_factor
+        description: "Calculated recency factor with episode cluster effects"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: emotional_salience
+        description: "Enhanced emotional salience with episodic context"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: co_activation_count
+        description: "Count of co-activations within and across episode clusters"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+      - name: episodic_memory_quality
+        description: "Quality classification of episodic memory formation"
+        tests:
+          - not_null
+          - accepted_values:
+              values: 
+                - 'high_fidelity_episodic'
+                - 'medium_fidelity_episodic'
+                - 'fragmented_episodic'
+                - 'semantic_dominant'
+
+      - name: processed_at
+        description: "Timestamp when this record was processed"
+        tests:
+          - not_null
+
+      - name: model_version
+        description: "Version identifier of the model that processed this record"
+        tests:
+          - not_null
+
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "stm_admission_rank <= 11"
+          name: stm_capacity_limit_check
+
+      - dbt_utils.expression_is_true:
+          expression: "capacity_status != 'exceeds_capacity' OR stm_admission_rank <= 9"
+          name: millers_law_enforcement
+
+  - name: consolidating_memories
+    description: >
+      Short-Term Memory Consolidating Memories - Handles memories in transition 
+      from working to long-term storage. Implements biological consolidation 
+      processes with synaptic homeostasis and interference calculations.
+      Materialized incrementally for efficient processing.
+
+    columns:
+      - name: memory_id
+        description: "Unique identifier for the consolidating memory"
+        tests:
+          - not_null
+          - unique
+
+      - name: content
+        description: "Raw textual content of the memory"
+        tests:
+          - not_null
+
+      - name: concepts
+        description: "Array of extracted concepts from the memory"
+        tests:
+          - not_null
+
+      - name: activation_strength
+        description: "Current activation strength of the memory"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: consolidation_priority
+        description: "Calculated priority score for consolidation processing"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: homeostatic_strength
+        description: "Synaptic homeostasis adjusted strength"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: interference_score
+        description: "Calculated interference score from similar memories"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: consolidation_batch
+        description: "Batch identifier for consolidation processing"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+
+      - name: hebbian_strength
+        description: "Hebbian learning adjusted strength"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: created_at
+        description: "Original creation timestamp of the memory"
+        tests:
+          - not_null
+
+      - name: last_accessed_at
+        description: "Most recent access timestamp"
+        tests:
+          - not_null
+
+      - name: processed_at
+        description: "Timestamp when consolidation processing occurred"
+        tests:
+          - not_null
+
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "consolidation_priority >= {{ var('consolidation_threshold') }}"
+          name: consolidation_threshold_check

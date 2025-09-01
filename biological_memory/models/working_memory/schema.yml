@@ -1,0 +1,117 @@
+version: 2
+
+models:
+  - name: wm_active_context
+    description: >
+      Working Memory Active Context - Implements the biological working memory system
+      with Miller's Rule (7±2 capacity limit). Manages actively processed memories
+      with high-speed access and frequent updates. Materialized as VIEW for real-time
+      access to current working memory state.
+    
+    columns:
+      - name: memory_id
+        description: "Unique identifier for the memory entry"
+        tests:
+          - not_null
+          - unique
+
+      - name: content
+        description: "Raw textual content of the memory"
+        tests:
+          - not_null
+
+      - name: concepts
+        description: "Array of extracted concepts and keywords from the memory content"
+        tests:
+          - not_null
+
+      - name: activation_strength
+        description: "Current activation strength (0.0-1.0), representing how active this memory is"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: created_at
+        description: "Timestamp when the memory was originally created"
+        tests:
+          - not_null
+
+      - name: last_accessed_at
+        description: "Timestamp of the most recent access to this memory"
+        tests:
+          - not_null
+
+      - name: access_count
+        description: "Number of times this memory has been accessed"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              severity: warn
+
+      - name: memory_type
+        description: "Type of memory, should be 'working_memory' for this model"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['working_memory']
+
+      - name: age_seconds
+        description: "Age of the memory in seconds since creation"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              severity: warn
+
+      - name: recency_score
+        description: "Calculated recency score (0.0-1.0) based on last access time"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: frequency_score
+        description: "Calculated frequency score (0.0-1.0) based on access count"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: memory_rank
+        description: "Ranking within working memory based on activation and recency"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 9  # Miller's Rule: 7±2
+
+      - name: hebbian_strength
+        description: "Calculated Hebbian learning strength for synaptic connections"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: processed_at
+        description: "Timestamp when this record was last processed by the model"
+        tests:
+          - not_null
+
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "memory_rank <= 9"  # Miller's Rule enforcement
+          name: working_memory_capacity_limit
+
+      - dbt_utils.expression_is_true:
+          expression: "activation_strength >= {{ var('plasticity_threshold') }}"
+          name: working_memory_activation_threshold
+
+      - dbt_utils.expression_is_true:
+          expression: "access_count >= 2"
+          name: working_memory_access_requirement

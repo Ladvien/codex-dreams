@@ -1,0 +1,220 @@
+version: 2
+
+models:
+  - name: stable_memories
+    description: >
+      Long-Term Memory Stable Memories - Stores consolidated memories that have 
+      proven persistent and important. Materialized as TABLE with proper indexing 
+      for fast retrieval. Optimized for complex queries and long-term analysis
+      with semantic enrichment and network analysis capabilities.
+
+    columns:
+      - name: memory_id
+        description: "Unique identifier for the stable long-term memory"
+        tests:
+          - not_null
+          - unique
+
+      - name: content
+        description: "Original content of the stable memory"
+        tests:
+          - not_null
+
+      - name: concepts
+        description: "Array of concepts extracted from memory content"
+        tests:
+          - not_null
+
+      - name: activation_strength
+        description: "Current activation strength of the stable memory"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: created_at
+        description: "Original creation timestamp of the memory"
+        tests:
+          - not_null
+
+      - name: last_accessed_at
+        description: "Most recent access timestamp"
+        tests:
+          - not_null
+
+      - name: access_count
+        description: "Total number of accesses to this memory"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+      - name: memory_type
+        description: "Type classification, should be 'long_term_memory'"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['long_term_memory']
+
+      - name: recency_score
+        description: "Calculated recency score for this stable memory"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: frequency_score
+        description: "Calculated frequency score based on access patterns"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: hebbian_strength
+        description: "Hebbian learning strength for synaptic connections"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: consolidation_priority
+        description: "Priority score from original consolidation process"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: consolidated_at
+        description: "Timestamp when memory was first consolidated"
+        tests:
+          - not_null
+
+      - name: semantic_associations
+        description: "Count of semantic associations with other memories"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+      - name: avg_association_strength
+        description: "Average strength of semantic associations"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: max_association_strength
+        description: "Maximum strength among all associations"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: network_centrality
+        description: "Centrality score in the semantic knowledge network"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: clustering_coefficient
+        description: "Clustering coefficient in the semantic network"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: access_rate_per_hour
+        description: "Calculated access rate per hour since creation"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+
+      - name: stability_score
+        description: "Calculated long-term stability score"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: importance_score
+        description: "Memory importance based on network effects"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: decay_resistance
+        description: "Calculated resistance to memory decay over time"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: last_processed_at
+        description: "Timestamp of last processing by this model"
+        tests:
+          - not_null
+
+      - name: memory_quality
+        description: "Quality classification of the stable memory"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 'high_quality'
+                - 'medium_quality' 
+                - 'low_quality'
+                - 'unstable'
+
+      - name: consolidation_status
+        description: "Current consolidation status in LTM"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 'fully_consolidated'
+                - 'partially_consolidated'
+                - 'consolidating'
+
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "activation_strength > {{ var('long_term_memory_threshold') }}"
+          name: ltm_activation_threshold
+
+      - dbt_utils.expression_is_true:
+          expression: "consolidation_priority > {{ var('consolidation_threshold') }}"
+          name: ltm_consolidation_threshold
+
+      - dbt_utils.expression_is_true:
+          expression: "decay_resistance > 0.1"
+          name: ltm_decay_resistance_minimum
+
+      - dbt_utils.expression_is_true:
+          expression: "stability_score > 0.3"
+          name: ltm_stability_minimum
+
+      - dbt_utils.expression_is_true:
+          expression: "memory_quality = 'unstable' OR decay_resistance > 0.2"
+          name: ltm_quality_consistency_check
+
+      - dbt_utils.expression_is_true:
+          expression: "consolidation_status = 'consolidating' OR decay_resistance > {{ var('strong_connection_threshold') }}"
+          name: ltm_consolidation_status_consistency
+
+      - dbt_utils.expression_is_true:
+          expression: "(consolidated_at <= created_at) IS NOT TRUE"
+          name: ltm_temporal_consistency

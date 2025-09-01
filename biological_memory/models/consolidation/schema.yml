@@ -1,0 +1,202 @@
+version: 2
+
+models:
+  - name: memory_replay
+    description: >
+      Memory Consolidation with Hippocampal Replay - Implements biologically 
+      accurate memory consolidation via hippocampal replay cycles. Simulates 
+      pattern completion, Hebbian strengthening, and cortical transfer.
+      Handles the transition from hippocampal to neocortical storage systems.
+
+    columns:
+      - name: id
+        description: "Unique identifier for the consolidated memory"
+        tests:
+          - not_null
+          - unique
+
+      - name: content
+        description: "Original memory content that underwent consolidation"
+        tests:
+          - not_null
+
+      - name: level_0_goal
+        description: "High-level goal classification extracted during STM processing"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 'Product Launch Strategy'
+                - 'Communication and Collaboration'
+                - 'Financial Planning and Management'  
+                - 'Project Management and Execution'
+                - 'Client Relations and Service'
+                - 'Operations and Maintenance'
+                - 'General Task Processing'
+
+      - name: level_1_tasks
+        description: "Mid-level task decomposition as JSON array"
+        tests:
+          - not_null
+
+      - name: atomic_actions
+        description: "Atomic action decomposition as JSON array"
+        tests:
+          - not_null
+
+      - name: phantom_objects
+        description: "Extracted phantom objects with affordances as JSON"
+        tests:
+          - not_null
+
+      - name: semantic_gist
+        description: "Abstract semantic representation for neocortical storage"
+        tests:
+          - not_null
+
+      - name: semantic_category
+        description: "Categorization of semantic content type"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 'executive_function'
+                - 'social_cognition'
+                - 'quantitative_reasoning'
+                - 'temporal_sequencing'
+                - 'interpersonal_skills'
+                - 'technical_procedures'
+                - 'general_cognition'
+
+      - name: cortical_region
+        description: "Target cortical region for long-term storage"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 'prefrontal_cortex'
+                - 'temporal_superior_cortex'
+                - 'parietal_cortex'
+                - 'frontal_motor_cortex'
+                - 'orbitofrontal_cortex'
+                - 'motor_cortex'
+                - 'association_cortex'
+
+      - name: consolidated_strength
+        description: "Final consolidated strength after replay processing"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: replay_associations
+        description: "LLM-generated associations for hippocampal replay as JSON"
+        tests:
+          - not_null
+
+      - name: replay_strength
+        description: "Calculated strength during replay cycles"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: cortical_integration_strength
+        description: "Integration strength with existing cortical knowledge"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: retrieval_accessibility
+        description: "Calculated accessibility score for future retrieval"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: hebbian_strength
+        description: "Hebbian learning strengthened weight"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+
+      - name: synaptic_change
+        description: "Calculated synaptic plasticity change during consolidation"
+        tests:
+          - not_null
+
+      - name: consolidation_fate
+        description: "Determined fate of the memory through consolidation"
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 'cortical_transfer'
+                - 'hippocampal_retention'
+                - 'gradual_forgetting'
+                - 'rapid_forgetting'
+
+      - name: stm_strength
+        description: "Original STM strength before consolidation"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: emotional_salience
+        description: "Emotional salience factor in consolidation"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+
+      - name: original_coactivation
+        description: "Original co-activation count from STM"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+      - name: consolidated_at
+        description: "Timestamp when consolidation processing completed"
+        tests:
+          - not_null
+
+      - name: memory_status
+        description: "Status of the memory post-consolidation"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['consolidated']
+
+      - name: consolidation_batch
+        description: "Batch identifier for consolidation processing optimization"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "consolidated_strength > {{ var('weak_connection_threshold') }}"
+          name: consolidated_strength_threshold
+
+      - dbt_utils.expression_is_true:
+          expression: "consolidation_fate IN ('cortical_transfer', 'hippocampal_retention') OR consolidated_strength <= {{ var('consolidation_threshold') }}"
+          name: consolidation_fate_consistency
+
+      - dbt_utils.expression_is_true:
+          expression: "cortical_integration_strength > 0 OR consolidation_fate NOT IN ('cortical_transfer')"
+          name: cortical_transfer_integration_check
+
+      - dbt_utils.expression_is_true:
+          expression: "retrieval_accessibility >= 0.1 OR consolidation_fate IN ('gradual_forgetting', 'rapid_forgetting')"
+          name: retrieval_accessibility_check
