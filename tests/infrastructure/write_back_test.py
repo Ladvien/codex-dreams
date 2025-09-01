@@ -39,34 +39,36 @@ from services.incremental_processor import IncrementalProcessor, ProcessingState
 from scripts.run_writeback_after_dbt import run_writeback_integration, validate_dbt_success
 
 
+# Module-level fixtures available to all test classes
+@pytest.fixture(scope="module")
+def test_postgres_url():
+    """Get test PostgreSQL connection URL"""
+    return os.getenv('TEST_DATABASE_URL', 'postgresql://codex_user:test_password@localhost:5432/test_codex_db')
+
+@pytest.fixture(scope="module") 
+def test_duckdb_path():
+    """Create temporary DuckDB database for testing"""
+    with tempfile.NamedTemporaryFile(suffix='.duckdb', delete=False) as f:
+        yield f.name
+    os.unlink(f.name)
+
+@pytest.fixture(scope="module")
+def test_db_connection(test_postgres_url):
+    """Create test database connection"""
+    conn = None
+    try:
+        conn = psycopg2.connect(test_postgres_url, cursor_factory=psycopg2.extras.DictCursor)
+        yield conn
+    except psycopg2.OperationalError:
+        # Database doesn't exist, use mock connection
+        pytest.skip("Test database not available, skipping PostgreSQL integration tests")
+    finally:
+        if conn:
+            conn.close()
+
+
 class TestWritebackInfrastructure:
     """Test infrastructure setup and configuration"""
-    
-    @pytest.fixture(scope="class")
-    def test_postgres_url(self):
-        """Get test PostgreSQL connection URL"""
-        return os.getenv('TEST_DATABASE_URL', 'postgresql://codex_user:test_password@localhost:5432/test_codex_db')
-    
-    @pytest.fixture(scope="class") 
-    def test_duckdb_path(self):
-        """Create temporary DuckDB database for testing"""
-        with tempfile.NamedTemporaryFile(suffix='.duckdb', delete=False) as f:
-            yield f.name
-        os.unlink(f.name)
-    
-    @pytest.fixture(scope="class")
-    def test_db_connection(self, test_postgres_url):
-        """Create test database connection"""
-        conn = None
-        try:
-            conn = psycopg2.connect(test_postgres_url, cursor_factory=psycopg2.extras.DictCursor)
-            yield conn
-        except psycopg2.OperationalError:
-            # Database doesn't exist, use mock connection
-            pytest.skip("Test database not available, skipping PostgreSQL integration tests")
-        finally:
-            if conn:
-                conn.close()
     
     def test_schema_creation(self, test_db_connection):
         """Test PostgreSQL schema creation and structure"""
@@ -163,8 +165,22 @@ class TestMemoryWritebackService:
     @pytest.fixture
     def mock_writeback_service(self, test_postgres_url, test_duckdb_path):
         """Create mock write-back service for testing"""
-        with patch('psycopg2.pool.ThreadedConnectionPool'):
-            with patch('duckdb.connect'):
+        with patch('psycopg2.pool.ThreadedConnectionPool') as mock_pool:
+            with patch('duckdb.connect') as mock_duckdb:
+                # Mock the connection pool to return mock connections
+                mock_conn = MagicMock()
+                mock_cursor = MagicMock()
+                mock_cursor.fetchone.return_value = [1]
+                mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+                mock_pool.return_value.getconn.return_value = mock_conn
+                
+                # Mock DuckDB connection
+                mock_duckdb_conn = MagicMock()
+                mock_duckdb_result = MagicMock()
+                mock_duckdb_result.fetchone.return_value = [1]
+                mock_duckdb_conn.execute.return_value = mock_duckdb_result
+                mock_duckdb.return_value = mock_duckdb_conn
+                
                 service = MemoryWritebackService(
                     postgres_url=test_postgres_url,
                     duckdb_path=test_duckdb_path,
