@@ -42,8 +42,9 @@ def test_postgresql_connection():
             'database': match.group(5)
         }
         
-        # Attempt connection
+        # Attempt connection with masked logging
         print(f"Connecting to PostgreSQL at {conn_params['host']}:{conn_params['port']}")
+        print(f"Database: {conn_params['database']}, User: {conn_params['user']}")
         conn = psycopg2.connect(**conn_params)
         cursor = conn.cursor()
         
@@ -101,13 +102,19 @@ def test_duckdb_postgres_scanner():
         if not postgres_password:
             raise ValueError("POSTGRES_PASSWORD not set in environment")
         
+        # Get connection parameters from environment
+        postgres_host = os.getenv('POSTGRES_HOST', 'localhost')
+        postgres_port = os.getenv('POSTGRES_PORT', '5432')
+        postgres_db = os.getenv('POSTGRES_DB', 'codex_db')
+        postgres_user = os.getenv('POSTGRES_USER', 'codex_user')
+        
         conn.execute(f"""
             CREATE OR REPLACE SECRET codex_db_connection (
                 TYPE POSTGRES,
-                HOST '192.168.1.104',
-                PORT 5432,
-                DATABASE 'codex_db',
-                USER 'codex_user',
+                HOST '{postgres_host}',
+                PORT {postgres_port},
+                DATABASE '{postgres_db}',
+                USER '{postgres_user}',
                 PASSWORD '{postgres_password}'
             )
         """)
@@ -165,13 +172,19 @@ def test_dbt_source_query():
         if not postgres_password:
             raise ValueError("POSTGRES_PASSWORD not set in environment")
         
+        # Get connection parameters from environment
+        postgres_host = os.getenv('POSTGRES_HOST', 'localhost')
+        postgres_port = os.getenv('POSTGRES_PORT', '5432')
+        postgres_db = os.getenv('POSTGRES_DB', 'codex_db')
+        postgres_user = os.getenv('POSTGRES_USER', 'codex_user')
+        
         conn.execute(f"""
             CREATE OR REPLACE SECRET codex_db_connection (
                 TYPE POSTGRES,
-                HOST '192.168.1.104',
-                PORT 5432,
-                DATABASE 'codex_db',
-                USER 'codex_user',
+                HOST '{postgres_host}',
+                PORT {postgres_port},
+                DATABASE '{postgres_db}',
+                USER '{postgres_user}',
                 PASSWORD '{postgres_password}'
             )
         """)

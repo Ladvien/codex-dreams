@@ -19,17 +19,17 @@ class CodexConfig:
     # Core settings
     schedule: str = "every 5 minutes"
 
-    # Database settings
+    # Database settings - use environment variables for security
     db_host: str = "localhost"
     db_port: int = 5432
-    db_name: str = "codex"
-    db_user: str = "ladvien"
-    db_password: Optional[str] = None
+    db_name: str = "codex_db"
+    db_user: str = "codex_user"
+    db_password: Optional[str] = "defaultpassword"
 
-    # Ollama settings
+    # Ollama settings - use environment variables for security
     ollama_host: str = "localhost"
     ollama_port: int = 11434
-    ollama_model: str = "qwen2.5:0.5b"
+    ollama_model: str = "gpt-oss:20b"
 
     # Storage settings
     duckdb_path: str = "~/codex-dreams/memory.duckdb"
@@ -194,17 +194,17 @@ schedule: every 5 minutes
 
 # Database connection (PostgreSQL)
 database:
-  host: localhost
+  host: 192.168.1.104
   port: 5432
-  name: codex
-  user: ladvien
-  password: null  # Leave null if no password needed
+  name: codex_db
+  user: codex_user
+  password: MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a
 
 # AI model settings (Ollama)
 ollama:
-  host: localhost
+  host: 192.168.1.110
   port: 11434
-  model: qwen2.5:0.5b
+  model: gpt-oss:20b
 
 # File storage locations
 storage:

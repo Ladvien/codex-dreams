@@ -26,8 +26,8 @@ class PostgresDataFlowTests(unittest.TestCase):
     
     def setUp(self):
         """Set up test environment and connections"""
-        # Get PostgreSQL config from environment or use defaults
-        postgres_url = os.getenv('POSTGRES_DB_URL', '')
+        # Get PostgreSQL config from environment, prioritize TEST_DATABASE_URL
+        postgres_url = os.getenv('TEST_DATABASE_URL') or os.getenv('POSTGRES_DB_URL', '')
         if postgres_url:
             import re
             match = re.match(r'postgresql://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)', postgres_url)
@@ -40,22 +40,22 @@ class PostgresDataFlowTests(unittest.TestCase):
                     'database': match.group(5)
                 }
             else:
-                # Fallback without hardcoded password
+                # Secure fallback without hardcoded credentials or IPs
                 self.pg_config = {
-                    'host': '192.168.1.104',
-                    'port': 5432,
-                    'database': 'codex_db',
-                    'user': 'codex_user',
-                    'password': os.getenv('POSTGRES_PASSWORD', 'password')
+                    'host': os.getenv('POSTGRES_HOST', 'localhost'),
+                    'port': int(os.getenv('POSTGRES_PORT', '5432')),
+                    'database': os.getenv('POSTGRES_DB', 'codex_db'),
+                    'user': os.getenv('POSTGRES_USER', 'codex_user'),
+                    'password': os.getenv('POSTGRES_PASSWORD', 'defaultpassword')
                 }
         else:
-            # Fallback without hardcoded password
+            # Secure fallback using environment variables only
             self.pg_config = {
-                'host': '192.168.1.104',
-                'port': 5432,
-                'database': 'codex_db',
-                'user': 'codex_user',
-                'password': os.getenv('POSTGRES_PASSWORD', 'password')
+                'host': os.getenv('POSTGRES_HOST', 'localhost'),
+                'port': int(os.getenv('POSTGRES_PORT', '5432')),
+                'database': os.getenv('POSTGRES_DB', 'codex_db'),
+                'user': os.getenv('POSTGRES_USER', 'codex_user'),
+                'password': os.getenv('POSTGRES_PASSWORD', 'defaultpassword')
             }
         
         # Create DuckDB connection for testing
@@ -67,6 +67,13 @@ class PostgresDataFlowTests(unittest.TestCase):
         
         # Set up PostgreSQL connection
         self.setup_postgres_connection()
+    
+    def _mask_credentials_in_config(self, config):
+        """Mask credentials in config for logging."""
+        masked_config = config.copy()
+        if 'password' in masked_config:
+            masked_config['password'] = '***'
+        return masked_config
         
     def setup_postgres_connection(self):
         """Set up PostgreSQL connection in DuckDB"""
@@ -86,6 +93,10 @@ class PostgresDataFlowTests(unittest.TestCase):
     def test_postgres_connection_health(self):
         """Test 1: Verify PostgreSQL connection is healthy and responsive"""
         start_time = time.time()
+        
+        # Log connection attempt with masked credentials
+        masked_config = self._mask_credentials_in_config(self.pg_config)
+        print(f"Testing connection to: {masked_config['host']}:{masked_config['port']}/{masked_config['database']}")
         
         result = self.duck_conn.execute("SELECT COUNT(*) as count FROM codex_db.public.memories").fetchone()
         

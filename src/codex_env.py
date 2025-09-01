@@ -33,10 +33,10 @@ def get_current_env() -> Optional[str]:
     with open(config_path) as f:
         content = f.read()
 
-    if "192.168" in content:
-        return "production"
-    elif "localhost" in content:
+    if "localhost" in content:
         return "local"
+    elif any(keyword in content for keyword in ["192.168", "10.0.", "172.16."]):
+        return "production"
     else:
         return "unknown"
 
@@ -96,9 +96,9 @@ def show_environments():
     if local_config.exists():
         marker = "❯" if current == "local" else " "
         print(f"{marker} local")
-        print(f"    Database: localhost:5432")
-        print(f"    Ollama: localhost:11434")
-        print(f"    Model: qwen2.5:0.5b")
+        print(f"    Database: {os.getenv('POSTGRES_HOST', 'localhost')}:5432")
+        print(f"    Ollama: {os.getenv('OLLAMA_HOST', 'localhost')}:11434")
+        print(f"    Model: gpt-oss:20b")
 
     # Production environment
     prod_config = get_env_config_path("production")
@@ -106,7 +106,7 @@ def show_environments():
         marker = "❯" if current == "production" else " "
         print(f"{marker} production")
         print(f"    Database: localhost:5432")
-        ollama_url = os.getenv("OLLAMA_URL", "http://192.168.1.110:11434")
+        ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
         print(f"    Ollama: {ollama_url.replace('http://', '')}")
         print(f"    Model: gpt-oss:20b")
 

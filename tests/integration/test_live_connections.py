@@ -19,10 +19,12 @@ class LiveConnectionTester:
         self.db_path = os.getenv(
             "DUCKDB_PATH", "/Users/ladvien/biological_memory/dbs/memory.duckdb"
         )
+        # Use TEST_DATABASE_URL if available, fallback to POSTGRES_DB_URL
         self.postgres_url = os.getenv(
-            "POSTGRES_DB_URL", "postgresql://codex_user:password@192.168.1.104:5432/codex_db"
+            "TEST_DATABASE_URL", 
+            os.getenv("POSTGRES_DB_URL", "postgresql://codex_user:defaultpassword@localhost:5432/codex_db")
         )
-        self.ollama_url = os.getenv("OLLAMA_URL", "http://192.168.1.110:11434")
+        self.ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
         self.ollama_model = os.getenv("OLLAMA_MODEL", "gpt-oss:20b")
         self.embedding_model = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
 
@@ -42,7 +44,9 @@ class LiveConnectionTester:
         conn = self.get_connection_with_extensions()
 
         try:
-            # Test attachment
+            # Test attachment with masked URL for security logging
+            masked_url = self._mask_credentials_in_url(self.postgres_url)
+            print(f"Testing connection to: {masked_url}")
             conn.execute(f"ATTACH '{self.postgres_url}' AS postgres_live (TYPE postgres)")
 
             # Test basic query
@@ -93,6 +97,12 @@ class LiveConnectionTester:
             return False
         finally:
             conn.close()
+    
+    def _mask_credentials_in_url(self, url):
+        """Mask credentials in database URL for logging."""
+        import re
+        # Replace password with *** in URL for secure logging
+        return re.sub(r'://([^:]+):([^@]+)@', r'://\1:***@', url)
 
     def test_ollama_connection(self):
         """Test live Ollama connection."""
