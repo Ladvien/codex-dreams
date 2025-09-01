@@ -67,7 +67,7 @@ SELECT
             'connection_ready', false
         ),
         'ollama_config', json_object(
-            'url', 'http://192.168.1.110:11434',
+            'url', 'http://localhost:11434',
             'model', 'gpt-oss:20b',
             'embedding_model', 'nomic-embed-text',
             'connection_ready', false

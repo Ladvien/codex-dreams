@@ -3,7 +3,7 @@
 
 -- IMPORTANT: Set these environment variables in your .env file:
 -- POSTGRES_DB_URL=postgresql://username:password@192.168.1.104:5432/codex_db
--- OLLAMA_URL=http://192.168.1.110:11434
+-- OLLAMA_URL=http://localhost:11434
 
 -- Create connection configuration table
 CREATE TABLE IF NOT EXISTS connection_config (

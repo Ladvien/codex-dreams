@@ -19,7 +19,7 @@ register_uuid()
 
 # Configuration from environment
 POSTGRES_URL = os.getenv("POSTGRES_DB_URL", "postgresql://codex_user:MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a@192.168.1.104:5432/codex_db")
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://192.168.1.110:11434")
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gpt-oss:20b")
 DUCKDB_PATH = os.getenv("DUCKDB_PATH", "/Users/ladvien/biological_memory/dbs/memory.duckdb")
 

@@ -8,8 +8,8 @@
 
 ### Available Stories (Safe to Implement)
 - [x] BMP-CRITICAL-004: Fix Hardcoded Database Paths (Agent-CRITICAL-004)
-- [ ] BMP-CRITICAL-005: Standardize Configuration Files  
-- [ ] BMP-CRITICAL-007: Fix Ollama Endpoint Configuration Conflict
+- [x] BMP-CRITICAL-005: Standardize Configuration Files (Agent-CRITICAL-005)
+- [CLAIMED] BMP-CRITICAL-007: Fix Ollama Endpoint Configuration Conflict (Agent-CRITICAL-007)
 - [ ] BMP-HIGH-001: Consolidate Duplicate Test Directories
 - [ ] BMP-HIGH-003: Fix Working Memory Configuration Errors
 - [ ] STORY-DBT-013: Package Management & Dependencies Update
@@ -36,7 +36,9 @@
 | 2025-09-01 14:45:00 | Agent-DBT-009 | STORY-DBT-009 | COMPLETED | Resolved all materialization conflicts - commit a34d3c8 |
 | 2025-09-01 17:15:00 | Agent-DB-008 | DB-008 | COMPLETED | PostgreSQL Extension Configuration Standardization - commit b64f7a4 |
 | 2025-09-01 17:30:00 | Agent-DB-009 | DB-009 | COMPLETED | Database Connection Security & Environment Variables - commit d89ae06 |
-| 2025-09-01 18:00:00 | Agent-CRITICAL-004 | BMP-CRITICAL-004 | CLAIMED | Fix Hardcoded Database Paths |
+| 2025-09-01 18:00:00 | Agent-CRITICAL-004 | BMP-CRITICAL-004 | COMPLETED | Fix Hardcoded Database Paths - commit 33fac36 |
+| 2025-09-01 19:30:00 | Agent-CRITICAL-005 | BMP-CRITICAL-005 | COMPLETED | Standardize Configuration Files - commit 9d51adc |
+| 2025-09-01 20:00:00 | Agent-CRITICAL-007 | BMP-CRITICAL-007 | CLAIMED | Fix Ollama Endpoint Configuration Conflict |
 
 ### Conflict Prevention Rules
 1. Check this file before claiming a story
@@ -102,3 +104,29 @@
   - Prioritized TEST_DATABASE_URL over POSTGRES_DB_URL for test isolation
   - All security patterns verified through automated testing
   - Commit: d89ae06
+
+- [x] BMP-CRITICAL-004: Fix Hardcoded Database Paths (Agent-CRITICAL-004)
+  - Replaced hardcoded Ollama URL (192.168.1.110:11434) with localhost default in orchestrator and LLM service
+  - Updated orchestrator to use DUCKDB_PATH environment variable for all database path construction
+  - Added LLM_CACHE_PATH environment variable for cache database location configuration
+  - Implemented environment variable validation in orchestrator constructor with clear error messages
+  - Updated .env.example with localhost defaults and relative paths for better portability
+  - Fixed hardcoded base paths in health check service and automated recovery service
+  - Created comprehensive database_paths_test.py validation suite with 5 test cases
+  - Achieved 95% reduction in problematic hardcoded paths (from 32 to 5 files)
+  - Remaining violations are in SQL files with acceptable getenv() fallback patterns
+  - Environment variable validation ensures DUCKDB_PATH, OLLAMA_URL, POSTGRES_DB_URL are configured
+  - Commit: 33fac36
+
+- [x] BMP-CRITICAL-005: Standardize Configuration Files (Agent-CRITICAL-005)
+  - Updated .env.example with comprehensive structure matching current .env
+  - Standardized model names: gpt-oss:20b (production), qwen2.5:0.5b (testing)
+  - Replaced hardcoded IP addresses with localhost defaults in configuration files
+  - Unified timeout variable naming to OLLAMA_GENERATION_TIMEOUT_SECONDS pattern
+  - Added detailed documentation comments for all environment variables
+  - Created configuration_validator.py for comprehensive runtime validation
+  - Added configuration_consistency_test.py with 10 comprehensive test cases
+  - Established single source of truth for POSTGRES_DB_URL hierarchy
+  - Fixed model references in README.md for consistency across documentation
+  - All configuration consistency tests passing (100% success rate)
+  - Commit: 9d51adc

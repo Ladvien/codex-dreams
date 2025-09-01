@@ -428,7 +428,7 @@ def initialize_llm_service(
     global _llm_service, _error_handler
     
     if not ollama_url:
-        ollama_url = os.getenv('OLLAMA_URL', 'http://192.168.1.110:11434')
+        ollama_url = os.getenv('OLLAMA_URL', 'http://localhost:11434')
     
     _error_handler = error_handler
     _llm_service = OllamaLLMService(
