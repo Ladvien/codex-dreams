@@ -17,9 +17,9 @@ Codex Dreams implements a sophisticated 4-stage biological memory pipeline that 
 ### Core Technology Stack
 
 - **DuckDB**: High-performance analytical database engine with cross-database query capabilities
-- **PostgreSQL**: Source data storage at 192.168.1.104:5432 (`codex_store` database) 
+- **PostgreSQL**: Source data storage with configurable connection (`codex_db` database) 
 - **dbt Core**: SQL-based transformation pipeline with 17+ sophisticated biological memory models
-- **Ollama LLM**: Local AI server at 192.168.1.110:11434 running `qwen2.5:0.5b` for semantic processing
+- **Ollama LLM**: Local AI server running `gpt-oss:20b` for production semantic processing
 - **Python CLI**: `codex` command with daemon service management for cross-platform operation
 
 ### Key Features
@@ -143,8 +143,8 @@ sources:
 ### Prerequisites
 
 - Python 3.8+
-- PostgreSQL database at 192.168.1.104:5432
-- Ollama server at 192.168.1.110:11434 with models:
+- PostgreSQL database (configurable via POSTGRES_DB_URL)
+- Ollama server (configurable via OLLAMA_URL) with models:
   - `gpt-oss:20b` (primary LLM for processing)
   - `nomic-embed-text` (embeddings model)
 - DuckDB with extensions: `postgres_scanner`, `httpfs`, `json`
@@ -219,11 +219,11 @@ Create a `.env` file based on `.env.example`:
 
 ```bash
 # Database Configuration
-POSTGRES_DB_URL=postgresql://codex_user:password@192.168.1.104:5432/codex_db
+POSTGRES_DB_URL=postgresql://codex_user:password@localhost:5432/codex_db
 DUCKDB_PATH=./biological_memory/dbs/memory.duckdb
 
 # Ollama Configuration  
-OLLAMA_URL=http://192.168.1.110:11434
+OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=gpt-oss:20b
 EMBEDDING_MODEL=nomic-embed-text
 
@@ -242,8 +242,9 @@ If you prefer using hostnames (e.g., in Docker environments or with custom DNS),
 
 1. **Add entries to `/etc/hosts`** (or `C:\Windows\System32\drivers\etc\hosts` on Windows):
    ```
-   192.168.1.104  postgres
-   192.168.1.110  ollama
+   # Configure your actual server IPs or use localhost for local installations
+   # your.postgres.server.ip  postgres
+   # your.ollama.server.ip    ollama
    ```
 
 2. **Update your `.env` file**:
