@@ -24,7 +24,7 @@ class CodexConfig:
     db_port: int = 5432
     db_name: str = "codex_db"
     db_user: str = "codex_user"
-    db_password: Optional[str] = "defaultpassword"
+    db_password: Optional[str] = None
 
     # Ollama settings - use environment variables for security
     ollama_host: str = "localhost"
@@ -50,13 +50,55 @@ class CodexConfig:
         """Get the PID file path"""
         return Path.home() / ".codex" / "codex.pid"
 
+    def _validate_credentials(self) -> None:
+        """Validate that credentials are secure and not using defaults"""
+        if not self.db_password:
+            raise ValueError("Database password is required. Set POSTGRES_PASSWORD environment variable.")
+        
+        # Check for default/insecure passwords
+        insecure_passwords = [
+            "password", "defaultpassword", "123456", "admin", "root", 
+            "codex", "test", "demo", "default", "changeme"
+        ]
+        
+        if self.db_password.lower() in insecure_passwords:
+            raise ValueError(f"Insecure password detected: '{self.db_password}'. Use a strong, unique password.")
+        
+        # Check minimum password complexity
+        if len(self.db_password) < 8:
+            raise ValueError("Database password must be at least 8 characters long.")
+    
+    def _get_required_env(self, key: str) -> str:
+        """Get required environment variable with validation"""
+        value = os.getenv(key)
+        if not value:
+            raise ValueError(f"Required environment variable {key} is not set")
+        return value
+
     @property
     def postgres_url(self) -> str:
-        """Get PostgreSQL connection string"""
-        if self.db_password:
-            return f"postgresql://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+        """Get PostgreSQL connection string with security validation"""
+        # Priority: Environment variables override config file
+        db_password = os.getenv("POSTGRES_PASSWORD") or self.db_password
+        db_host = os.getenv("POSTGRES_HOST") or self.db_host
+        db_port = int(os.getenv("POSTGRES_PORT", str(self.db_port)))
+        db_name = os.getenv("POSTGRES_DB") or self.db_name
+        db_user = os.getenv("POSTGRES_USER") or self.db_user
+        
+        # Temporarily set password for validation
+        original_password = self.db_password
+        self.db_password = db_password
+        
+        try:
+            self._validate_credentials()
+        finally:
+            # Restore original password
+            self.db_password = original_password
+        
+        if db_password:
+            return f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
         else:
-            return f"postgresql://{self.db_user}@{self.db_host}:{self.db_port}/{self.db_name}"
+            return f"postgresql://{db_user}@{db_host}:{db_port}/{db_name}"
 
     @property
     def ollama_url(self) -> str:

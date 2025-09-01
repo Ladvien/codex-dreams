@@ -27,11 +27,18 @@ class TestCredentialManagement(unittest.TestCase):
         self.project_root = Path(__file__).parent.parent.parent
         
     def test_no_hardcoded_passwords_remain(self):
-        """Test that the exposed password MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a is no longer in codebase."""
-        exposed_password = "MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a"
+        """Test that ALL hardcoded passwords have been removed from codebase."""
+        # Known exposed passwords that must be removed
+        exposed_passwords = [
+            "MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a",  # Original exposed password
+            "i5(|_})9A4&9Khd23&DJ4VRq&G_.px0Z",   # Second hardcoded password found
+            "M|h!y,3:tL^-MJSRswpH09N_JJnNkj?Q"    # Third hardcoded password found
+        ]
         
-        # Files that should be cleaned of the exposed password
+        # Files that have been cleaned of hardcoded passwords
         critical_files = [
+            self.project_root / "src" / "generate_insights.py",
+            self.project_root / "src" / "reset_insights.py", 
             self.project_root / "biological_memory" / "setup_postgres_connection.sql",
             self.project_root / ".env"
         ]
@@ -40,8 +47,59 @@ class TestCredentialManagement(unittest.TestCase):
             if file_path.exists():
                 with open(file_path, 'r') as f:
                     content = f.read()
-                    self.assertNotIn(exposed_password, content, 
-                                   f"Exposed password still found in {file_path}")
+                
+                for password in exposed_passwords:
+                    self.assertNotIn(password, content, 
+                                   f"Hardcoded password '{password[:8]}...' still found in {file_path}")
+                    
+        # Verify files now require environment variables
+        generate_insights = self.project_root / "src" / "generate_insights.py"
+        if generate_insights.exists():
+            with open(generate_insights, 'r') as f:
+                content = f.read()
+            self.assertIn("POSTGRES_DB_URL environment variable is required", content)
+            
+    def test_codex_config_security_validation(self):
+        """Test that CodexConfig class enforces secure credential practices."""
+        # Import the CodexConfig class
+        import sys
+        sys.path.append(str(self.project_root / "src"))
+        
+        try:
+            from codex_config import CodexConfig
+            
+            # Test 1: Should reject None password
+            config = CodexConfig()
+            config.db_password = None
+            
+            with self.assertRaises(ValueError) as context:
+                _ = config.postgres_url
+            self.assertIn("Database password is required", str(context.exception))
+            
+            # Test 2: Should reject insecure passwords
+            insecure_passwords = ["password", "defaultpassword", "123456", "admin"]
+            for bad_password in insecure_passwords:
+                config.db_password = bad_password
+                with self.assertRaises(ValueError) as context:
+                    _ = config.postgres_url
+                self.assertIn("Insecure password detected", str(context.exception))
+            
+            # Test 3: Should reject short passwords
+            config.db_password = "short"
+            with self.assertRaises(ValueError) as context:
+                _ = config.postgres_url
+            self.assertIn("at least 8 characters", str(context.exception))
+            
+            # Test 4: Should accept secure passwords
+            config.db_password = "SecurePassword123!"
+            try:
+                url = config.postgres_url
+                self.assertIn("SecurePassword123!", url)
+            except ValueError as e:
+                self.fail(f"Secure password was rejected: {e}")
+                
+        except ImportError:
+            self.skipTest("CodexConfig not available for testing")
                                    
     def test_credential_masking_in_url(self):
         """Test URL credential masking function."""

@@ -13,15 +13,22 @@ LOAD json;
 LOAD httpfs;
 
 -- Create PostgreSQL connection secret using environment variables
--- Set these environment variables before running this script:
+-- SECURITY: This file should be used with a companion script that substitutes
+-- environment variables. Never commit hardcoded passwords.
+--
+-- Usage: substitute_env.py setup_postgres_connection.sql | duckdb
+-- 
+-- Required environment variables:
 -- POSTGRES_HOST, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+
+-- Template placeholders for environment substitution:
 CREATE OR REPLACE SECRET codex_db_connection (
     TYPE POSTGRES,
-    HOST $1,           -- POSTGRES_HOST environment variable
+    HOST '${POSTGRES_HOST}',
     PORT 5432,
-    DATABASE $2,       -- POSTGRES_DB environment variable  
-    USER $3,           -- POSTGRES_USER environment variable
-    PASSWORD $4        -- POSTGRES_PASSWORD environment variable
+    DATABASE '${POSTGRES_DB}',
+    USER '${POSTGRES_USER}',
+    PASSWORD '${POSTGRES_PASSWORD}'
 );
 
 -- Attach PostgreSQL database for cross-database queries
