@@ -10,7 +10,7 @@ biological_memory:
       threads: 8
       extensions:
         - httpfs     # For Ollama HTTP calls
-        - postgres   # For PostgreSQL connection
+        - postgres_scanner   # For PostgreSQL connection
         - json       # For JSON processing
       attach:
         - path: "{{ env_var('POSTGRES_DB_URL') }}"
@@ -26,7 +26,7 @@ biological_memory:
       path: /tmp/test_biological_memory.duckdb
       threads: 4
       extensions:
-        - postgres
+        - postgres_scanner
         - json
       attach:
         - path: "{{ env_var('TEST_DATABASE_URL') }}"

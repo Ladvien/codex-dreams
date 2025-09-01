@@ -4,13 +4,21 @@
 -- IMPORTANT: Set environment variables in .env file:
 -- POSTGRES_DB_URL=postgresql://username:password@192.168.1.104:5432/codex_db
 
--- Load the postgres extension
-LOAD postgres;
+-- Load the postgres_scanner extension
+LOAD postgres_scanner;
 
--- Attach PostgreSQL database using environment variable
--- The connection string should come from POSTGRES_DB_URL env variable
-SET postgres_connection = getenv('POSTGRES_DB_URL');
-ATTACH $postgres_connection AS postgres_db (TYPE postgres);
+-- Create PostgreSQL connection secret using environment variables  
+CREATE OR REPLACE SECRET codex_db_connection (
+    TYPE POSTGRES,
+    HOST getenv('POSTGRES_HOST', '192.168.1.104'),
+    PORT 5432,
+    DATABASE getenv('POSTGRES_DB', 'codex_db'),
+    USER getenv('POSTGRES_USER', 'codex_user'),
+    PASSWORD getenv('POSTGRES_PASSWORD')
+);
+
+-- Attach PostgreSQL database
+ATTACH '' AS postgres_db (TYPE POSTGRES, SECRET codex_db_connection);
 
 -- Test the connection by listing schemas
 SELECT schema_name FROM postgres_db.information_schema.schemata;
