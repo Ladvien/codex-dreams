@@ -47,7 +47,197 @@
 **Impact**: Documents actual system sophistication for future development  
 **Description**: Update `ARCHITECTURE.md` to reflect the sophisticated service mesh and biological implementation that exists  
 
-### **P1 - HIGH VALUE ENHANCEMENTS (Estimated 1-2 weeks)**
+---
+
+## 🔥 **CRITICAL SECURITY & STABILITY ISSUES (Deep Analysis 2025-08-31)**
+
+### 🚨 **P0 EMERGENCY - IMMEDIATE ACTION (Today)**
+
+**BMP-ARCH-001**: Architecture Documentation Status Correction  
+**Points**: 1  
+**Status**: P0 EMERGENCY  
+**Time**: 30 minutes  
+**Impact**: Critical misrepresentation prevents proper architectural decisions  
+**Description**: CLAUDE.md claims "initial planning phase" when system is 85-90% complete with sophisticated implementation. Creates fundamental misunderstanding of system state.
+**Files**: `CLAUDE.md:4`  
+**Acceptance Criteria**:
+- [ ] Update "initial planning phase" to reflect actual 85-90% completion
+- [ ] Document sophisticated biological memory implementation status
+- [ ] Update current state section with actual capabilities
+- [ ] Correct technology stack implementation status
+
+**BMP-SECURITY-001**: Rotate All Exposed Credentials  
+**Points**: 1  
+**Status**: P0 EMERGENCY  
+**Time**: 1 hour  
+**Impact**: Production database password exposed in .env and SQL files  
+**Description**: Password "MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a" hardcoded in multiple locations. Requires immediate rotation and secure credential management implementation.
+**Files**: `.env`, `setup_postgres_connection.sql`  
+**Acceptance Criteria**:
+- [ ] Rotate database password
+- [ ] Implement secrets management
+- [ ] Remove hardcoded credentials
+- [ ] Update deployment docs
+
+**BMP-SECURITY-002**: Fix Shell Injection Vulnerability  
+**Points**: 2  
+**Status**: P0 EMERGENCY  
+**Time**: 2 hours  
+**Impact**: Remote code execution risk via shell=True  
+**Description**: orchestrate_biological_memory.py uses shell=True with user-controllable input
+**Files**: `orchestrate_biological_memory.py`  
+**Acceptance Criteria**:
+- [ ] Replace shell=True with shell=False
+- [ ] Use subprocess list format
+- [ ] Add input validation
+- [ ] Security test coverage
+
+### 🔴 **P0 CRITICAL - THIS WEEK**
+**BMP-CRITICAL-001**: Fix STM Duration Biological Violation  
+**Points**: 1  
+**Status**: P0 CRITICAL  
+**Time**: 15 minutes  
+**Impact**: 60× violation breaks hippocampal consolidation  
+**Description**: STM duration set to 30 seconds instead of 30 minutes (1800 seconds)
+**Files**: `biological_memory/dbt_project.yml:28`  
+**Acceptance Criteria**:
+- [ ] Change `short_term_memory_duration: 30` to `1800`
+- [ ] Verify biological cascade functions
+- [ ] Test memory transfer timing
+- [ ] Update documentation
+
+**BMP-CRITICAL-002**: Implement Missing LLM UDF Functions  
+**Points**: 5  
+**Status**: P0 CRITICAL  
+**Time**: 4 hours  
+**Impact**: All dbt models fail without LLM functions  
+**Description**: llm_generate_json() and llm_generate_embedding() referenced but not implemented
+**Files**: All dbt models in `biological_memory/models/`  
+**Acceptance Criteria**:
+- [ ] Register LLM UDF functions in DuckDB
+- [ ] Connect to Ollama service
+- [ ] Add error handling
+- [ ] Test all dbt models run successfully
+
+**BMP-CRITICAL-003**: Create Write-Back Mechanism  
+**Points**: 8  
+**Status**: P0 CRITICAL  
+**Time**: 8 hours  
+**Impact**: All processing results lost - no persistence  
+**Description**: No codex_processed schema or write-back implementation exists
+**Files**: Need to create new write-back service  
+**Acceptance Criteria**:
+- [ ] Design codex_processed schema
+- [ ] Implement write-back service
+- [ ] Add transaction boundaries
+- [ ] Test end-to-end data flow
+
+**BMP-CRITICAL-004**: Fix Hardcoded Database Paths  
+**Points**: 3  
+**Status**: P0 CRITICAL  
+**Time**: 3 hours  
+**Impact**: Deployment failures across environments  
+**Description**: Database paths hardcoded throughout codebase
+**Files**: `orchestrate_biological_memory.py:138`, multiple test files  
+**Acceptance Criteria**:
+- [ ] Use environment variables for all paths
+- [ ] Add configuration validation
+- [ ] Test multi-environment deployment
+- [ ] Update .env.example
+
+**BMP-CRITICAL-005**: Standardize Configuration Files  
+**Points**: 3  
+**Status**: P0 CRITICAL  
+**Time**: 3 hours  
+**Impact**: 47+ configuration mismatches cause failures  
+**Description**: Inconsistent environment variables and settings across files
+**Files**: `.env`, `dbt_project.yml`, `profiles.yml`, all config files  
+**Acceptance Criteria**:
+- [ ] Audit all configuration files
+- [ ] Create single source of truth
+- [ ] Standardize variable names
+- [ ] Add configuration tests
+
+**BMP-CRITICAL-006**: Fix LLM Integration Architecture Mismatch  
+**Points**: 4  
+**Status**: P0 CRITICAL  
+**Time**: 4 hours  
+**Impact**: 90% of biological memory models fail due to missing functions  
+**Description**: Architecture specifies DuckDB prompt() function but implementation uses Python UDF service bridge. UDF functions not registered causing model failures.
+**Files**: All dbt models, DuckDB UDF registration  
+**Acceptance Criteria**:
+- [ ] Register llm_generate_json() and llm_generate_embedding() UDF functions
+- [ ] Connect UDF functions to Ollama service
+- [ ] Add error handling for LLM service failures
+- [ ] Test all biological memory models execute successfully
+
+**BMP-CRITICAL-007**: Fix Ollama Endpoint Configuration Conflict  
+**Points**: 2  
+**Status**: P0 CRITICAL  
+**Time**: 1 hour  
+**Impact**: LLM service initialization failure causing model execution blocks  
+**Description**: Orchestrator hardcoded to http://192.168.1.110:11434 while environment expects http://localhost:11434
+**Files**: `orchestrate_biological_memory.py:127`, `.env:41`  
+**Acceptance Criteria**:
+- [ ] Remove hardcoded Ollama endpoint from orchestrator
+- [ ] Use OLLAMA_URL environment variable consistently
+- [ ] Add configuration validation for LLM service endpoints
+- [ ] Test LLM service connectivity across environments
+
+### 🟡 **P1 HIGH PRIORITY - THIS SPRINT**
+
+**BMP-HIGH-001**: Consolidate Duplicate Test Directories  
+**Points**: 5  
+**Status**: P1 HIGH  
+**Impact**: Maintenance burden with 115+ duplicate test files  
+**Description**: Two separate test directories with overlapping tests
+
+**BMP-HIGH-002**: Fix Database Schema Name Inconsistencies  
+**Points**: 3  
+**Status**: P1 HIGH  
+**Time**: 2 hours  
+**Impact**: Query failures due to codex_db vs codex_store schema mismatches  
+**Description**: Source configuration references codex_db but actual schema name is codex_store causing source() function failures
+**Files**: `biological_memory/models/staging/stg_codex_memories.sql:20`, schema definitions  
+**Acceptance Criteria**:
+- [ ] Standardize schema naming (codex_db vs codex_store)
+- [ ] Update all source() references to correct schema name
+- [ ] Validate dbt source configurations
+- [ ] Test all model dependencies resolve correctly
+
+**BMP-HIGH-003**: Fix Working Memory Configuration Errors  
+**Points**: 3  
+**Status**: P1 HIGH  
+**Time**: 2 hours  
+**Impact**: Working memory model cannot execute due to field/config mismatches  
+**Description**: Working memory references non-existent previous_strength field and has materialization conflicts
+**Files**: `biological_memory/models/working_memory/`, `dbt_project.yml`  
+**Acceptance Criteria**:
+- [ ] Fix previous_strength field reference or add missing field
+- [ ] Resolve materialization strategy conflicts (ephemeral vs view)
+- [ ] Validate working memory model executes successfully
+- [ ] Test Miller's 7±2 capacity constraint implementation
+
+**BMP-HIGH-003**: Implement HTTP Connection Pooling  
+**Points**: 5  
+**Status**: P1 HIGH  
+**Impact**: 300ms overhead per LLM request  
+**Description**: Single session causes 100-6000× performance degradation
+
+**BMP-HIGH-004**: Fix Consolidation Threshold  
+**Points**: 2  
+**Status**: P1 HIGH  
+**Impact**: Blocks memory transfer to LTM  
+**Description**: Set to 0.6 instead of 0.5 biological requirement per McGaugh (2000)
+**Citations**: McGaugh (2000), Dudai (2004)  
+**Files**: `biological_memory/dbt_project.yml:35`  
+**Acceptance Criteria**:
+- [ ] Change `consolidation_threshold: 0.6` to `0.5`
+- [ ] Validate memory transfer to LTM functions properly  
+- [ ] Test consolidation cascade with new threshold
+- [ ] Update biological parameter validation tests
+
+### **P2 - MEDIUM PRIORITY (Estimated 1-2 weeks)**
 
 **PERF-001**: Database Query Optimization  
 **Points**: 5  

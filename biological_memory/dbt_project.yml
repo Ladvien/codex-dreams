@@ -25,14 +25,14 @@ clean-targets:
 vars:
   # Core biological parameters
   working_memory_capacity: 7  # Miller's Law: 7±2 items
-  short_term_memory_duration: 30  # seconds
+  short_term_memory_duration: 1800  # seconds (30 minutes) - biological accuracy per Peterson & Peterson (1959)
   long_term_memory_threshold: 0.7  # activation strength threshold
   
   # Memory strength and quality thresholds
   strong_connection_threshold: 0.7  # Strong memory connections
   medium_quality_threshold: 0.6    # Medium quality memories
   high_quality_threshold: 0.8      # High quality memories  
-  consolidation_threshold: 0.6     # Minimum for consolidation
+  consolidation_threshold: 0.5     # Minimum for consolidation - biological accuracy per McGaugh (2000)
   stability_threshold: 0.5         # Basic stability requirement
   overload_threshold: 0.9          # Working memory overload
   
