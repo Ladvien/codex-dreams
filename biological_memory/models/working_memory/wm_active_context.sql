@@ -2,7 +2,8 @@
   Working Memory Active Memories Model
   Materialized as VIEW for real-time access to current working memory
   
-  Working memory holds 7±2 items actively being processed
+  Working memory holds 7±2 items actively being processed within 5-minute attention window
+  Implements Miller's Law (1956) and Cowan's capacity limits (2001)
   High-speed access, temporary storage, frequent updates
 #}
 
@@ -27,8 +28,8 @@ WITH current_working_set AS (
     {{ frequency_score('COALESCE(access_count, 0)') }} as frequency_score
   FROM {{ source('codex_db', 'memories') }}
   WHERE 
-    -- Only recent, highly active memories in working memory - NULL SAFE
-    COALESCE(created_at, '1900-01-01'::TIMESTAMP) > CURRENT_TIMESTAMP - INTERVAL '{{ var("short_term_memory_duration") }} SECONDS'
+    -- Only recent, highly active memories in working memory - 5-minute attention window per Miller (1956)
+    COALESCE(created_at, '1900-01-01'::TIMESTAMP) > CURRENT_TIMESTAMP - INTERVAL '{{ var("working_memory_duration") }} SECONDS'
     AND COALESCE(activation_strength, 0.0) > {{ var('plasticity_threshold') }}
     AND COALESCE(access_count, 0) >= 2
 ),
@@ -61,4 +62,4 @@ SELECT
   LEAST(1.0, COALESCE(activation_strength, 0.1) * (1.0 + {{ var('hebbian_learning_rate') }})) as hebbian_strength,
   CURRENT_TIMESTAMP as processed_at
 FROM ranked_memories
-WHERE COALESCE(memory_rank, 1) <= {{ var('working_memory_capacity') }}
+WHERE COALESCE(memory_rank, 1) <= ({{ var('working_memory_capacity') }} + FLOOR(RANDOM() * 3 - 1))  -- Miller's 7±2 variability

@@ -8,8 +8,18 @@ import os
 import sys
 from datetime import datetime
 
-# Configuration from environment or defaults
-POSTGRES_URL = os.getenv("POSTGRES_DB_URL", "postgresql://codex_user:i5(|_})9A4&9Khd23&DJ4VRq&G_.px0Z@192.168.1.104:5432/codex_db")
+# Configuration from environment - no hardcoded credentials
+POSTGRES_URL = os.getenv("POSTGRES_DB_URL")
+if not POSTGRES_URL:
+    raise ValueError("POSTGRES_DB_URL environment variable is required")
+
+# Validate that default/insecure passwords are not being used
+if "defaultpassword" in POSTGRES_URL or ("password" in POSTGRES_URL and "://" in POSTGRES_URL):
+    parsed_url = POSTGRES_URL.split("://")[1] if "://" in POSTGRES_URL else ""
+    if "@" in parsed_url and ":" in parsed_url.split("@")[0]:
+        password_part = parsed_url.split("@")[0].split(":")[1] 
+        if password_part in ["password", "defaultpassword"]:
+            raise ValueError("Default or insecure password detected. Please use a secure password in POSTGRES_DB_URL")
 
 def reset_insights():
     """Drop all insights from the database"""

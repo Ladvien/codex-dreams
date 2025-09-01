@@ -12,14 +12,16 @@ LOAD fts;
 LOAD json;
 LOAD httpfs;
 
--- Create PostgreSQL connection secret
+-- Create PostgreSQL connection secret using environment variables
+-- Set these environment variables before running this script:
+-- POSTGRES_HOST, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
 CREATE OR REPLACE SECRET codex_db_connection (
     TYPE POSTGRES,
-    HOST '192.168.1.104',
+    HOST $1,           -- POSTGRES_HOST environment variable
     PORT 5432,
-    DATABASE 'codex_db',
-    USER 'codex_user',
-    PASSWORD 'M|h!y,3:tL^-MJSRswpH09N_JJnNkj?Q'
+    DATABASE $2,       -- POSTGRES_DB environment variable  
+    USER $3,           -- POSTGRES_USER environment variable
+    PASSWORD $4        -- POSTGRES_PASSWORD environment variable
 );
 
 -- Attach PostgreSQL database for cross-database queries

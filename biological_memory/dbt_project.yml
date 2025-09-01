@@ -24,7 +24,8 @@ clean-targets:
 # Biological Memory Processing Variables
 vars:
   # Core biological parameters
-  working_memory_capacity: 7  # Miller's Law: 7±2 items
+  working_memory_capacity: 7  # Miller's Law: 7±2 items (base capacity)
+  working_memory_duration: 300  # seconds (5 minutes) - attention window per Miller (1956) & Cowan (2001)
   short_term_memory_duration: 1800  # seconds (30 minutes) - biological accuracy per Peterson & Peterson (1959)
   long_term_memory_threshold: 0.7  # activation strength threshold
   

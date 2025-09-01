@@ -1,3 +1,565 @@
+# Biological Memory System - Jira Epic and Stories
+
+## Epic: Restore Biological Memory Architecture Compliance
+
+**Epic Description:** Implement critical fixes to restore biological memory system to architecture specification compliance, fix security vulnerabilities, and establish robust testing framework.
+
+**Business Value:** Enable production-ready biological memory consolidation system with proper security, testing, and biological accuracy.
+
+---
+
+## Work Stream 1: Core Architecture & Schema (Can Start Immediately)
+
+### STORY-001: Implement Biological Memory Schema Structure
+
+**Priority:** Critical  
+**Story Points:** 13  
+**Assigned Subagents:** postgres-sql-expert, cognitive-memory-researcher
+
+**Description:**
+As a system architect, I need the proper biological memory schema implemented according to ARCHITECTURE.md specifications so that the system can perform biological memory consolidation.
+
+**Acceptance Criteria:**
+- [ ] Create `biological_memory.episodic_buffer` table with all fields from ARCHITECTURE.md lines 261-350
+- [ ] Create `biological_memory.consolidation_buffer` table with proper schema
+- [ ] Create `codex_processed.semantic_memory` table with network structure
+- [ ] Implement proper indexes for performance (btree for timestamps, gin for jsonb fields)
+- [ ] Create migration scripts for existing data
+- [ ] All tables connect to PostgreSQL at 192.168.1.104 using credentials from .env
+- [ ] Schema validation tests pass in `/tests/database/schema_test.py`
+
+**Technical Details:**
+```sql
+-- Example structure from architecture
+CREATE SCHEMA IF NOT EXISTS biological_memory;
+CREATE SCHEMA IF NOT EXISTS codex_processed;
+
+CREATE TABLE biological_memory.episodic_buffer (
+    memory_id UUID PRIMARY KEY,
+    raw_content TEXT,
+    timestamp TIMESTAMPTZ,
+    attention_weight FLOAT,
+    emotional_salience FLOAT,
+    spatial_context JSONB,
+    temporal_context JSONB,
+    social_context JSONB,
+    phantom_objects JSONB[],
+    level_0_goal TEXT,
+    level_1_tasks TEXT[],
+    atomic_actions TEXT[],
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Tests Required:**
+- `/tests/database/schema_test.py` - Validates all tables exist with correct columns
+- `/tests/database/migration_test.py` - Tests data migration from old to new schema
+- `/tests/database/connection_test.py` - Verifies connection to 192.168.1.104
+
+**Definition of Done:**
+- [ ] All three biological memory schemas created and documented
+- [ ] Migration scripts tested and reversible
+- [ ] Performance indexes implemented
+- [ ] All tests pass with >95% coverage
+- [ ] Documentation updated in `/docs/database_schema.md`
+- [ ] Code review completed by postgres-sql-expert
+
+---
+
+### STORY-002: Fix dbt Project Configuration for Biological Processing
+
+**Priority:** Critical  
+**Story Points:** 8  
+**Assigned Subagents:** postgres-sql-expert, cognitive-memory-researcher
+
+**Description:**
+As a data engineer, I need the dbt project properly configured with biological memory tags and variables so that the pipeline can run with biological timing patterns.
+
+**Acceptance Criteria:**
+- [ ] Add biological orchestration tags: `continuous`, `short_term`, `consolidation`, `long_term`
+- [ ] Configure Ollama variables in `dbt_project.yml`:
+  - `ollama_url: "http://192.168.1.110:11434"`
+  - `ollama_model: "llama2"`
+  - `ollama_temperature: 0.7`
+- [ ] Set correct biological timing parameters:
+  - `working_memory_duration: 300` (5 minutes, not 1800)
+  - `working_memory_capacity_base: 7`
+  - `working_memory_capacity_variance: 2`
+- [ ] Configure model materializations per architecture spec lines 487-555
+
+**Tests Required:**
+- `/tests/dbt/configuration_test.py` - Validates all dbt configurations
+- `/tests/dbt/biological_timing_test.py` - Tests timing parameters match spec
+- `/tests/dbt/model_tags_test.py` - Verifies model tags properly applied
+
+**Definition of Done:**
+- [ ] dbt project configuration matches ARCHITECTURE.md specifications
+- [ ] All biological parameters validated against research
+- [ ] Tests achieve 100% configuration coverage
+- [ ] `dbt run` executes successfully with new configuration
+- [ ] Documentation updated in `/biological_memory/README.md`
+
+---
+
+## Work Stream 2: Security & Configuration (Can Start Immediately)
+
+### STORY-003: Remove All Hardcoded Credentials and Implement Secure Configuration
+
+**Priority:** Critical - Security  
+**Story Points:** 5  
+**Assigned Subagents:** rust-engineering-expert, postgres-sql-expert
+
+**Description:**
+As a security engineer, I need all hardcoded credentials removed and replaced with secure environment variable management so that production systems are not compromised.
+
+**Acceptance Criteria:**
+- [ ] Remove hardcoded password from `/src/generate_insights.py:21`
+- [ ] Remove hardcoded password from `/biological_memory/setup_postgres_connection.sql:22`
+- [ ] Implement secure credential management using environment variables
+- [ ] Add validation that prevents startup with default passwords
+- [ ] Create `.env.example` with all required variables (no actual passwords)
+- [ ] Implement credential rotation mechanism
+
+**Implementation:**
+```python
+# /src/codex_config.py - Secure implementation
+import os
+from typing import Optional
+
+class CodexConfig:
+    def __init__(self):
+        self.postgres_password = self._get_required_env("POSTGRES_PASSWORD")
+        if self.postgres_password == "defaultpassword":
+            raise ValueError("Default password not allowed in production")
+    
+    def _get_required_env(self, key: str) -> str:
+        value = os.getenv(key)
+        if not value:
+            raise ValueError(f"Required environment variable {key} not set")
+        return value
+```
+
+**Tests Required:**
+- `/tests/security/credential_test.py` - Validates no hardcoded credentials
+- `/tests/security/env_validation_test.py` - Tests environment variable validation
+- `/tests/security/rotation_test.py` - Tests credential rotation mechanism
+
+**Definition of Done:**
+- [ ] No hardcoded credentials in entire codebase
+- [ ] Security scan passes with no vulnerabilities
+- [ ] Environment variable validation implemented
+- [ ] Tests achieve 100% coverage of configuration code
+- [ ] Security documentation updated
+- [ ] Code review by rust-engineering-expert completed
+
+---
+
+### STORY-004: Implement Comprehensive Error Handling
+
+**Priority:** High  
+**Story Points:** 8  
+**Assigned Subagents:** rust-engineering-expert, rust-mcp-developer
+
+**Description:**
+As a developer, I need comprehensive error handling throughout the codebase so that the system fails gracefully and provides useful debugging information.
+
+**Acceptance Criteria:**
+- [ ] Add try-catch blocks to all database operations
+- [ ] Implement error handling for file I/O operations
+- [ ] Add timeout handling for all external service calls
+- [ ] Create custom exception hierarchy for different error types
+- [ ] Implement structured logging with appropriate levels
+- [ ] Add retry logic with exponential backoff for transient failures
+
+**Tests Required:**
+- `/tests/error_handling/database_errors_test.py`
+- `/tests/error_handling/file_io_errors_test.py`
+- `/tests/error_handling/timeout_test.py`
+- `/tests/error_handling/retry_logic_test.py`
+
+**Definition of Done:**
+- [ ] All external operations have error handling
+- [ ] Custom exception hierarchy documented
+- [ ] Retry logic tested under various failure scenarios
+- [ ] Error messages are helpful and actionable
+- [ ] Logging follows structured format
+- [ ] Tests cover all error paths
+
+---
+
+## Work Stream 3: LLM Integration (Can Start Immediately)
+
+### STORY-005: Implement Working LLM Integration with Ollama
+
+**Priority:** Critical  
+**Story Points:** 13  
+**Assigned Subagents:** cognitive-memory-researcher, rust-mcp-developer
+
+**Description:**
+As a cognitive system designer, I need proper LLM integration with Ollama so that the system can perform cognitive enrichment and memory consolidation.
+
+**Acceptance Criteria:**
+- [ ] Replace non-existent `llm_generate_json()` with working implementation
+- [ ] Replace non-existent `llm_generate_embedding()` with vector generation
+- [ ] Implement `prompt()` function as specified in ARCHITECTURE.md lines 199-207
+- [ ] Add connection to Ollama at 192.168.1.110:11434
+- [ ] Implement prompt caching system (lines 2073-2119)
+- [ ] Add comprehensive error handling and fallbacks
+- [ ] Implement timeout handling (30s default)
+
+**Implementation Example:**
+```python
+# /src/llm_integration.py
+import httpx
+from typing import Dict, Any, Optional
+import json
+
+class OllamaIntegration:
+    def __init__(self, base_url: str = "http://192.168.1.110:11434"):
+        self.base_url = base_url
+        self.client = httpx.Client(timeout=30.0)
+        self.cache = {}
+    
+    async def prompt(self, 
+                    prompt_text: str, 
+                    model: str = "llama2",
+                    temperature: float = 0.7) -> Dict[str, Any]:
+        """Execute prompt with caching and error handling"""
+        cache_key = hash((prompt_text, model, temperature))
+        
+        if cache_key in self.cache:
+            return self.cache[cache_key]
+        
+        try:
+            response = await self.client.post(
+                f"{self.base_url}/api/generate",
+                json={
+                    "model": model,
+                    "prompt": prompt_text,
+                    "temperature": temperature,
+                    "stream": False
+                }
+            )
+            result = response.json()
+            self.cache[cache_key] = result
+            return result
+        except httpx.TimeoutException:
+            return self._get_fallback_response(prompt_text)
+```
+
+**Tests Required:**
+- `/tests/llm/ollama_integration_test.py` - Tests Ollama connection
+- `/tests/llm/prompt_caching_test.py` - Validates caching mechanism
+- `/tests/llm/embedding_generation_test.py` - Tests vector generation
+- `/tests/llm/fallback_test.py` - Tests fallback mechanisms
+
+**Definition of Done:**
+- [ ] All LLM functions working with Ollama
+- [ ] Prompt caching reduces API calls by >50%
+- [ ] Error handling prevents pipeline crashes
+- [ ] Response validation implemented
+- [ ] Tests achieve >90% coverage
+- [ ] Performance benchmarks documented
+
+---
+
+## Work Stream 4: Biological Accuracy (Depends on Stream 1)
+
+### STORY-006: Fix Working Memory Attention Window to 5 Minutes
+
+**Priority:** Critical  
+**Story Points:** 5  
+**Assigned Subagents:** cognitive-memory-researcher, postgres-sql-expert
+
+**Description:**
+As a cognitive scientist, I need the working memory attention window set to 5 minutes according to biological constraints so that the system accurately models human memory.
+
+**Acceptance Criteria:**
+- [ ] Fix `/biological_memory/models/working_memory/wm_active_context.sql` line 31
+- [ ] Change from 30-minute (1800s) to 5-minute (300s) window
+- [ ] Implement Miller's Law capacity variability (7±2)
+- [ ] Add dynamic capacity calculation: `7 + FLOOR(RANDOM() * 3 - 1)`
+- [ ] Validate against cognitive science research
+
+**Tests Required:**
+- `/tests/biological/working_memory_window_test.py`
+- `/tests/biological/capacity_variability_test.py`
+- `/tests/biological/millers_law_test.py`
+
+**Definition of Done:**
+- [ ] Working memory window is exactly 5 minutes
+- [ ] Capacity varies between 5-9 items
+- [ ] Tests validate biological accuracy
+- [ ] Performance impact documented
+- [ ] Cognitive researcher validates implementation
+
+---
+
+### STORY-007: Implement Hebbian Learning Mathematics
+
+**Priority:** High  
+**Story Points:** 8  
+**Assigned Subagents:** cognitive-memory-researcher, postgres-sql-expert
+
+**Description:**
+As a neural network researcher, I need correct Hebbian learning calculations so that memory strengthening follows biological principles.
+
+**Acceptance Criteria:**
+- [ ] Fix `/biological_memory/models/consolidation/memory_replay.sql` line 100
+- [ ] Change from multiplication to proper Hebbian formula:
+  - `hebbian_potential * (1 + hebbian_learning_rate)`
+- [ ] Set learning rate to biologically accurate 0.1
+- [ ] Implement spike-timing dependent plasticity
+- [ ] Add synaptic weight normalization
+
+**Tests Required:**
+- `/tests/biological/hebbian_learning_test.py`
+- `/tests/biological/synaptic_plasticity_test.py`
+- `/tests/biological/weight_normalization_test.py`
+
+**Definition of Done:**
+- [ ] Hebbian calculations match neuroscience literature
+- [ ] Learning rate validated by research
+- [ ] Tests verify mathematical accuracy
+- [ ] Performance optimized for large-scale processing
+- [ ] Documentation includes biological references
+
+---
+
+## Work Stream 5: Testing Infrastructure (Can Start Immediately)
+
+### STORY-008: Refactor Test Architecture for Maintainability
+
+**Priority:** High  
+**Story Points:** 13  
+**Assigned Subagents:** rust-engineering-expert, rust-mcp-developer
+
+**Description:**
+As a test engineer, I need a maintainable test architecture so that tests are reliable, fast, and easy to understand.
+
+**Acceptance Criteria:**
+- [ ] Split 652-line `/tests/conftest.py` into modular fixtures:
+  - `/tests/fixtures/database.py`
+  - `/tests/fixtures/mocking.py`
+  - `/tests/fixtures/test_data.py`
+- [ ] Standardize all test files to `test_*.py` pattern
+- [ ] Remove hardcoded paths, use fixtures and tmp_path
+- [ ] Implement test isolation with transactions
+- [ ] Add parallel test execution support
+- [ ] Create test data factories
+
+**Tests Required:**
+- `/tests/infrastructure/fixture_loading_test.py`
+- `/tests/infrastructure/isolation_test.py`
+- `/tests/infrastructure/parallel_execution_test.py`
+
+**Definition of Done:**
+- [ ] conftest.py is under 100 lines
+- [ ] All tests follow naming convention
+- [ ] Tests run in parallel reducing time by >50%
+- [ ] No test depends on another test's state
+- [ ] Test documentation updated
+- [ ] CI/CD pipeline runs all tests successfully
+
+---
+
+### STORY-009: Implement Integration Testing with Live Resources
+
+**Priority:** High  
+**Story Points:** 8  
+**Assigned Subagents:** postgres-sql-expert, rust-mcp-developer
+
+**Description:**
+As a QA engineer, I need integration tests that validate the system works with live PostgreSQL and Ollama instances.
+
+**Acceptance Criteria:**
+- [ ] Create integration test suite connecting to 192.168.1.104 (PostgreSQL)
+- [ ] Create integration tests for Ollama at 192.168.1.110
+- [ ] Implement test data cleanup after each run
+- [ ] Add health checks before running tests
+- [ ] Create separate test database to avoid production impact
+- [ ] Add performance benchmarking
+
+**Tests Required:**
+- `/tests/integration/postgres_integration_test.py`
+- `/tests/integration/ollama_integration_test.py`
+- `/tests/integration/end_to_end_memory_test.py`
+- `/tests/integration/performance_benchmark_test.py`
+
+**Definition of Done:**
+- [ ] Integration tests cover all external services
+- [ ] Tests clean up all test data
+- [ ] Performance benchmarks established
+- [ ] Tests can run in CI/CD environment
+- [ ] Documentation includes test environment setup
+- [ ] No impact on production data
+
+---
+
+## Work Stream 6: Code Quality (Can Start Immediately)
+
+### STORY-010: Implement Type Hints and Code Standards
+
+**Priority:** Medium  
+**Story Points:** 8  
+**Assigned Subagents:** rust-engineering-expert, rust-mcp-developer
+
+**Description:**
+As a code maintainer, I need comprehensive type hints and consistent code standards so that the codebase is maintainable and self-documenting.
+
+**Acceptance Criteria:**
+- [ ] Add type hints to all functions in `/src/` directory
+- [ ] Configure and run Black formatter on all Python files
+- [ ] Configure and run isort for import organization
+- [ ] Set up flake8 for linting with max line length 100
+- [ ] Add mypy for static type checking
+- [ ] Create pre-commit hooks for automatic formatting
+
+**Tests Required:**
+- `/tests/quality/type_hints_test.py` - Validates type hint coverage
+- `/tests/quality/formatting_test.py` - Checks code formatting
+- `/tests/quality/import_order_test.py` - Validates import organization
+
+**Definition of Done:**
+- [ ] 100% type hint coverage in src/ directory
+- [ ] All code passes Black, isort, flake8 checks
+- [ ] mypy runs with no errors
+- [ ] Pre-commit hooks prevent bad commits
+- [ ] CI/CD includes code quality checks
+- [ ] Documentation updated with coding standards
+
+---
+
+## Work Stream 7: Biological Orchestration (Depends on Streams 1-4)
+
+### STORY-011: Implement Biological Rhythm Pipeline Orchestration
+
+**Priority:** High  
+**Story Points:** 13  
+**Assigned Subagents:** cognitive-memory-researcher, memory-curator
+
+**Description:**
+As a system orchestrator, I need biological rhythm scheduling so that memory consolidation follows natural cognitive patterns.
+
+**Acceptance Criteria:**
+- [ ] Implement continuous processing (every 5 minutes)
+- [ ] Implement short-term consolidation (every 20 minutes)
+- [ ] Implement long-term consolidation (every 90 minutes)
+- [ ] Implement REM sleep simulation (nightly at 2 AM)
+- [ ] Add synaptic homeostasis process
+- [ ] Create Apache Airflow DAGs for orchestration
+
+**Implementation:**
+```python
+# /dags/biological_rhythms.py
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+from datetime import datetime, timedelta
+
+default_args = {
+    'owner': 'cognitive-memory-researcher',
+    'depends_on_past': False,
+    'email_on_failure': True,
+    'email_on_retry': False,
+    'retries': 2,
+    'retry_delay': timedelta(minutes=5)
+}
+
+# Continuous processing DAG
+continuous_dag = DAG(
+    'continuous_memory_processing',
+    default_args=default_args,
+    description='5-minute working memory processing',
+    schedule_interval='*/5 * * * *',
+    start_date=datetime(2025, 9, 1),
+    catchup=False
+)
+```
+
+**Tests Required:**
+- `/tests/orchestration/rhythm_scheduling_test.py`
+- `/tests/orchestration/consolidation_pipeline_test.py`
+- `/tests/orchestration/rem_simulation_test.py`
+
+**Definition of Done:**
+- [ ] All biological rhythms implemented
+- [ ] Pipeline runs continuously without errors
+- [ ] Memory consolidation validated by researcher
+- [ ] Performance metrics collected
+- [ ] Documentation includes biological rationale
+- [ ] Monitoring dashboard created
+
+---
+
+## Work Stream 8: Performance & Optimization (Can start after Stream 1)
+
+### STORY-012: Optimize Semantic Network Performance
+
+**Priority:** Medium  
+**Story Points:** 8  
+**Assigned Subagents:** postgres-vector-optimizer, postgres-sql-expert
+
+**Description:**
+As a performance engineer, I need the semantic network optimized so that it can handle large-scale memory processing efficiently.
+
+**Acceptance Criteria:**
+- [ ] Replace static minicolumn generation with adaptive clustering
+- [ ] Implement proper vector indexing with pgvector
+- [ ] Add batch processing for consolidation
+- [ ] Optimize incremental materialization strategies
+- [ ] Implement connection pooling for database access
+- [ ] Add query performance monitoring
+
+**Tests Required:**
+- `/tests/performance/semantic_network_test.py`
+- `/tests/performance/vector_indexing_test.py`
+- `/tests/performance/batch_processing_test.py`
+
+**Definition of Done:**
+- [ ] Query performance improved by >50%
+- [ ] Can process 10,000 memories per minute
+- [ ] Vector similarity search under 100ms
+- [ ] Connection pool prevents exhaustion
+- [ ] Performance benchmarks documented
+- [ ] Monitoring alerts configured
+
+---
+
+## Execution Plan
+
+### Phase 1 (Week 1-2): Critical Foundation
+- **Parallel Streams:** 1, 2, 5, 6 can start immediately
+- **Focus:** Security fixes, core schema, test infrastructure
+
+### Phase 2 (Week 2-3): Core Functionality  
+- **Streams:** 3, 4 (after Stream 1 completes)
+- **Focus:** LLM integration, biological accuracy
+
+### Phase 3 (Week 3-4): Integration & Optimization
+- **Streams:** 7, 8 (after Streams 1-4 complete)
+- **Focus:** Orchestration, performance
+
+### Phase 4 (Week 4): Validation & Deployment
+- Run full integration tests
+- Performance validation
+- Documentation completion
+- Production deployment preparation
+
+## Success Metrics
+- Zero security vulnerabilities
+- All tests passing with >90% coverage
+- Biological parameters validated by research
+- Performance meets SLA (<100ms query time)
+- System processes memories continuously for 7 days without failure
+
+## Risk Mitigation
+- **Risk:** Ollama integration complexity
+  - **Mitigation:** Early spike with fallback to mock LLM if needed
+- **Risk:** PostgreSQL performance at scale
+  - **Mitigation:** Implement partitioning and archival strategy
+- **Risk:** Test flakiness with live services
+  - **Mitigation:** Implement retry logic and service health checks
+
 # CODEX DREAMS - CONSOLIDATED PROJECT BACKLOG
 
 **Last Updated**: 2025-09-01 (Implementation Status Verified)  

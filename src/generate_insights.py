@@ -17,8 +17,14 @@ from typing import List, Dict, Any
 # Register UUID adapter for psycopg2
 register_uuid()
 
-# Configuration from environment
-POSTGRES_URL = os.getenv("POSTGRES_DB_URL", "postgresql://codex_user:i5(|_})9A4&9Khd23&DJ4VRq&G_.px0Z@192.168.1.104:5432/codex_db")
+# Configuration from environment - no hardcoded credentials
+POSTGRES_URL = os.getenv("POSTGRES_DB_URL")
+if not POSTGRES_URL:
+    raise ValueError("POSTGRES_DB_URL environment variable is required")
+
+# Validate that default/insecure passwords are not being used
+if "defaultpassword" in POSTGRES_URL or "password" in POSTGRES_URL.split("://")[1].split("@")[0].split(":")[1]:
+    raise ValueError("Default or insecure password detected. Please use a secure password in POSTGRES_DB_URL")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gpt-oss:20b")
 DUCKDB_PATH = os.getenv("DUCKDB_PATH", "/Users/ladvien/biological_memory/dbs/memory.duckdb")
