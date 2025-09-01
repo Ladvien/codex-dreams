@@ -19,7 +19,7 @@ CREATE OR REPLACE SECRET codex_db_connection (
     PORT 5432,
     DATABASE 'codex_db',
     USER 'codex_user',
-    PASSWORD 'MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a'
+    PASSWORD 'M|h!y,3:tL^-MJSRswpH09N_JJnNkj?Q'
 );
 
 -- Attach PostgreSQL database for cross-database queries

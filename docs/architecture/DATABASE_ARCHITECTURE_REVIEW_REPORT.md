@@ -120,7 +120,7 @@ ATTACH '${POSTGRES_DB_URL}' AS source_memories (TYPE POSTGRES);
 **Current Implementation:**
 ```sql
 -- postgres_connection_setup.sql
-ATTACH 'postgresql://codex_user:MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a@192.168.1.104:5432/codex_db' AS postgres_db (TYPE postgres);
+ATTACH 'postgresql://codex_user:***REDACTED***@192.168.1.104:5432/codex_db' AS postgres_db (TYPE postgres);
 ```
 
 **Issues:**
