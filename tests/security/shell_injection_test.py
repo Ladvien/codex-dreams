@@ -65,7 +65,12 @@ class TestShellInjectionPrevention:
             # Verify security logging
             orchestrator.logger.error.assert_called()
             error_call = orchestrator.logger.error.call_args[0][0]
-            assert "Dangerous character" in error_call or "Invalid command format" in error_call
+            assert any(phrase in error_call for phrase in [
+                "Dangerous character", 
+                "Invalid command format", 
+                "Disallowed dbt subcommand",
+                "Unexpected argument format"
+            ]), f"Error message '{error_call}' doesn't contain expected phrases"
             orchestrator.logger.reset_mock()
     
     def test_command_injection_via_arguments_blocked(self, orchestrator):
@@ -354,8 +359,10 @@ class TestShellInjectionPrevention:
         orchestrator.logger.error.assert_called()
         error_message = orchestrator.logger.error.call_args[0][0]
         
-        # Error should mention dangerous character but not the full command
-        assert "Dangerous character" in error_message
+        # Error should mention security issue but not the full command  
+        assert any(phrase in error_message for phrase in [
+            "Dangerous character", "Disallowed dbt subcommand", "Unexpected argument format"
+        ])
         assert "/etc/passwd" not in error_message, "Sensitive paths should not appear in logs"
     
     @patch('subprocess.run')

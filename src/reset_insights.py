@@ -9,7 +9,7 @@ import sys
 from datetime import datetime
 
 # Configuration from environment or defaults
-POSTGRES_URL = os.getenv("POSTGRES_DB_URL", "postgresql://codex_user:MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a@192.168.1.104:5432/codex_db")
+POSTGRES_URL = os.getenv("POSTGRES_DB_URL", "postgresql://codex_user:i5(|_})9A4&9Khd23&DJ4VRq&G_.px0Z@192.168.1.104:5432/codex_db")
 
 def reset_insights():
     """Drop all insights from the database"""

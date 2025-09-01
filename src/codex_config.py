@@ -194,15 +194,15 @@ schedule: every 5 minutes
 
 # Database connection (PostgreSQL)
 database:
-  host: 192.168.1.104
+  host: localhost
   port: 5432
   name: codex_db
   user: codex_user
-  password: MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a
+  password: ***REDACTED***
 
 # AI model settings (Ollama)
 ollama:
-  host: 192.168.1.110
+  host: localhost
   port: 11434
   model: gpt-oss:20b
 
