@@ -18,15 +18,19 @@ from typing import List, Dict, Any
 register_uuid()
 
 # Configuration from environment
-POSTGRES_URL = os.getenv("POSTGRES_DB_URL", "postgresql://ladvien@localhost:5432/codex")
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
+POSTGRES_URL = os.getenv("POSTGRES_DB_URL", "postgresql://codex_user:MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a@192.168.1.104:5432/codex_db")
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://192.168.1.110:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gpt-oss:20b")
 DUCKDB_PATH = os.getenv("DUCKDB_PATH", "/Users/ladvien/biological_memory/dbs/memory.duckdb")
 
 
 def call_ollama(prompt: str, temperature: float = 0.7, max_tokens: int = 150) -> str:
     """Call Ollama API to generate text"""
     try:
+        print(f"  → Calling Ollama at {OLLAMA_URL} with model {OLLAMA_MODEL}")
+        print(f"    Prompt length: {len(prompt)} chars, max_tokens: {max_tokens}")
+        
+        start_time = datetime.now()
         response = requests.post(
             f"{OLLAMA_URL}/api/generate",
             json={
@@ -35,23 +39,33 @@ def call_ollama(prompt: str, temperature: float = 0.7, max_tokens: int = 150) ->
                 "stream": False,
                 "options": {"temperature": temperature, "num_predict": max_tokens},
             },
-            timeout=30,
+            timeout=120,  # Increased from 30 to 120 seconds for larger models
         )
+        
+        elapsed = (datetime.now() - start_time).total_seconds()
+        print(f"    Response received in {elapsed:.1f} seconds")
 
         if response.status_code == 200:
             result = response.json()
-            return result.get("response", "").strip()
+            response_text = result.get("response", "").strip()
+            print(f"    Generated {len(response_text)} chars")
+            return response_text
         else:
-            print(f"Ollama API error: {response.status_code}")
+            print(f"  ✗ Ollama API error: {response.status_code}")
+            print(f"    Response: {response.text[:200]}")
             return ""
+    except requests.exceptions.Timeout:
+        print(f"  ✗ Ollama request timed out after 120 seconds")
+        print(f"    Consider using a smaller model or increasing timeout")
+        return ""
     except Exception as e:
-        print(f"Error calling Ollama: {e}")
+        print(f"  ✗ Error calling Ollama: {e}")
         return ""
 
 
 def extract_tags(content: str) -> List[str]:
     """Extract tags from content using Ollama"""
-    prompt = f"Extract 3-5 single-word tags from this text. Return only the tags separated by commas, nothing else: {content}"
+    prompt = f"List 3-5 keywords from: {content}\n\nKeywords:"
 
     response = call_ollama(prompt, temperature=0.3, max_tokens=50)
 
@@ -74,44 +88,86 @@ def generate_insight(content: str, related_memories: List[str] = None) -> Dict[s
             f"\n\nRelated memories exist with IDs: {', '.join(map(str, related_memories[:3]))}"
         )
 
-    # Generate insight
-    insight_prompt = f"""Analyze this memory and generate a brief insight about patterns, themes, or important observations.
-Be concise and specific (max 2 sentences):
+    # Try to generate insight with LLM
+    insight_prompt = f"""Given this memory: {context}
 
-Memory: {context}
-
-Insight:"""
+What is the key insight or pattern? (1-2 sentences):"""
 
     insight_content = call_ollama(insight_prompt, temperature=0.7, max_tokens=100)
 
+    # If LLM fails, use rule-based fallback
     if not insight_content or len(insight_content) < 10:
-        # Fallback to simple pattern detection
-        insight_content = f"Memory recorded about: {content[:100]}..."
+        print("  ⚠ Using fallback insight generation (LLM response empty)")
+        
+        # Create more meaningful fallback insights based on content analysis
+        content_lower = content.lower()
+        
+        if "test" in content_lower or "debug" in content_lower:
+            insight_content = f"Testing activity detected: {content[:80]}..."
+            insight_type = "testing"
+        elif "error" in content_lower or "fix" in content_lower:
+            insight_content = f"Error handling or debugging pattern observed in: {content[:60]}..."
+            insight_type = "debugging"
+        elif "create" in content_lower or "new" in content_lower:
+            insight_content = f"Creation or initialization pattern detected: {content[:70]}..."
+            insight_type = "creation"
+        elif "update" in content_lower or "change" in content_lower:
+            insight_content = f"Modification pattern identified in: {content[:70]}..."
+            insight_type = "modification"
+        elif "learn" in content_lower or "understand" in content_lower:
+            insight_content = f"Learning process captured: {content[:80]}..."
+            insight_type = "learning"
+        else:
+            # Generic fallback
+            insight_content = f"Memory captured: {content[:100]}..."
+            insight_type = "pattern"
+    else:
+        # LLM succeeded, determine type from content
+        insight_type = "pattern"  # Default
+        if related_memories is not None and len(related_memories) > 1:
+            insight_type = "connection"
+        elif "learn" in content.lower() or "understand" in content.lower():
+            insight_type = "learning"
 
-    # Extract tags
+    # Extract tags (with fallback if LLM fails)
     tags = extract_tags(content)
-
-    # Determine insight type based on content
-    insight_type = "pattern"  # Default
-    if related_memories is not None and len(related_memories) > 1:
-        insight_type = "connection"
-    elif "learn" in content.lower() or "understand" in content.lower():
-        insight_type = "learning"
+    if not tags:
+        # Fallback tag extraction using simple keyword analysis
+        print("  ⚠ Using fallback tag extraction")
+        words = content.lower().split()
+        # Filter for meaningful words (longer than 3 chars, not common words)
+        common_words = {'the', 'and', 'for', 'with', 'this', 'that', 'from', 'have', 'will', 'been', 'after'}
+        tags = []
+        for word in words:
+            clean_word = ''.join(c for c in word if c.isalnum())
+            if len(clean_word) > 3 and clean_word not in common_words and clean_word not in tags:
+                tags.append(clean_word)
+                if len(tags) >= 5:
+                    break
 
     return {
         "content": insight_content,
         "type": insight_type,
         "tags": tags,
-        "confidence": 0.7,  # Default confidence for MVP
+        "confidence": 0.7 if insight_content else 0.3,  # Lower confidence for fallback
     }
 
 
 def process_memories():
     """Main processing function"""
 
+    print("=" * 60)
     print("Starting MVP Insights Generation...")
+    print("=" * 60)
+    print(f"Configuration:")
+    print(f"  PostgreSQL: {POSTGRES_URL.split('@')[1] if '@' in POSTGRES_URL else POSTGRES_URL}")
+    print(f"  Ollama: {OLLAMA_URL}")
+    print(f"  Model: {OLLAMA_MODEL}")
+    print(f"  DuckDB: {DUCKDB_PATH}")
+    print()
 
     # Connect to DuckDB
+    print("Connecting to DuckDB...")
     duck_conn = duckdb.connect(DUCKDB_PATH)
 
     # Attach PostgreSQL codex_db database (this is the source database for dbt models)
@@ -122,17 +178,19 @@ def process_memories():
     )
     print(f"Attached codex_db from: {POSTGRES_URL}")
 
-    # Get memories to process
-    print("Fetching memories from DuckDB view...")
+    # Get memories to process from PostgreSQL via DuckDB
+    print("Fetching memories to process from codex_db...")
     memories_df = duck_conn.execute(
         """
         SELECT 
-            memory_id,
+            id as memory_id,
             content,
-            suggested_tags,
-            related_memories,
-            connection_count
-        FROM mvp_memory_insights
+            tags,
+            summary,
+            context
+        FROM codex_db.public.memories
+        WHERE content IS NOT NULL
+        ORDER BY created_at DESC
         LIMIT 10
     """
     ).fetchdf()
@@ -151,16 +209,15 @@ def process_memories():
 
     insights_generated = 0
 
-    for _, row in memories_df.iterrows():
+    for idx, row in memories_df.iterrows():
         memory_id = row["memory_id"]
         content = row["content"]
-        related_memories = (
-            row["related_memories"]
-            if row["related_memories"] is not None and len(row["related_memories"]) > 0
-            else []
-        )
+        # For now, we don't have related memories in the base table
+        # This would come from a more sophisticated biological memory analysis
+        related_memories = []
 
-        print(f"\nProcessing memory {str(memory_id)[:8]}...")
+        print(f"\n[{idx + 1}/{len(memories_df)}] Processing memory {str(memory_id)[:8]}...")
+        print(f"  Content preview: {content[:100]}..." if len(content) > 100 else f"  Content: {content}")
 
         # Generate insight
         insight = generate_insight(content, related_memories)

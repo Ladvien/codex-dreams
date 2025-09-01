@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(cargo build:*)",
+      "Bash(source .env)",
+      "Bash(./target/release/codex-store mcp:*)",
+      "Bash(chmod:*)",
+      "Bash(./mcp-manager.sh:*)",
+      "Bash(./target/release/codex-store:*)",
+      "Bash(find:*)",
+      "Bash(cargo test:*)",
+      "Bash(mv:*)",
+      "Bash(psql:*)",
+      "WebSearch",
+      "Bash(RUSTFLAGS=-Awarnings cargo test --no-run)"
+    ],
+    "additionalDirectories": [
+      "/Users/ladvien/Library",
+      "/Users/ladvien/.config",
+      "/Users/ladvien/.codex"
+    ]
+  },
+  "outputStyle": "Explanatory"
+}

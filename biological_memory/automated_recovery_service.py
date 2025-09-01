@@ -644,8 +644,9 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     
     # Initialize recovery service
+    import os
     recovery_service = initialize_recovery_service(
-        base_path="/Users/ladvien/codex-dreams/biological_memory",
+        base_path=os.getenv('DBT_PROJECT_DIR', "/Users/ladvien/codex-dreams/biological_memory"),
         recovery_enabled=True,
         dry_run=True  # Safe for testing
     )

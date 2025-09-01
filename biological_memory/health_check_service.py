@@ -226,22 +226,22 @@ class ComprehensiveHealthMonitor:
                     'database': match.group(5)
                 }
             else:
-                # Fallback to defaults without hardcoded password
+                # Fallback to defaults using environment variables
                 postgres_params = {
-                    'host': '192.168.1.104',
+                    'host': os.getenv('POSTGRES_HOST', 'localhost'),
                     'port': 5432,
-                    'database': 'codex_db',
-                    'user': 'codex_user',
-                    'password': 'password'  # Placeholder - should come from env
+                    'database': os.getenv('POSTGRES_DB', 'codex_db'),
+                    'user': os.getenv('POSTGRES_USER', 'codex_user'),
+                    'password': os.getenv('POSTGRES_PASSWORD', 'password')  # Should come from env
                 }
         else:
-            # Fallback to defaults without hardcoded password
+            # Fallback to defaults using environment variables
             postgres_params = {
-                'host': '192.168.1.104',
+                'host': os.getenv('POSTGRES_HOST', 'localhost'),
                 'port': 5432,
-                'database': 'codex_db',
-                'user': 'codex_user',
-                'password': 'password'  # Placeholder - should come from env
+                'database': os.getenv('POSTGRES_DB', 'codex_db'),
+                'user': os.getenv('POSTGRES_USER', 'codex_user'),
+                'password': os.getenv('POSTGRES_PASSWORD', 'password')  # Should come from env
             }
         
         self.circuit_breakers['postgresql'] = PostgreSQLCircuitBreaker(
@@ -280,8 +280,8 @@ class ComprehensiveHealthMonitor:
                 details = {
                     'connection_state': circuit_breaker.state,
                     'failure_count': circuit_breaker.failure_count,
-                    'host': '192.168.1.104',
-                    'database': 'codex_db'
+                    'host': os.getenv('POSTGRES_HOST', 'localhost'),
+                    'database': os.getenv('POSTGRES_DB', 'codex_db')
                 }
                 error_message = None
             else:
@@ -844,8 +844,9 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     
     # Initialize health monitor
+    import os
     monitor = initialize_health_monitor(
-        base_path="/Users/ladvien/codex-dreams/biological_memory",
+        base_path=os.getenv('DBT_PROJECT_DIR', "/Users/ladvien/codex-dreams/biological_memory"),
         enable_http_endpoints=True,
         http_port=8080
     )

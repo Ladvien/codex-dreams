@@ -54,7 +54,7 @@ class OllamaLLMService:
     """
     
     def __init__(self, 
-                 ollama_url: str = "http://192.168.1.110:11434",
+                 ollama_url: str = "http://localhost:11434",
                  model_name: str = "gpt-oss:20b",
                  cache_db_path: Optional[str] = None,
                  error_handler: Optional[BiologicalMemoryErrorHandler] = None):

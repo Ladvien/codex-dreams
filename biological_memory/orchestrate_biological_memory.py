@@ -50,8 +50,14 @@ class BiologicalMemoryOrchestrator:
     Orchestrates biological memory processing following circadian rhythms
     """
     
-    def __init__(self, base_path: str = "/Users/ladvien/codex-dreams/biological_memory", log_dir: Optional[str] = None):
+    def __init__(self, base_path: str = None, log_dir: Optional[str] = None):
+        # Use environment variable for base path or fall back to default
+        if base_path is None:
+            base_path = os.getenv('DBT_PROJECT_DIR', "/Users/ladvien/codex-dreams/biological_memory")
         self.base_path = Path(base_path)
+        
+        # Validate required environment variables
+        self._validate_environment_variables()
         
         # Environment variables for BMP-013
         self.max_db_connections = int(os.getenv('MAX_DB_CONNECTIONS', '160'))
@@ -120,22 +126,53 @@ class BiologicalMemoryOrchestrator:
         
         self.logger.info("Biological Memory Orchestrator initialized")
 
+    def _validate_environment_variables(self):
+        """Validate that required environment variables are configured properly"""
+        required_vars = {
+            'DUCKDB_PATH': 'Path to DuckDB database file',
+            'OLLAMA_URL': 'URL for Ollama LLM service',
+            'POSTGRES_DB_URL': 'PostgreSQL connection string'
+        }
+        
+        missing_vars = []
+        for var_name, description in required_vars.items():
+            value = os.getenv(var_name)
+            if not value:
+                missing_vars.append(f"{var_name} ({description})")
+        
+        if missing_vars:
+            error_msg = f"Missing required environment variables:\n" + "\n".join(f"  - {var}" for var in missing_vars)
+            error_msg += "\n\nPlease check your .env file or environment configuration."
+            raise ValueError(error_msg)
+        
+        # Additional validation for paths
+        duckdb_path = os.getenv('DUCKDB_PATH')
+        if duckdb_path:
+            duckdb_parent = Path(duckdb_path).parent
+            if not duckdb_parent.exists():
+                try:
+                    duckdb_parent.mkdir(parents=True, exist_ok=True)
+                    print(f"Created directory: {duckdb_parent}")
+                except Exception as e:
+                    print(f"Warning: Could not create DuckDB directory {duckdb_parent}: {e}")
+
     def _init_llm_service(self):
         """Initialize LLM integration service with Ollama"""
         try:
             # Get Ollama URL from environment
-            ollama_url = os.getenv('OLLAMA_URL', 'http://192.168.1.110:11434')
+            ollama_url = os.getenv('OLLAMA_URL', 'http://localhost:11434')
             
             # Initialize LLM service with error handler
+            llm_cache_path = os.getenv('LLM_CACHE_PATH', str(self.base_path / "dbs" / "llm_cache.duckdb"))
             llm_service = initialize_llm_service(
                 ollama_url=ollama_url,
-                model_name="gpt-oss:20b",
-                cache_db_path=str(self.base_path / "dbs" / "llm_cache.duckdb"),
+                model_name=os.getenv('OLLAMA_MODEL', "gpt-oss:20b"),
+                cache_db_path=llm_cache_path,
                 error_handler=self.error_handler
             )
             
             # Test database connection and register UDF functions
-            db_path = self.base_path / 'dbs' / 'memory.duckdb'
+            db_path = Path(os.getenv('DUCKDB_PATH', str(self.base_path / 'dbs' / 'memory.duckdb')))
             with duckdb.connect(str(db_path)) as conn:
                 success = register_llm_functions(conn)
                 if success:
@@ -361,7 +398,7 @@ class BiologicalMemoryOrchestrator:
         
         try:
             # Test database connectivity with SQL safety system - BMP-HIGH-006
-            db_path = self.base_path / 'dbs' / 'memory.duckdb'
+            db_path = Path(os.getenv('DUCKDB_PATH', str(self.base_path / 'dbs' / 'memory.duckdb')))
             
             # Use SQL safety manager for bulletproof database operations
             result = self.sql_safety.execute_safe_query(
