@@ -354,11 +354,11 @@
     {{ log("Creating optimized indexes for memory table", info=true) }}
   {% endif %}
   
+  {# PostgreSQL GIN index syntax not supported in DuckDB - using regular index instead #}
   {% set index_statements = [
     "CREATE INDEX IF NOT EXISTS idx_" ~ this.name ~ "_activation ON " ~ this ~ " (activation_strength DESC)",
     "CREATE INDEX IF NOT EXISTS idx_" ~ this.name ~ "_timestamp ON " ~ this ~ " (created_at, last_accessed_at)",
     "CREATE INDEX IF NOT EXISTS idx_" ~ this.name ~ "_type ON " ~ this ~ " (memory_type)",
-    -- PostgreSQL GIN index syntax not supported in DuckDB - using regular index instead
     "CREATE INDEX IF NOT EXISTS idx_" ~ this.name ~ "_concepts ON " ~ this ~ " (concepts)"
   ] %}
   
