@@ -81,11 +81,21 @@ vars:
   temp_materialization_threshold: 100000
 
 # Model configurations - Optimized for <50ms query performance
+# 
+# MATERIALIZATION STRATEGY:
+# - working_memory: view (real-time access, matches model overrides)
+# - short_term_memory: incremental (real-time updates with performance optimization)  
+# - long_term_memory: table (comprehensive indexing for complex queries)
+# - semantic: incremental (efficient semantic graph updates, matches model overrides)
+# - analytics: view (flexibility with performance hints)
+# - insights: view (for MVP pipeline)
+# - performance: ephemeral (real-time monitoring, temporary calculations)
+# - consolidation: incremental (heavy optimization with merge strategy)
 models:
   biological_memory:
-    # Working memory models (ephemeral for speed - most accessed, temporary data)
+    # Working memory models (view for real-time access - matching model overrides)
     working_memory:
-      +materialized: ephemeral
+      +materialized: view
       +pre-hook: [
         "{{ log('Processing working memory batch', info=true) }}",
         "SET threads = 4",
@@ -107,9 +117,9 @@ models:
       ]
       +post-hook: [
         "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_memory_id ON {{ this }} (memory_id)",
-        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_created_at ON {{ this }} (created_at DESC)",
-        -- PostgreSQL ANALYZE not supported in DuckDB - DuckDB auto-analyzes
-        -- "ANALYZE {{ this }}"
+        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_created_at ON {{ this }} (created_at DESC)"
+        # PostgreSQL ANALYZE not supported in DuckDB - DuckDB auto-analyzes
+        # "ANALYZE {{ this }}"
       ]
       +tags: ["performance_optimized", "incremental"]
       
@@ -119,17 +129,17 @@ models:
       +pre-hook: "SET memory_limit = '6GB'"
       +post-hook: [
         "{{ create_memory_indexes() }}",
-        -- PostgreSQL GIN index syntax not supported in DuckDB
-        -- "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_semantic_search ON {{ this }} USING gin(concepts)",
-        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_stability ON {{ this }} (stability_score DESC, created_at DESC)",
-        -- PostgreSQL ANALYZE not supported in DuckDB - DuckDB auto-analyzes
-        -- "ANALYZE {{ this }}"
+        # PostgreSQL GIN index syntax not supported in DuckDB
+        # "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_semantic_search ON {{ this }} USING gin(concepts)",
+        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_stability ON {{ this }} (stability_score DESC, created_at DESC)"
+        # PostgreSQL ANALYZE not supported in DuckDB - DuckDB auto-analyzes
+        # "ANALYZE {{ this }}"
       ]
       +tags: ["core", "memory", "production", "indexed"]
       
-    # Semantic associations (materialized table for complex similarity calculations)
+    # Semantic associations (incremental for efficient semantic graph updates - matching model overrides)
     semantic:
-      +materialized: table
+      +materialized: incremental
       +unique_key: [source_concept, target_concept]
       +pre-hook: [
         "{{ strengthen_associations() }}",
@@ -139,9 +149,9 @@ models:
       +post-hook: [
         "{{ update_semantic_graph() }}",
         "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_source_target ON {{ this }} (source_concept, target_concept)",
-        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_similarity ON {{ this }} (similarity_score DESC)",
-        -- PostgreSQL ANALYZE not supported in DuckDB - DuckDB auto-analyzes
-        -- "ANALYZE {{ this }}"
+        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_similarity ON {{ this }} (similarity_score DESC)"
+        # PostgreSQL ANALYZE not supported in DuckDB - DuckDB auto-analyzes
+        # "ANALYZE {{ this }}"
       ]
       +tags: ["semantic", "performance_intensive"]
       
@@ -173,8 +183,8 @@ models:
         "SET enable_parallel_aggregation = true"
       ]
       +post-hook: [
-        -- PostgreSQL VACUUM ANALYZE not supported in DuckDB - DuckDB handles optimization automatically
-        -- "VACUUM ANALYZE {{ this }}",
+        # PostgreSQL VACUUM ANALYZE not supported in DuckDB - DuckDB handles optimization automatically
+        # "VACUUM ANALYZE {{ this }}",
         "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_consolidated_strength ON {{ this }} (consolidated_strength DESC)",
         "DELETE FROM {{ this }} WHERE consolidated_strength < {{ var('weak_connection_threshold') }}"
       ]

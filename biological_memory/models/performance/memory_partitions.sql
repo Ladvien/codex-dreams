@@ -4,7 +4,7 @@
 #}
 
 {{ config(
-    materialized='view',
+    materialized='ephemeral',
     tags=['partitioning', 'performance'],
     post_hook='{{ create_monthly_partitions("raw_memories", "created_at") }}'
 ) }}

@@ -4,7 +4,7 @@
 #}
 
 {{ config(
-    materialized='view',
+    materialized='ephemeral',
     tags=['working_memory', 'performance_optimized'],
     post_hook='{{ create_performance_indexes("raw_memories") }}'
 ) }}

@@ -1,6 +1,6 @@
 {{
   config(
-    materialized='table',
+    materialized='view',
     tags=['insights', 'mvp'],
     description='MVP Insights Generator - Creates insights from memories using Ollama'
   )

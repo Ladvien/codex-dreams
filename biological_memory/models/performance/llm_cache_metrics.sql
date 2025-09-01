@@ -4,7 +4,7 @@
 #}
 
 {{ config(
-    materialized='view',
+    materialized='ephemeral',
     tags=['caching', 'performance', 'llm'],
     post_hook='{{ create_llm_cache() }}'
 ) }}
