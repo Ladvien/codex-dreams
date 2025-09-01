@@ -9,14 +9,19 @@
   - Memory consolidation logic
 #}
 
-{# Enhanced Hebbian learning strength with temporal co-activation counting #}
+{# Enhanced Hebbian learning strength with advanced synaptic mechanisms #}
 {% macro calculate_hebbian_strength() %}
   {# 
-    Advanced Hebbian learning implementation:
+    Advanced synaptic mechanisms implementation (STORY-MEM-004):
+    - LTP/LTD differential strengthening with biological accuracy
+    - Metaplasticity factor optimization (BCM theory - Bienenstock, Cooper, Munro)
+    - Synaptic tagging and capture mechanisms (Frey & Morris 1997)
+    - Spike-timing dependent plasticity with precise temporal windows (±40ms)
     - Co-activation counting within 5-minute temporal windows
-    - Proper learning rate application (0.1 default)
-    - Prevents runaway potentiation with normalization
-    - Updates consolidated memories based on STM co-activation patterns
+    - Homeostatic synaptic scaling (Turrigiano 2008)
+    - Competition mechanisms for winner-take-all dynamics
+    - LTP threshold: ~-50mV to -40mV (NMDA receptor activation)
+    - LTD threshold: ~-70mV to -60mV (weak depolarization)
   #}
   
   {# Biological parameter validation #}
@@ -28,55 +33,162 @@
     {{ log("WARNING: Hebbian learning rate may be too low for effective learning (<0.01): " ~ var('hebbian_learning_rate'), info=true) }}
   {% endif %}
   
-  -- Step 1: Calculate co-activation patterns within 5-minute windows
-  WITH coactivation AS (
+  -- Step 1: Advanced co-activation analysis with STDP temporal windows
+  WITH spike_timing_analysis AS (
     SELECT 
       a.id as pre_id,
       b.id as post_id,
       COUNT(*) as coactivation_count,
       AVG(EXTRACT(EPOCH FROM (b.timestamp - a.timestamp))) as avg_delay_seconds,
-      COUNT(DISTINCT a.semantic_category) as shared_categories
+      COUNT(DISTINCT a.semantic_category) as shared_categories,
+      
+      -- Spike-timing dependent plasticity (STDP) window analysis (20-40ms biological window)
+      CASE 
+        WHEN AVG(EXTRACT(EPOCH FROM (b.timestamp - a.timestamp))) BETWEEN -0.040 AND 0.040 -- ±40ms biological window
+          THEN 'stdp_potentiation'
+        WHEN AVG(EXTRACT(EPOCH FROM (b.timestamp - a.timestamp))) BETWEEN -0.100 AND -0.040 -- -100ms to -40ms
+          THEN 'stdp_depression'
+        WHEN AVG(EXTRACT(EPOCH FROM (b.timestamp - a.timestamp))) BETWEEN 0.040 AND 0.100 -- 40ms to 100ms
+          THEN 'stdp_weak_depression'
+        ELSE 'no_stdp_effect'
+      END as stdp_window_type,
+      
+      -- Calculate STDP strength based on biological timing
+      CASE 
+        WHEN AVG(EXTRACT(EPOCH FROM (b.timestamp - a.timestamp))) BETWEEN -0.020 AND 0.020 -- Optimal ±20ms
+          THEN 1.0  -- Maximum LTP
+        WHEN AVG(EXTRACT(EPOCH FROM (b.timestamp - a.timestamp))) BETWEEN -0.040 AND 0.040 -- ±40ms
+          THEN 0.7  -- Strong LTP
+        WHEN AVG(EXTRACT(EPOCH FROM (b.timestamp - a.timestamp))) BETWEEN -0.070 AND -0.040 -- LTD window
+          THEN -0.5  -- LTD (depression)
+        WHEN AVG(EXTRACT(EPOCH FROM (b.timestamp - a.timestamp))) BETWEEN 0.040 AND 0.070 -- Weak LTD
+          THEN -0.3  -- Weak LTD
+        ELSE 0.0
+      END as stdp_strength_factor
     FROM {{ ref('stm_hierarchical_episodes') }} a
     JOIN {{ ref('stm_hierarchical_episodes') }} b
       ON a.semantic_category = b.semantic_category
-      AND b.timestamp BETWEEN a.timestamp AND a.timestamp + INTERVAL '5 minutes'
+      AND b.timestamp BETWEEN a.timestamp - INTERVAL '100 milliseconds' AND a.timestamp + INTERVAL '5 minutes'
       AND a.id != b.id  -- Prevent self-connections
     GROUP BY a.id, b.id
     HAVING COUNT(*) >= 1  -- At least one co-activation event
   ),
   
-  -- Step 2: Calculate Hebbian strength updates
-  hebbian_updates AS (
+  -- Step 2: Advanced synaptic mechanisms with LTP/LTD and metaplasticity
+  metaplasticity_factors AS (
     SELECT 
-      COALESCE(c.pre_id, c.post_id) as memory_id,
-      AVG(c.coactivation_count) as avg_coactivation,
-      MAX(c.coactivation_count) as max_coactivation,
+      COALESCE(s.pre_id, s.post_id) as memory_id,
+      AVG(s.coactivation_count) as avg_coactivation,
+      MAX(s.coactivation_count) as max_coactivation,
       COUNT(*) as total_connections,
+      AVG(s.stdp_strength_factor) as avg_stdp_factor,
       
-      -- Hebbian strength calculation: ΔW = η × coactivation × (1 - current_strength)
+      -- Metaplasticity factor calculation (BCM theory - Bienenstock, Cooper, Munro)
+      -- θM (modification threshold) varies based on recent activity history
+      CASE 
+        WHEN AVG(COALESCE(m.consolidated_strength, 0.1)) > {{ var('high_quality_threshold') }} -- High activity
+          THEN {{ var('high_quality_threshold') }} * 1.2  -- Raise threshold (harder to potentiate)
+        WHEN AVG(COALESCE(m.consolidated_strength, 0.1)) < {{ var('consolidation_threshold') }} -- Low activity  
+          THEN {{ var('consolidation_threshold') }} * 0.8  -- Lower threshold (easier to potentiate)
+        ELSE {{ var('consolidation_threshold') }}  -- Normal threshold
+      END as metaplasticity_threshold,
+      
+      -- Advanced LTP/LTD calculation with metaplasticity and STDP
       AVG(
-        {{ var('hebbian_learning_rate') }} * 
-        {{ safe_divide('LEAST(c.coactivation_count, 10.0)', '10.0', '0.0') }} *  -- Normalize to prevent saturation
-        (1.0 - COALESCE(m.consolidated_strength, 0.1))  -- Prevent runaway potentiation
-      ) as hebbian_delta
-    FROM coactivation c
-    LEFT JOIN {{ ref('memory_replay') }} m ON (m.id = c.pre_id OR m.id = c.post_id)
-    GROUP BY COALESCE(c.pre_id, c.post_id)
+        CASE 
+          -- Long-Term Potentiation (LTP) conditions: NMDA receptor activation
+          WHEN s.stdp_window_type = 'stdp_potentiation' 
+            AND COALESCE(m.consolidated_strength, 0.1) > ({{ var('consolidation_threshold') }} * 0.8)
+            THEN {{ var('hebbian_learning_rate') }} * 1.5 * s.stdp_strength_factor * 
+                 {{ safe_divide('LEAST(s.coactivation_count, 10.0)', '10.0', '0.0') }}
+          
+          -- Long-Term Depression (LTD) conditions: weak depolarization
+          WHEN s.stdp_window_type IN ('stdp_depression', 'stdp_weak_depression')
+            OR COALESCE(m.consolidated_strength, 0.1) < ({{ var('consolidation_threshold') }} * 0.3)
+            THEN -{{ var('hebbian_learning_rate') }} * 0.8 * ABS(s.stdp_strength_factor)
+          
+          -- Standard Hebbian learning for non-STDP cases
+          WHEN s.stdp_window_type = 'no_stdp_effect'
+            THEN {{ var('hebbian_learning_rate') }} * 
+                 {{ safe_divide('LEAST(s.coactivation_count, 10.0)', '10.0', '0.0') }} *
+                 (1.0 - COALESCE(m.consolidated_strength, 0.1))
+          
+          ELSE 0.0
+        END
+      ) as ltp_ltd_delta,
+      
+      -- Synaptic tagging and capture (Frey & Morris 1997)
+      -- Tag synapses that have been recently active for potential strengthening
+      CASE 
+        WHEN AVG(s.coactivation_count) >= 3 AND MAX(s.stdp_strength_factor) > 0.5
+          THEN TRUE  -- Tag for protein synthesis-dependent strengthening
+        ELSE FALSE
+      END as synaptic_tag,
+      
+      -- Competition mechanisms - lateral inhibition
+      RANK() OVER (PARTITION BY s.pre_id ORDER BY AVG(s.coactivation_count) DESC) as competition_rank
+      
+    FROM spike_timing_analysis s
+    LEFT JOIN {{ ref('memory_replay') }} m ON (m.id = s.pre_id OR m.id = s.post_id)
+    GROUP BY COALESCE(s.pre_id, s.post_id)
+  ),
+  
+  -- Step 3: Apply homeostatic synaptic scaling (Turrigiano 2008)
+  homeostatic_scaling AS (
+    SELECT 
+      *,
+      -- Homeostatic synaptic scaling - global scaling to maintain network stability
+      AVG(ltp_ltd_delta) OVER () as network_avg_change,
+      STDDEV(ltp_ltd_delta) OVER () as network_std_change,
+      
+      -- Calculate scaling factor to prevent runaway potentiation/depression
+      CASE 
+        WHEN ABS(ltp_ltd_delta) > (2.0 * COALESCE(NULLIF(STDDEV(ltp_ltd_delta) OVER (), 0), 0.1))
+          THEN SIGN(ltp_ltd_delta) * (2.0 * COALESCE(NULLIF(STDDEV(ltp_ltd_delta) OVER (), 0), 0.1)) -- Cap extreme changes
+        ELSE ltp_ltd_delta
+      END as scaled_synaptic_change,
+      
+      -- Winner-take-all competition (only top 30% of connections strengthened significantly)
+      CASE 
+        WHEN competition_rank <= CEIL(COUNT(*) OVER (PARTITION BY memory_id) * 0.3) 
+          THEN 1.0  -- Winners get full strengthening
+        WHEN competition_rank <= CEIL(COUNT(*) OVER (PARTITION BY memory_id) * 0.7)
+          THEN 0.5  -- Moderate competition
+        ELSE 0.2    -- Losers get minimal strengthening (lateral inhibition)
+      END as competition_factor
+    FROM metaplasticity_factors
   )
   
-  -- Step 3: Update consolidated strength with Hebbian learning
+  -- Step 4: Update consolidated strength with advanced synaptic mechanisms
   UPDATE {{ ref('memory_replay') }} m
   SET 
-    consolidated_strength = LEAST(1.0, 
-      consolidated_strength * (1 + COALESCE(h.hebbian_delta, 0))
-    ),
+    consolidated_strength = GREATEST(0.0, LEAST(1.0, 
+      consolidated_strength + (h.scaled_synaptic_change * h.competition_factor)
+    )),
     hebbian_strength = COALESCE(h.avg_coactivation, 0),
-    last_hebbian_update = CURRENT_TIMESTAMP
-  FROM hebbian_updates h
-  WHERE m.id = h.memory_id
-    AND h.hebbian_delta > 0.001;  -- Only update meaningful changes
     
-  {{ log("Hebbian learning applied to " ~ run_query("SELECT COUNT(*) FROM hebbian_updates")[0][0] ~ " memory connections", info=true) }}
+    -- New fields for advanced synaptic mechanisms (STORY-MEM-004)
+    ltp_enhanced_strength = CASE 
+      WHEN h.scaled_synaptic_change > 0 
+        THEN consolidated_strength + (h.scaled_synaptic_change * 1.5)
+      ELSE consolidated_strength
+    END,
+    ltd_weakened_strength = CASE 
+      WHEN h.scaled_synaptic_change < 0
+        THEN GREATEST(0.0, consolidated_strength + (h.scaled_synaptic_change * 0.8))  
+      ELSE consolidated_strength
+    END,
+    metaplasticity_factor = h.metaplasticity_threshold,
+    synaptic_tagged = h.synaptic_tag,
+    stdp_window_factor = h.avg_stdp_factor,
+    competition_strength = h.competition_factor,
+    
+    last_hebbian_update = CURRENT_TIMESTAMP
+  FROM homeostatic_scaling h
+  WHERE m.id = h.memory_id
+    AND ABS(h.scaled_synaptic_change) > 0.001;  -- Only update meaningful changes
+    
+  {{ log("Advanced synaptic mechanisms applied with LTP/LTD, metaplasticity, STDP, and homeostatic scaling to " ~ run_query("SELECT COUNT(*) FROM homeostatic_scaling")[0][0] ~ " memory connections", info=true) }}
 {% endmacro %}
 
 {# Advanced synaptic homeostasis for network stability and pruning #}

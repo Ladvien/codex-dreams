@@ -28,6 +28,15 @@ from error_handling import (
 )
 from llm_integration_service import get_llm_service
 
+# Import biological parameter monitoring (if available)
+try:
+    import sys
+    sys.path.append('/Users/ladvien/codex-dreams/src')
+    from monitoring.biological_parameter_monitor import get_biological_parameter_monitor
+    BIOLOGICAL_MONITORING_AVAILABLE = True
+except ImportError:
+    BIOLOGICAL_MONITORING_AVAILABLE = False
+
 
 class ServiceStatus(Enum):
     """Service health status levels"""
@@ -185,6 +194,20 @@ class ComprehensiveHealthMonitor:
         # HTTP server for health endpoints
         self.http_server = None
         self.http_thread = None
+        
+        # Biological parameter monitoring integration
+        self.biological_monitor = None
+        if BIOLOGICAL_MONITORING_AVAILABLE:
+            try:
+                self.biological_monitor = get_biological_parameter_monitor(
+                    base_path=str(self.base_path),
+                    dbt_project_dir=str(self.base_path)
+                )
+                self.logger.info("Biological parameter monitoring integrated")
+            except Exception as e:
+                self.logger.warning(f"Failed to initialize biological parameter monitoring: {e}")
+        else:
+            self.logger.warning("Biological parameter monitoring not available")
         
         self.logger.info(f"Health monitor initialized for {base_path}")
     

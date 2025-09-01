@@ -37,9 +37,9 @@
     {% set incremental_filter = "" %}
 {% endif %}
 
--- Step 1: Optimized adaptive cortical clustering
-WITH adaptive_minicolumns AS (
-  {{ adaptive_cortical_clustering(
+-- Step 1: Biologically-accurate cortical minicolumn architecture
+WITH biological_minicolumns AS (
+  {{ biological_cortical_clustering(
     "SELECT memory_id, 
             COALESCE(embedding_vector, " ~ create_real_embedding('content', 256) ~ ") as embedding,
             content, concepts, memory_type
@@ -65,9 +65,14 @@ optimized_memories AS (
     cm.hebbian_strength,
     cm.consolidation_priority,
     
-    -- Adaptive clustering assignment
-    amc.cortical_minicolumn_id,
-    amc.cortical_region,
+    -- Biological cortical assignment with lateral inhibition
+    bmc.cortical_minicolumn_id,
+    bmc.cortical_region,
+    bmc.semantic_classification,
+    bmc.cortical_activation,
+    bmc.column_competition_factor,
+    bmc.lateral_inhibition_strength,
+    bmc.cortical_hierarchy_level,
     
     -- Optimized memory age calculation
     CASE 
@@ -91,22 +96,23 @@ optimized_memories AS (
     -- Cache embedding vector for performance
     COALESCE(cm.embedding_vector, {{ create_real_embedding('cm.content', 256) }}) as cached_embedding,
     
-    -- Semantic category from adaptive clustering
+    -- Biologically-informed semantic category with cortical specialization
     CASE 
-      WHEN amc.cortical_region = 'prefrontal_cortex' THEN 'episodic_autobiographical'
-      WHEN amc.cortical_region = 'temporal_cortex' THEN 'semantic_conceptual'
-      WHEN amc.cortical_region = 'motor_cortex' THEN 'procedural_skills'
-      WHEN amc.cortical_region = 'parietal_cortex' THEN 'spatial_navigation'
-      WHEN amc.cortical_region = 'association_cortex' THEN 'temporal_sequence'
-      WHEN amc.cortical_region = 'cingulate_cortex' THEN 'emotional_valence'
-      WHEN amc.cortical_region = 'auditory_cortex' THEN 'social_cognition'
-      WHEN amc.cortical_region = 'somatosensory_cortex' THEN 'linguistic_semantic'
-      WHEN amc.cortical_region = 'visual_cortex' THEN 'sensory_perceptual'
+      WHEN bmc.cortical_region = 'prefrontal_cortex' THEN 'executive_control'
+      WHEN bmc.cortical_region = 'temporal_cortex' THEN 'semantic_linguistic'
+      WHEN bmc.cortical_region = 'primary_motor_cortex' THEN 'motor_procedural'
+      WHEN bmc.cortical_region = 'parietal_cortex' THEN 'spatial_attention'
+      WHEN bmc.cortical_region = 'visual_cortex' THEN 'visual_perceptual'
+      WHEN bmc.cortical_region = 'auditory_cortex' THEN 'auditory_linguistic'
+      WHEN bmc.cortical_region = 'somatosensory_cortex' THEN 'tactile_proprioceptive'
+      WHEN bmc.cortical_region = 'cingulate_cortex' THEN 'emotional_motivational'
+      WHEN bmc.cortical_region = 'hippocampal_cortex' THEN 'episodic_memory'
+      WHEN bmc.cortical_region = 'association_cortex' THEN 'multimodal_integration'
       ELSE 'abstract_conceptual'
     END as semantic_category
     
   FROM {{ ref('consolidating_memories') }} cm
-  JOIN adaptive_minicolumns amc ON cm.memory_id = amc.memory_id
+  JOIN biological_minicolumns bmc ON cm.memory_id = bmc.memory_id
   WHERE 
     cm.activation_strength > {{ var('long_term_memory_threshold') }}
     AND cm.consolidation_priority > {{ var('consolidation_threshold') }}
@@ -114,72 +120,41 @@ optimized_memories AS (
     {{ incremental_filter }}
 ),
 
--- Step 3: Optimized network centrality with batch processing
+-- Step 3: Biologically-accurate network centrality with cortical organization
 network_centrality_optimized AS (
-  SELECT 
-    om.*,
-    
-    -- Performance-optimized centrality measures using cached vectors
-    COALESCE(
-      (SELECT COUNT(*) 
-       FROM optimized_memories om2 
-       WHERE om2.memory_id != om.memory_id
-         AND {{ fast_cosine_similarity('om.cached_embedding', 'om2.cached_embedding', 0.3) }} > {{ var('semantic_association_threshold') }}
-      ),
-      0
-    ) as degree_centrality,
-    
-    -- Betweenness centrality approximation
-    COALESCE(
-      (SELECT COUNT(DISTINCT om2.semantic_category) 
-       FROM optimized_memories om2
-       WHERE om2.memory_id != om.memory_id 
-         AND om2.semantic_category != om.semantic_category
-         AND {{ fast_cosine_similarity('om.cached_embedding', 'om2.cached_embedding', 0.2) }} > 0.2
-      ), 
-      0
-    ) as betweenness_centrality_proxy,
-    
-    -- Closeness centrality using batch similarity calculation
-    COALESCE(
-      (SELECT AVG({{ fast_cosine_similarity('om.cached_embedding', 'om2.cached_embedding') }})
-       FROM optimized_memories om2
-       WHERE om2.memory_id != om.memory_id
-       LIMIT 50  -- Performance limit
-      ),
-      0.0
-    ) as closeness_centrality_proxy,
-    
-    -- Eigenvector centrality approximation
-    LEAST(1.0, (
-      COALESCE(
-        (SELECT AVG(om2.activation_strength * {{ fast_cosine_similarity('om.cached_embedding', 'om2.cached_embedding') }})
-         FROM optimized_memories om2
-         WHERE om2.memory_id != om.memory_id
-           AND {{ fast_cosine_similarity('om.cached_embedding', 'om2.cached_embedding') }} > 0.3
-         LIMIT 20  -- Performance limit
-        ),
-        0.0
-      )
-    )) as eigenvector_centrality_proxy,
-    
-    -- Clustering coefficient (local network density)
-    0.5 as clustering_coefficient,  -- Simplified for performance
-    
-    -- Network centrality composite score
-    LEAST(1.0, (
-      COALESCE(degree_centrality, 0) / 25.0 * 0.4 +  -- Reduced max for performance
-      COALESCE(closeness_centrality_proxy, 0.0) * 0.3 +
-      COALESCE(eigenvector_centrality_proxy, 0.0) * 0.3
-    )) as network_centrality_score
-    
-  FROM optimized_memories om
+  {{ cortical_network_centrality(
+    "SELECT memory_id, cortical_region, cortical_minicolumn_id, 
+            cached_embedding as embedding, cortical_activation, 
+            cortical_hierarchy_level, lateral_inhibition_strength
+     FROM optimized_memories"
+  ) }}
 ),
 
--- Step 4: Optimized synaptic plasticity with performance monitoring
+-- Step 3a: Enhanced centrality integration with biological constraints
+biological_centrality_integration AS (
+  SELECT 
+    om.*,
+    nco.normalized_degree_centrality as degree_centrality,
+    nco.normalized_betweenness_centrality as betweenness_centrality_proxy,
+    nco.normalized_closeness_centrality as closeness_centrality_proxy,
+    nco.normalized_eigenvector_centrality as eigenvector_centrality_proxy,
+    nco.cortical_clustering_coefficient as clustering_coefficient,
+    nco.biological_network_centrality as network_centrality_score,
+    
+    -- Biological activation modulation
+    om.cortical_activation * nco.biological_network_centrality as modulated_centrality,
+    
+    -- Lateral inhibition effects on centrality
+    GREATEST(0.1, nco.biological_network_centrality * (1.0 - om.lateral_inhibition_strength * 0.4)) as inhibited_centrality
+    
+  FROM optimized_memories om
+  JOIN network_centrality_optimized nco ON om.memory_id = nco.memory_id
+),
+
+-- Step 4: Biologically-enhanced synaptic plasticity with cortical modulation
 synaptic_plasticity_optimized AS (
   SELECT 
-    nco.*,
+    bci.*,
     
     -- LTP: Enhanced with performance optimization
     CASE 
@@ -199,19 +174,19 @@ synaptic_plasticity_optimized AS (
     
     -- Optimized synaptic efficacy calculation
     LEAST(1.0, GREATEST(0.1, 
-      nco.activation_strength * 
+      bci.activation_strength * bci.cortical_activation * 
       (1.0 + {{ var('hebbian_learning_rate') }} * 
-       CASE WHEN nco.access_count > 5 AND {{ memory_age_seconds('nco.last_accessed_at') }} < 86400 
+       CASE WHEN bci.access_count > 5 AND {{ memory_age_seconds('bci.last_accessed_at') }} < 86400 
             THEN 1.0 ELSE 0.0 END) *
       (1.0 - {{ var('synaptic_decay_rate') }} * 
-       CASE WHEN nco.access_count < 3 AND nco.memory_age = 'remote' AND {{ memory_age_seconds('nco.last_accessed_at') }} > 604800
-            THEN 1.0 ELSE 0.0 END)
+       CASE WHEN bci.access_count < 3 AND bci.memory_age = 'remote' AND {{ memory_age_seconds('bci.last_accessed_at') }} > 604800
+            THEN (1.0 + bci.lateral_inhibition_strength) ELSE 1.0 END)
     )) as synaptic_efficacy,
     
     -- Metaplasticity factor
-    EXP(-{{ safe_divide('nco.access_count', '10.0', '1.0') }}) as metaplasticity_factor
+    EXP(-{{ safe_divide('bci.access_count', '10.0', '1.0') }}) * (1.0 - bci.lateral_inhibition_strength * 0.2) as metaplasticity_factor
     
-  FROM network_centrality_optimized nco
+  FROM biological_centrality_integration bci
 ),
 
 -- Step 5: High-performance retrieval strength calculation

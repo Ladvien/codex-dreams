@@ -68,6 +68,32 @@ vars:
   homeostasis_target: 0.5
   plasticity_threshold: 0.6
   
+  # Advanced synaptic mechanisms parameters (STORY-MEM-004)
+  # LTP/LTD thresholds (biological accuracy)
+  ltp_threshold_low: -0.050        # -50mV NMDA receptor activation
+  ltp_threshold_high: -0.040       # -40mV strong LTP threshold
+  ltd_threshold_low: -0.070        # -70mV weak depolarization  
+  ltd_threshold_high: -0.060       # -60mV LTD threshold
+  
+  # Metaplasticity factors (BCM theory)
+  metaplasticity_time_constant: 3600  # 1 hour in seconds
+  bcm_threshold_multiplier: 1.2    # BCM threshold modification factor
+  
+  # STDP parameters (spike-timing dependent plasticity)
+  stdp_window_ms: 40               # ±40ms biological STDP window
+  stdp_optimal_window_ms: 20       # ±20ms optimal timing
+  stdp_max_strength: 1.0           # Maximum LTP strength
+  stdp_depression_strength: -0.5   # LTD strength
+  
+  # Competition and lateral inhibition
+  competition_winner_ratio: 0.3    # Top 30% get full strengthening
+  lateral_inhibition_strength: 0.2 # Strength for losing connections
+  
+  # Synaptic tagging parameters (Frey & Morris 1997)
+  synaptic_tag_threshold: 3        # Minimum co-activations for tagging
+  tag_duration_hours: 2            # Duration of synaptic tag
+  protein_synthesis_delay_min: 30  # Minutes for protein synthesis
+  
   # Synaptic homeostasis parameters
   homeostasis_adjustment_rate: 0.05
   weak_connection_threshold: 0.01  # Prune connections below this threshold
