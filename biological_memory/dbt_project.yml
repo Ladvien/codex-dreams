@@ -25,9 +25,16 @@ clean-targets:
 vars:
   # Core biological parameters
   working_memory_capacity: 7  # Miller's Law: 7±2 items (base capacity)
+  working_memory_capacity_base: 7  # Base capacity per Miller (1956) - for biological orchestration
+  working_memory_capacity_variance: 2  # Variance range (±2) for dynamic capacity limits
   working_memory_duration: 300  # seconds (5 minutes) - attention window per Miller (1956) & Cowan (2001)
   short_term_memory_duration: 1800  # seconds (30 minutes) - biological accuracy per Peterson & Peterson (1959)
   long_term_memory_threshold: 0.7  # activation strength threshold
+  
+  # Ollama LLM configuration - using environment variables for security
+  ollama_url: "{{ env_var('OLLAMA_URL', 'http://192.168.1.110:11434') }}"  # Ollama server endpoint
+  ollama_model: "{{ env_var('OLLAMA_MODEL', 'llama2') }}"  # Default model for biological processing
+  ollama_temperature: 0.7  # Temperature for creative and consolidation processes
   
   # Memory strength and quality thresholds
   strong_connection_threshold: 0.7  # Strong memory connections
@@ -103,7 +110,7 @@ models:
         "SET enable_hash_join = true"
       ]
       +post-hook: "{{ calculate_memory_stats('working_memory') }}"
-      +tags: ["performance_critical", "real_time"]
+      +tags: ["performance_critical", "real_time", "continuous"]
       
     # Short-term memory (incremental for real-time updates with performance optimization)
     short_term_memory:
@@ -122,7 +129,7 @@ models:
         # PostgreSQL ANALYZE not supported in DuckDB - DuckDB auto-analyzes
         # "ANALYZE {{ this }}"
       ]
-      +tags: ["performance_optimized", "incremental"]
+      +tags: ["performance_optimized", "incremental", "short_term"]
       
     # Long-term memory (tables with comprehensive indexing for complex queries)
     long_term_memory:
@@ -136,7 +143,7 @@ models:
         # PostgreSQL ANALYZE not supported in DuckDB - DuckDB auto-analyzes
         # "ANALYZE {{ this }}"
       ]
-      +tags: ["core", "memory", "production", "indexed"]
+      +tags: ["core", "memory", "production", "indexed", "long_term"]
       
     # Semantic associations (incremental for efficient semantic graph updates - matching model overrides)
     semantic:
@@ -154,7 +161,7 @@ models:
         # PostgreSQL ANALYZE not supported in DuckDB - DuckDB auto-analyzes
         # "ANALYZE {{ this }}"
       ]
-      +tags: ["semantic", "performance_intensive"]
+      +tags: ["semantic", "performance_intensive", "long_term"]
       
     # Analytics and reporting (views for flexibility with performance hints)
     analytics:
