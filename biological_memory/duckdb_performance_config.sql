@@ -41,7 +41,7 @@ SET default_order = 'ASC';
 SET enable_progress_bar = true;
 
 -- Enable profiling for performance monitoring
-SET enable_profiling = true;
+SET enable_profiling = 'json';
 
 -- ====================
 -- BIOLOGICAL MEMORY SPECIFIC
@@ -50,49 +50,28 @@ SET enable_profiling = true;
 -- Configure for semantic similarity workloads
 SET max_expression_depth = 1000;  -- Deep nested expressions in similarity calculations
 
--- Enable parallel aggregation for memory consolidation
-SET enable_parallel_aggregation = true;
+-- Enable parallel aggregation (built-in to DuckDB, no explicit setting needed)
+-- DuckDB automatically uses parallel aggregation based on thread count
 
 -- ====================
--- PERFORMANCE INDEXES
+-- REMOTE TABLE NOTES
 -- ====================
 
--- Create performance-critical indexes for biological memory queries
-
--- Working memory access patterns (most frequent)
-CREATE INDEX IF NOT EXISTS idx_raw_memories_activation_strength 
-ON raw_memories (activation_strength DESC, created_at DESC);
-
--- Temporal access patterns for memory decay
-CREATE INDEX IF NOT EXISTS idx_raw_memories_created_at_desc 
-ON raw_memories (created_at DESC);
-
--- Access frequency patterns
-CREATE INDEX IF NOT EXISTS idx_raw_memories_access_count 
-ON raw_memories (access_count DESC, last_accessed_at DESC);
-
--- Memory type filtering
-CREATE INDEX IF NOT EXISTS idx_raw_memories_memory_type 
-ON raw_memories (memory_type, activation_strength DESC);
-
--- Compound index for working memory queries (covers most common filters)
-CREATE INDEX IF NOT EXISTS idx_raw_memories_working_memory_compound
-ON raw_memories (memory_type, activation_strength DESC, created_at DESC, access_count DESC);
-
--- Memory ID for joins  
-CREATE INDEX IF NOT EXISTS idx_raw_memories_memory_id 
-ON raw_memories (memory_id);
+-- Note: DuckDB cannot create indexes on remote PostgreSQL tables.
+-- Index optimization should be done directly on PostgreSQL server:
+--   codex_db.public.memories (activation_strength DESC, created_at DESC)
+--   codex_db.public.memories (created_at DESC)
+--   codex_db.public.memories (memory_type, activation_strength DESC)
+--   codex_db.public.memories (memory_id)
+--
+-- DuckDB will leverage PostgreSQL's existing indexes through postgres_scanner
 
 -- ====================
 -- LLM CACHE OPTIMIZATION
 -- ====================
 
--- Optimize LLM cache for fast lookups
-CREATE INDEX IF NOT EXISTS idx_llm_cache_prompt_hash 
-ON llm_response_cache (prompt_hash);
-
-CREATE INDEX IF NOT EXISTS idx_llm_cache_accessed_at 
-ON llm_response_cache (last_accessed_at DESC);
+-- Note: LLM cache tables are created locally in DuckDB
+-- Index creation is handled by dbt models that create these tables
 
 -- ====================
 -- PERFORMANCE METRICS
@@ -123,9 +102,10 @@ ON performance_benchmarks (execution_time_ms DESC);
 -- ====================
 
 -- Update table statistics for query optimization
-ANALYZE raw_memories;
-ANALYZE llm_response_cache;
-ANALYZE performance_metrics;
+-- Note: Remote PostgreSQL tables cannot be analyzed from DuckDB
+-- Statistics are maintained by PostgreSQL server automatically
+--
+-- Local DuckDB tables will be analyzed by dbt when they are created
 
 -- ====================
 -- SUCCESS MESSAGE
