@@ -5,12 +5,13 @@ Tests DuckDB initialization, extension loading, and integration
 with PostgreSQL and Ollama as specified in acceptance criteria.
 """
 
-import pytest
-import duckdb
-import tempfile
-import os
-from unittest.mock import patch, Mock
 import json
+import os
+import tempfile
+from unittest.mock import Mock, patch
+
+import duckdb
+import pytest
 import requests
 
 

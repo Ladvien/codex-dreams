@@ -14,13 +14,14 @@ Senior QA Engineer Review - Edge Cases to Test:
 7. Malformed input recovery
 """
 
-import pytest
 import json
-import tempfile
 import os
+import sqlite3
+import tempfile
 from datetime import datetime, timezone
 from unittest.mock import patch
-import sqlite3
+
+import pytest
 
 
 class TestDataBoundaryConditions:
@@ -578,7 +579,7 @@ class TestSystemStabilityEdgeCases:
         """Test handling of timestamp edge cases."""
         conn = biological_memory_schema
 
-        from datetime import datetime, timezone, timedelta
+        from datetime import datetime, timedelta, timezone
 
         # Edge case timestamps
         edge_timestamps = [

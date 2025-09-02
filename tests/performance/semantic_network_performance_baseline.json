@@ -1,71 +1,39 @@
 {
-  "timestamp": "2025-09-01T16:05:00Z",
-  "story": "BMP-012: Optimize Semantic Network Performance",
-  "performance_requirements": {
-    "target_query_performance_ms": 50,
-    "target_vector_search_ms": 100,
-    "target_batch_processing_rate": 10000,
-    "target_improvement_percentage": 50
-  },
-  "actual_results": {
-    "vector_similarity_search": {
-      "average_time_ms": 0.96,
-      "p95_time_ms": 1.29,
-      "p99_time_ms": 1.29,
-      "improvement_vs_target": "99.04% improvement (0.96ms vs 100ms target)",
-      "memory_count_tested": 1000
+  "timestamp": "2025-09-02T02:06:59.826490+00:00",
+  "memory_count": 5000,
+  "system_avg_performance_ms": 0.30460997979389504,
+  "queries_meeting_target": 5,
+  "total_queries": 5,
+  "individual_results": {
+    "simple_count": {
+      "avg_time_ms": 0.14040850073797628,
+      "p95_time_ms": 0.3124169888906181,
+      "target_ms": 10.0,
+      "meets_target": true
     },
-    "semantic_network_queries": {
-      "estimated_average_ms": 5,
-      "expected_improvement": "90% vs baseline",
-      "status": "optimized with incremental materialization"
+    "avg_retrieval_strength": {
+      "avg_time_ms": 0.1286332990275696,
+      "p95_time_ms": 0.18333300249651074,
+      "target_ms": 20.0,
+      "meets_target": true
     },
-    "adaptive_clustering": {
-      "status": "implemented",
-      "replaces": "static minicolumn generation",
-      "cortical_regions": 10,
-      "minicolumns": 1000
+    "semantic_category_stats": {
+      "avg_time_ms": 0.37680829991586506,
+      "p95_time_ms": 0.49766700249165297,
+      "target_ms": 50.0,
+      "meets_target": true
     },
-    "connection_pooling": {
-      "postgresql_max_connections": 200,
-      "duckdb_optimizations": "result caching, query timeouts",
-      "status": "configured"
+    "top_memories": {
+      "avg_time_ms": 0.3475958001217805,
+      "p95_time_ms": 0.44254199019633234,
+      "target_ms": 40.0,
+      "meets_target": true
     },
-    "vector_indexing": {
-      "postgresql_hnsw_ready": true,
-      "fallback_gin_indexes": true,
-      "materialized_views": ["working_memory", "consolidation_candidates"],
-      "status": "optimized"
+    "cortical_region_analysis": {
+      "avg_time_ms": 0.5296039991662838,
+      "p95_time_ms": 0.9154580038739368,
+      "target_ms": 60.0,
+      "meets_target": true
     }
-  },
-  "optimizations_implemented": [
-    "High-performance vector operations with caching",
-    "Adaptive cortical clustering (K-means based)",
-    "Optimized batch processing macros",
-    "Connection pooling for PostgreSQL remote access", 
-    "Incremental materialization strategies",
-    "PostgreSQL HNSW vector indexes",
-    "DuckDB performance configuration",
-    "Vector magnitude caching",
-    "Matryoshka representation learning (256-dim reduced vectors)"
-  ],
-  "performance_improvements": {
-    "vector_similarity_search": "99.04% improvement (0.96ms vs 100ms)",
-    "query_response_time": ">90% improvement (estimated)",
-    "batch_processing_capability": "10,000+ memories per minute",
-    "memory_efficiency": "25% reduction with caching",
-    "connection_efficiency": "200 max connections vs unlimited"
-  },
-  "story_completion_status": {
-    "requirements_met": true,
-    "performance_targets_exceeded": true,
-    "biological_accuracy_maintained": true,
-    "production_ready": true
-  },
-  "next_steps": [
-    "Deploy optimized models to production",
-    "Monitor performance in live environment",
-    "Fine-tune HNSW parameters based on real data",
-    "Implement automatic performance regression testing"
-  ]
+  }
 }

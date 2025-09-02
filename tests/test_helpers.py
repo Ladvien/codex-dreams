@@ -3,8 +3,9 @@ Test helper utilities for managing test dependencies
 """
 
 import os
-import pytest
+
 import psycopg2
+import pytest
 import requests
 
 

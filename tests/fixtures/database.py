@@ -5,15 +5,16 @@ Provides isolated DuckDB and PostgreSQL connections with proper cleanup,
 schema setup, and transaction-based test isolation.
 """
 
-import os
-import pytest
-import tempfile
-import duckdb
 import json
-from typing import Generator, Dict, Any
+import os
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, Dict, Generator
 from unittest.mock import Mock
+
+import duckdb
+import pytest
 
 
 @pytest.fixture(scope="function")
@@ -76,11 +77,7 @@ def test_postgres_connection(test_env_vars):
 def isolated_test_db(test_duckdb, test_postgres_connection):
     """Provide both DuckDB and PostgreSQL isolated test connections."""
     postgres_conn, schema = test_postgres_connection if test_postgres_connection else (None, None)
-    return {
-        "duckdb": test_duckdb, 
-        "postgres": postgres_conn,
-        "postgres_schema": schema
-    }
+    return {"duckdb": test_duckdb, "postgres": postgres_conn, "postgres_schema": schema}
 
 
 @pytest.fixture(scope="function")
@@ -89,7 +86,8 @@ def biological_memory_schema(test_duckdb):
     conn = test_duckdb
 
     # Create all required tables for biological memory testing
-    conn.execute("""
+    conn.execute(
+        """
         CREATE TABLE IF NOT EXISTS raw_memories (
             id INTEGER PRIMARY KEY,
             content TEXT NOT NULL,
@@ -97,9 +95,11 @@ def biological_memory_schema(test_duckdb):
             metadata JSON,
             processed BOOLEAN DEFAULT FALSE
         )
-    """)
+    """
+    )
 
-    conn.execute("""
+    conn.execute(
+        """
         CREATE TABLE IF NOT EXISTS working_memory_view (
             id INTEGER PRIMARY KEY,
             content TEXT,
@@ -107,9 +107,11 @@ def biological_memory_schema(test_duckdb):
             timestamp TIMESTAMP,
             miller_capacity_position INTEGER CHECK (miller_capacity_position <= 7)
         )
-    """)
+    """
+    )
 
-    conn.execute("""
+    conn.execute(
+        """
         CREATE TABLE IF NOT EXISTS stm_hierarchical_episodes (
             id INTEGER PRIMARY KEY,
             content TEXT,
@@ -123,9 +125,11 @@ def biological_memory_schema(test_duckdb):
             ready_for_consolidation BOOLEAN DEFAULT FALSE,
             processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """)
+    """
+    )
 
-    conn.execute("""
+    conn.execute(
+        """
         CREATE TABLE IF NOT EXISTS ltm_semantic_network (
             id INTEGER PRIMARY KEY,
             concept_a TEXT,
@@ -135,16 +139,19 @@ def biological_memory_schema(test_duckdb):
             consolidation_timestamp TIMESTAMP,
             retrieval_count INTEGER DEFAULT 0
         )
-    """)
+    """
+    )
 
-    conn.execute("""
+    conn.execute(
+        """
         CREATE TABLE IF NOT EXISTS memory_metrics (
             id INTEGER PRIMARY KEY,
             metric_name TEXT,
             metric_value FLOAT,
             measurement_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """)
+    """
+    )
 
     return conn
 
@@ -152,23 +159,23 @@ def biological_memory_schema(test_duckdb):
 @pytest.fixture(scope="function")
 def transactional_duckdb(test_duckdb):
     """Provide DuckDB connection with transaction-based isolation.
-    
+
     Note: DuckDB doesn't support full transactions like PostgreSQL,
     but we can simulate isolation by using temporary tables.
     """
     conn = test_duckdb
-    
+
     # Begin "transaction" by creating temporary tables
     temp_tables = []
-    
+
     def create_temp_table(name: str, schema: str):
         temp_name = f"temp_{name}_{os.getpid()}"
         conn.execute(f"CREATE TEMP TABLE {temp_name} AS {schema}")
         temp_tables.append(temp_name)
         return temp_name
-    
+
     yield conn, create_temp_table
-    
+
     # Cleanup temporary tables
     for table in temp_tables:
         try:
@@ -204,11 +211,13 @@ def cleanup_test_schemas():
 
         with conn.cursor() as cur:
             # Find and drop all test schemas
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT schema_name 
                 FROM information_schema.schemata 
                 WHERE schema_name LIKE 'test_schema_%'
-            """)
+            """
+            )
             schemas = cur.fetchall()
 
             for (schema,) in schemas:

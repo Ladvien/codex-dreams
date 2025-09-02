@@ -46,7 +46,7 @@ class DaemonConfig:
         """Load environment variables after initialization"""
         self._load_from_environment()
 
-    def _load_from_environment(self):
+    def _load_from_environment(self) -> None:
         """Load configuration from environment variables"""
         env_mappings = {
             "postgres_db_url": "POSTGRES_DB_URL",

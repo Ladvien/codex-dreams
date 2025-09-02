@@ -27,7 +27,8 @@ import uuid
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Generator
+from types import TracebackType
 
 import duckdb
 import psycopg2
@@ -122,7 +123,7 @@ class MemoryWritebackService:
 
         return logger
 
-    def _initialize_connections(self):
+    def _initialize_connections(self) -> None:
         """Initialize database connection pools"""
         try:
             # PostgreSQL connection pool
@@ -145,7 +146,7 @@ class MemoryWritebackService:
             self.logger.error(f"Failed to initialize connections: {str(e)}")
             raise
 
-    def _test_connections(self):
+    def _test_connections(self) -> None:
         """Test database connections and validate schema"""
         # Test PostgreSQL
         with self._get_pg_connection() as pg_conn:
@@ -163,7 +164,7 @@ class MemoryWritebackService:
         self.logger.info("Database connection tests passed")
 
     @contextmanager
-    def _get_pg_connection(self):
+    def _get_pg_connection(self) -> Generator[Any, None, None]:
         """Get PostgreSQL connection from pool with automatic cleanup"""
         conn = None
         try:
@@ -320,7 +321,7 @@ class MemoryWritebackService:
 
     def _write_processed_memories_batch(
         self, memories: List[Dict[str, Any]], metrics: ProcessingMetrics
-    ):
+    ) -> None:
         """Write processed memories to PostgreSQL in batches"""
 
         insert_query = """
@@ -468,7 +469,7 @@ class MemoryWritebackService:
             self.logger.error(f"Failed to write back insights: {str(e)}")
             raise
 
-    def _write_insights_batch(self, insights: List[Dict[str, Any]], batch_id: str):
+    def _write_insights_batch(self, insights: List[Dict[str, Any]], batch_id: str) -> None:
         """Write generated insights to PostgreSQL"""
 
         insert_query = """
@@ -564,7 +565,7 @@ class MemoryWritebackService:
             self.logger.error(f"Failed to write back associations: {str(e)}")
             raise
 
-    def _write_associations_batch(self, associations: List[Dict[str, Any]], batch_id: str):
+    def _write_associations_batch(self, associations: List[Dict[str, Any]], batch_id: str) -> None:
         """Write memory associations to PostgreSQL"""
 
         insert_query = """
@@ -593,7 +594,7 @@ class MemoryWritebackService:
                     self.logger.error(f"Failed to write associations batch: {str(e)}")
                     raise
 
-    def write_processing_metadata(self, batch_id: str, additional_metadata: Dict[str, Any] = None):
+    def write_processing_metadata(self, batch_id: str, additional_metadata: Optional[Dict[str, Any]] = None) -> None:
         """Write processing metadata to PostgreSQL for tracking and monitoring"""
 
         metrics = self.processing_metrics.get(batch_id)
@@ -708,7 +709,7 @@ class MemoryWritebackService:
 
         return results
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Clean up resources and close connections"""
         try:
             if self.duckdb_conn:
@@ -725,11 +726,11 @@ class MemoryWritebackService:
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Optional[type], exc_val: Optional[Exception], exc_tb: Optional[TracebackType]) -> None:
         self.cleanup()
 
 
-def main():
+def main() -> None:
     """CLI entry point for running write-back operations"""
     import argparse
 

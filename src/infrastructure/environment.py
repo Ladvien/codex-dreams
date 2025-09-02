@@ -4,7 +4,9 @@ Environment configuration module for testing
 
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Dict, Optional, Callable, TypeVar
+
+T = TypeVar('T')
 
 
 @dataclass
@@ -35,7 +37,7 @@ class PostgreSQLConnection:
         self.connected = True
         return True
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         self.connected = False
 
 
@@ -50,7 +52,7 @@ class OllamaConnection:
         self.connected = True
         return True
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         self.connected = False
 
 
@@ -61,10 +63,10 @@ class ConnectionRetry:
         self.max_retries = max_retries
         self.attempts = 0
 
-    def retry(self, func):
+    def retry(self, func: Callable[..., T]) -> Callable[..., T]:
         """Retry decorator"""
 
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> T:
             for i in range(self.max_retries):
                 try:
                     return func(*args, **kwargs)

@@ -5,12 +5,13 @@ Tests dbt profile configuration, project structure, and custom macros
 as specified in acceptance criteria.
 """
 
-import pytest
 import os
-import yaml
-from pathlib import Path
-from unittest.mock import patch, Mock
 import tempfile
+from pathlib import Path
+from unittest.mock import Mock, patch
+
+import pytest
+import yaml
 
 
 class TestDBTProfileConfiguration:

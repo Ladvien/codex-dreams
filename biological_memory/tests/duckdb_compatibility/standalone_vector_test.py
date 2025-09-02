@@ -4,19 +4,22 @@ Standalone DuckDB vector operations test
 Tests our DuckDB-compatible vector functions directly
 """
 
-import duckdb
 import math
+
+import duckdb
+
 
 def test_vector_operations():
     """Test vector operations in DuckDB"""
-    conn = duckdb.connect(':memory:')
-    
+    conn = duckdb.connect(":memory:")
+
     print("🧪 Testing Standalone Vector Operations...")
-    
+
     # Test vector dot product
     print("\n📊 Testing Vector Dot Product")
     try:
-        result = conn.execute("""
+        result = conn.execute(
+            """
             SELECT 
                 (SELECT SUM(v1 * v2) 
                  FROM (
@@ -24,36 +27,40 @@ def test_vector_operations():
                      UNNEST([1.0, 2.0, 3.0]) as v1,
                      UNNEST([4.0, 5.0, 6.0]) as v2
                  )) as dot_product
-        """).fetchone()[0]
-        
+        """
+        ).fetchone()[0]
+
         print(f"✅ Dot product result: {result}")
         expected = 32.0
         assert abs(float(result) - expected) < 0.01, f"Expected {expected}, got {result}"
-        
+
     except Exception as e:
         print(f"❌ Error: {e}")
-        
-    # Test vector magnitude  
+
+    # Test vector magnitude
     print("\n📐 Testing Vector Magnitude")
     try:
-        result = conn.execute("""
+        result = conn.execute(
+            """
             SELECT 
                 SQRT((SELECT SUM(v * v) 
                       FROM (SELECT UNNEST([3.0, 4.0]) as v))) as magnitude
-        """).fetchone()[0]
-        
+        """
+        ).fetchone()[0]
+
         print(f"✅ Magnitude result: {result}")
         expected = 5.0
         assert abs(float(result) - expected) < 0.01, f"Expected {expected}, got {result}"
-        
+
     except Exception as e:
         print(f"❌ Error: {e}")
-    
+
     # Test cosine similarity complete calculation
     print("\n🎯 Testing Complete Cosine Similarity")
     try:
         # Vectors [1, 0] and [1, 0] should have similarity = 1
-        result = conn.execute("""
+        result = conn.execute(
+            """
             WITH vectors AS (
                 SELECT 
                     [1.0, 0.0] as v1,
@@ -76,19 +83,21 @@ def test_vector_operations():
             SELECT 
                 dot_prod / (mag1 * mag2) as cosine_similarity
             FROM dot_product, magnitudes
-        """).fetchone()[0]
-        
+        """
+        ).fetchone()[0]
+
         print(f"✅ Cosine similarity result: {result}")
         expected = 1.0  # Identical vectors
         assert abs(float(result) - expected) < 0.01, f"Expected {expected}, got {result}"
-        
+
     except Exception as e:
         print(f"❌ Error: {e}")
-    
-    # Test with orthogonal vectors  
+
+    # Test with orthogonal vectors
     print("\n⟂ Testing Orthogonal Vectors")
     try:
-        result = conn.execute("""
+        result = conn.execute(
+            """
             WITH vectors AS (
                 SELECT 
                     [1.0, 0.0] as v1,
@@ -111,17 +120,19 @@ def test_vector_operations():
             SELECT 
                 dot_prod / (mag1 * mag2) as cosine_similarity
             FROM dot_product, magnitudes
-        """).fetchone()[0]
-        
+        """
+        ).fetchone()[0]
+
         print(f"✅ Orthogonal cosine similarity: {result}")
         expected = 0.0
         assert abs(float(result) - expected) < 0.01, f"Expected {expected}, got {result}"
-        
+
     except Exception as e:
         print(f"❌ Error: {e}")
-        
+
     conn.close()
     print("\n🎉 All vector operations tests completed successfully!")
+
 
 if __name__ == "__main__":
     test_vector_operations()

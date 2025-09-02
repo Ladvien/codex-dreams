@@ -5,17 +5,18 @@ Provides realistic mock implementations for Ollama LLM service
 and HTTP requests, enabling offline testing with deterministic responses.
 """
 
-import pytest
 import json
 import random
+from typing import Any, Dict
 from unittest.mock import Mock, patch
-from typing import Dict, Any
+
+import pytest
 
 
 @pytest.fixture(scope="function")
 def mock_ollama():
     """Mock Ollama responses for offline testing with realistic biological data."""
-    
+
     # Comprehensive mock responses for different biological memory operations
     mock_responses = {
         "extraction": {
@@ -80,40 +81,44 @@ def mock_ollama():
         elif "association" in prompt_lower or "relate" in prompt_lower:
             return json.dumps(mock_responses["associations"])
         elif "gist" in prompt_lower or "summary" in prompt_lower or "summarize" in prompt_lower:
-            return json.dumps({
-                "gist": mock_responses["semantic_gist"],
-                "category": mock_responses["category"],
-                "subcategory": mock_responses["subcategory"],
-                "region": mock_responses["region"],
-                "confidence": mock_responses["confidence"],
-            })
+            return json.dumps(
+                {
+                    "gist": mock_responses["semantic_gist"],
+                    "category": mock_responses["category"],
+                    "subcategory": mock_responses["subcategory"],
+                    "region": mock_responses["region"],
+                    "confidence": mock_responses["confidence"],
+                }
+            )
         elif "similarity" in prompt_lower or "compare" in prompt_lower:
             return str(mock_responses["similarity"])
         elif "creative" in prompt_lower or "connect" in prompt_lower:
             return mock_responses["creative_link"]
         elif "consolidation" in prompt_lower or "consolidate" in prompt_lower:
-            return json.dumps({
-                "consolidation_potential": mock_responses["consolidation_potential"],
-                "memory_strength": mock_responses["memory_strength"],
-                "retrieval_cues": mock_responses["retrieval_cues"],
-            })
+            return json.dumps(
+                {
+                    "consolidation_potential": mock_responses["consolidation_potential"],
+                    "memory_strength": mock_responses["memory_strength"],
+                    "retrieval_cues": mock_responses["retrieval_cues"],
+                }
+            )
         elif "forget" in prompt_lower or "decay" in prompt_lower:
-            return json.dumps({
-                "forgetting_curve_position": mock_responses["forgetting_curve_position"],
-                "retention_probability": 0.7,
-                "decay_rate": 0.05,
-            })
+            return json.dumps(
+                {
+                    "forgetting_curve_position": mock_responses["forgetting_curve_position"],
+                    "retention_probability": 0.7,
+                    "decay_rate": 0.05,
+                }
+            )
         elif "embed" in prompt_lower or "vector" in prompt_lower:
             # Mock embedding vector (384 dimensions for nomic-embed-text)
             random.seed(hash(prompt_text) % 2147483647)  # Deterministic based on prompt
             embedding = [random.uniform(-1, 1) for _ in range(384)]
             return json.dumps({"embedding": embedding})
         else:
-            return json.dumps({
-                "response": "Generic mock response", 
-                "prompt_type": "unknown", 
-                "confidence": 0.5
-            })
+            return json.dumps(
+                {"response": "Generic mock response", "prompt_type": "unknown", "confidence": 0.5}
+            )
 
     with patch("duckdb.DuckDBPyConnection.execute") as mock_execute:
         # Configure mock to handle prompt() function calls
@@ -157,7 +162,7 @@ def mock_http_requests():
             json={
                 "models": [
                     {"name": "qwen2.5:0.5b", "size": 352000000},
-                    {"name": "nomic-embed-text", "size": 274000000}
+                    {"name": "nomic-embed-text", "size": 274000000},
                 ]
             },
             status=200,
@@ -171,58 +176,59 @@ def mock_http_requests():
 @pytest.fixture(scope="function")
 def mock_ollama_server():
     """Mock complete Ollama server for end-to-end testing."""
+
     class MockOllamaServer:
         def __init__(self):
             self.models = ["qwen2.5:0.5b", "nomic-embed-text"]
             self.embedding_dim = 384
-            
+
         def generate_response(self, prompt: str, model: str) -> Dict[str, Any]:
             """Generate realistic response based on prompt content."""
             if "extract" in prompt.lower():
                 return {
                     "model": model,
-                    "response": json.dumps({
-                        "entities": ["meeting", "team", "project"],
-                        "topics": ["collaboration", "planning"],
-                        "sentiment": "positive",
-                        "importance": 0.8
-                    }),
-                    "done": True
+                    "response": json.dumps(
+                        {
+                            "entities": ["meeting", "team", "project"],
+                            "topics": ["collaboration", "planning"],
+                            "sentiment": "positive",
+                            "importance": 0.8,
+                        }
+                    ),
+                    "done": True,
                 }
             elif "embed" in prompt.lower():
                 # Generate deterministic embedding
                 random.seed(hash(prompt) % 2147483647)
-                return {
-                    "embedding": [random.uniform(-1, 1) for _ in range(self.embedding_dim)]
-                }
+                return {"embedding": [random.uniform(-1, 1) for _ in range(self.embedding_dim)]}
             else:
                 return {
                     "model": model,
                     "response": f"Mock response for: {prompt[:50]}...",
-                    "done": True
+                    "done": True,
                 }
-        
+
         def is_model_available(self, model: str) -> bool:
             """Check if model is available."""
             return model in self.models
-    
+
     return MockOllamaServer()
 
 
 @pytest.fixture(scope="function")
 def mock_duckdb_extensions():
     """Mock DuckDB extension loading for environments without extensions."""
-    
+
     def mock_extension_loader():
         """Mock extension loading that always succeeds."""
         return True
-    
-    with patch('duckdb.DuckDBPyConnection.execute') as mock_execute:
+
+    with patch("duckdb.DuckDBPyConnection.execute") as mock_execute:
         original_execute = mock_execute.side_effect
-        
+
         def extension_aware_execute(query: str):
             query_lower = query.lower().strip()
-            if query_lower.startswith('install ') or query_lower.startswith('load '):
+            if query_lower.startswith("install ") or query_lower.startswith("load "):
                 # Mock successful extension operations
                 return Mock(fetchall=lambda: [])
             else:
@@ -230,16 +236,16 @@ def mock_duckdb_extensions():
                 if original_execute:
                     return original_execute(query)
                 return Mock(fetchall=lambda: [])
-        
+
         mock_execute.side_effect = extension_aware_execute
         yield mock_extension_loader
 
 
-@pytest.fixture(scope="function") 
+@pytest.fixture(scope="function")
 def mock_environment_isolation():
     """Mock environment variables for test isolation."""
     import os
-    
+
     original_env = {}
     test_env = {
         "DUCKDB_PATH": ":memory:",  # Use in-memory database for tests
@@ -248,17 +254,17 @@ def mock_environment_isolation():
         "OLLAMA_TIMEOUT": "5",  # Shorter timeout for tests
         "MAX_DB_CONNECTIONS": "50",  # Lower connection limit for tests
     }
-    
+
     # Store original values
     for key in test_env:
         original_env[key] = os.environ.get(key)
-    
+
     # Set test values
     for key, value in test_env.items():
         os.environ[key] = value
-    
+
     yield test_env
-    
+
     # Restore original values
     for key, value in original_env.items():
         if value is not None:

@@ -19,7 +19,7 @@ from .codex_config_editor import (
 from .codex_service import CodexService, format_time_until, format_uptime
 
 
-def cmd_init(args: Any) -> int:
+def cmd_init(args: argparse.Namespace) -> int:
     """Initialize Codex Dreams with interactive setup"""
     config_path = Path.home() / ".codex" / "config.yaml"
 
@@ -43,7 +43,7 @@ def cmd_init(args: Any) -> int:
         return 1
 
 
-def cmd_start(args: Any) -> int:
+def cmd_start(args: argparse.Namespace) -> int:
     """Start the Codex Dreams service"""
     try:
         config = get_config()
@@ -72,7 +72,7 @@ def cmd_start(args: Any) -> int:
         return 1
 
 
-def cmd_stop(args: Any) -> int:
+def cmd_stop(args: argparse.Namespace) -> int:
     """Stop the Codex Dreams service"""
     try:
         config = get_config()
@@ -83,7 +83,7 @@ def cmd_stop(args: Any) -> int:
         return 1
 
 
-def cmd_restart(args: Any) -> int:
+def cmd_restart(args: argparse.Namespace) -> int:
     """Restart the Codex Dreams service"""
     try:
         config = get_config()
@@ -94,7 +94,7 @@ def cmd_restart(args: Any) -> int:
         return 1
 
 
-def cmd_status(args: Any) -> int:
+def cmd_status(args: argparse.Namespace) -> int:
     """Show detailed status of Codex Dreams"""
     try:
         config = get_config()
@@ -153,7 +153,7 @@ def cmd_status(args: Any) -> int:
         return 1
 
 
-def cmd_config(args: Any) -> int:
+def cmd_config(args: argparse.Namespace) -> int:
     """Configure Codex Dreams"""
     try:
         config = get_config()
@@ -200,7 +200,7 @@ def cmd_config(args: Any) -> int:
         return 1
 
 
-def cmd_run(args: Any) -> int:
+def cmd_run(args: argparse.Namespace) -> int:
     """Run insights generation once (for testing)"""
     try:
         config = get_config()
@@ -232,7 +232,7 @@ def cmd_run(args: Any) -> int:
         return 1
 
 
-def cmd_env(args: Any) -> int:
+def cmd_env(args: argparse.Namespace) -> int:
     """Manage environment configurations"""
     from .codex_env import show_environments, switch_env
 
@@ -276,7 +276,7 @@ def cmd_env(args: Any) -> int:
     return 0
 
 
-def cmd_logs(args: Any) -> int:
+def cmd_logs(args: argparse.Namespace) -> int:
     """Show recent logs"""
     try:
         config = get_config()

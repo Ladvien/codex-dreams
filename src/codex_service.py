@@ -11,6 +11,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Optional
+from types import FrameType
 
 import psutil
 
@@ -205,11 +206,11 @@ class CodexService:
         scheduler.run()
 
 
-def run_scheduler_daemon():
+def run_scheduler_daemon() -> None:
     """Entry point for daemon process"""
 
     # Set up signal handlers for graceful shutdown
-    def signal_handler(signum, frame):
+    def signal_handler(signum: int, frame: Optional[FrameType]) -> None:
         # Silent shutdown on signal
         sys.exit(0)
 

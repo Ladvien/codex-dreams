@@ -5,11 +5,12 @@ Tests semantic memory with cortical organization, retrieval mechanisms,
 and graph-based similarity as specified in acceptance criteria.
 """
 
-import pytest
-from datetime import datetime, timezone, timedelta
 import json
 import math
-from unittest.mock import patch, Mock
+from datetime import datetime, timedelta, timezone
+from unittest.mock import Mock, patch
+
+import pytest
 
 
 class TestSemanticSimilarity:

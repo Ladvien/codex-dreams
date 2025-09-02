@@ -13,15 +13,16 @@ Author: Memory Agent - BMP-005
 Created: 2025-08-28
 """
 
-import pytest
-import duckdb
 import json
-import pandas as pd
-from datetime import datetime, timedelta
-from pathlib import Path
-import tempfile
 import os
 import sys
+import tempfile
+from datetime import datetime, timedelta
+from pathlib import Path
+
+import duckdb
+import pandas as pd
+import pytest
 
 # Add biological_memory to Python path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "biological_memory"))

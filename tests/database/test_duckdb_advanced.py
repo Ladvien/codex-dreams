@@ -4,17 +4,18 @@ Advanced DuckDB tests for BMP-002 - Senior Engineer Review
 Additional comprehensive testing for edge cases, performance, and reliability.
 """
 
-import os
-import pytest
-import duckdb
-import time
 import json
-import threading
-import tempfile
+import os
 import shutil
-from pathlib import Path
+import tempfile
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from unittest.mock import patch, MagicMock
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import duckdb
+import pytest
 
 
 class TestDuckDBAdvanced:
@@ -25,7 +26,9 @@ class TestDuckDBAdvanced:
         cls.db_path = os.getenv("DUCKDB_PATH", "/Users/ladvien/biological_memory/dbs/memory.duckdb")
         cls.postgres_url = os.getenv(
             "TEST_DATABASE_URL",
-            os.getenv("POSTGRES_DB_URL", "postgresql://codex_user:defaultpassword@localhost:5432/codex_db")
+            os.getenv(
+                "POSTGRES_DB_URL", "postgresql://codex_user:defaultpassword@localhost:5432/codex_db"
+            ),
         )
         cls.ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
 

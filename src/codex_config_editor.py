@@ -4,6 +4,8 @@ Interactive configuration editor for Codex Dreams.
 Provides simple menu-driven config editing.
 """
 
+from typing import Any
+
 from .codex_config import CodexConfig, interactive_schedule_selection
 
 

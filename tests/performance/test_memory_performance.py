@@ -8,10 +8,11 @@ Tests memory processing performance to ensure:
 - Total test suite <5 minutes
 """
 
-import pytest
 import time
 from datetime import datetime, timezone
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
+import pytest
 
 
 class TestMemoryPerformance:

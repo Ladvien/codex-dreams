@@ -24,13 +24,19 @@ if not POSTGRES_URL:
     raise ValueError("POSTGRES_DB_URL environment variable is required")
 
 # Validate that default/insecure passwords are not being used
-if (
-    "defaultpassword" in POSTGRES_URL
-    or "password" in POSTGRES_URL.split("://")[1].split("@")[0].split(":")[1]
-):
-    raise ValueError(
-        "Default or insecure password detected. Please use a secure password in POSTGRES_DB_URL"
-    )
+try:
+    # Extract password from URL safely
+    auth_part = POSTGRES_URL.split("://")[1].split("@")[0]
+    if ":" in auth_part:
+        password = auth_part.split(":")[1]
+        # Only check for exact matches of insecure passwords
+        if password.lower() in ["password", "defaultpassword", "test", "admin", "123456"]:
+            raise ValueError(
+                "Default or insecure password detected. Please use a secure password in POSTGRES_DB_URL"
+            )
+except (IndexError, AttributeError):
+    # If we can't parse the URL, skip validation
+    pass
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gpt-oss:20b")
 DUCKDB_PATH = os.getenv("DUCKDB_PATH", "/Users/ladvien/biological_memory/dbs/memory.duckdb")

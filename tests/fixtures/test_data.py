@@ -5,13 +5,14 @@ Provides realistic test data representing different stages of biological
 memory processing, from raw sensory input to consolidated long-term memories.
 """
 
-import pytest
 import json
-import random
-from datetime import datetime, timezone, timedelta
-from typing import List, Dict, Any, Generator
-from pathlib import Path
 import os
+import random
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any, Dict, Generator, List
+
+import pytest
 
 
 @pytest.fixture(scope="session")
@@ -19,8 +20,8 @@ def test_env_vars() -> Dict[str, str]:
     """Load test environment variables with fallback defaults."""
     return {
         "POSTGRES_DB_URL": os.getenv(
-            "TEST_DATABASE_URL", 
-            "postgresql://codex_user:test_password@localhost:5432/test_codex_db"
+            "TEST_DATABASE_URL",
+            "postgresql://codex_user:test_password@localhost:5432/test_codex_db",
         ),
         "OLLAMA_URL": os.getenv("OLLAMA_URL", "http://localhost:11434"),
         "OLLAMA_MODEL": os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b"),
@@ -94,25 +95,25 @@ def working_memory_fixture(test_duckdb, sample_memory_data):
     conn = test_duckdb
 
     # Create working memory view structure
-    conn.execute("""
+    conn.execute(
+        """
         CREATE TABLE raw_memories (
             id INTEGER,
             content TEXT,
             timestamp TIMESTAMP,
             metadata JSON
         )
-    """)
+    """
+    )
 
     # Insert sample data (limited to Miller's capacity)
     for i, memory in enumerate(sample_memory_data[:7]):  # Enforce 7±2 limit
-        conn.execute("""
+        conn.execute(
+            """
             INSERT INTO raw_memories VALUES (?, ?, ?, ?)
-        """, (
-            memory["id"], 
-            memory["content"], 
-            memory["timestamp"], 
-            json.dumps(memory["metadata"])
-        ))
+        """,
+            (memory["id"], memory["content"], memory["timestamp"], json.dumps(memory["metadata"])),
+        )
 
     return conn
 
@@ -123,7 +124,8 @@ def short_term_memory_fixture(test_duckdb, sample_memory_data):
     conn = test_duckdb
 
     # Create STM table structure
-    conn.execute("""
+    conn.execute(
+        """
         CREATE TABLE stm_hierarchical_episodes (
             id INTEGER,
             content TEXT,
@@ -139,28 +141,32 @@ def short_term_memory_fixture(test_duckdb, sample_memory_data):
             ready_for_consolidation BOOLEAN,
             processed_at TIMESTAMP
         )
-    """)
+    """
+    )
 
     # Insert processed memories with realistic hierarchical structure
     for i, memory in enumerate(sample_memory_data):
-        conn.execute("""
+        conn.execute(
+            """
             INSERT INTO stm_hierarchical_episodes VALUES 
             (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            memory["id"],
-            memory["content"],
-            memory["timestamp"],
-            json.dumps(memory["metadata"]),
-            f"Professional development goal {i+1}",
-            f"Execute task: {memory['content'][:30]}...",
-            f"Actions: observe, process, respond",
-            json.dumps(["computer", "documents", "people"]),
-            json.dumps({"location": "office", "spatial_context": "work_environment"}),
-            0.5 + (i * 0.1),  # Increasing strength
-            i + 1,
-            i >= 2,  # Mark later memories for consolidation
-            datetime.now(timezone.utc),
-        ))
+        """,
+            (
+                memory["id"],
+                memory["content"],
+                memory["timestamp"],
+                json.dumps(memory["metadata"]),
+                f"Professional development goal {i+1}",
+                f"Execute task: {memory['content'][:30]}...",
+                f"Actions: observe, process, respond",
+                json.dumps(["computer", "documents", "people"]),
+                json.dumps({"location": "office", "spatial_context": "work_environment"}),
+                0.5 + (i * 0.1),  # Increasing strength
+                i + 1,
+                i >= 2,  # Mark later memories for consolidation
+                datetime.now(timezone.utc),
+            ),
+        )
 
     return conn
 
@@ -185,11 +191,14 @@ def hebbian_learning_data(biological_memory_schema):
     ]
 
     for concept_a, concept_b, strength, assoc_type in test_associations:
-        conn.execute("""
+        conn.execute(
+            """
             INSERT INTO ltm_semantic_network 
             (concept_a, concept_b, association_strength, association_type, consolidation_timestamp)
             VALUES (?, ?, ?, ?, ?)
-        """, (concept_a, concept_b, strength, assoc_type, datetime.now(timezone.utc)))
+        """,
+            (concept_a, concept_b, strength, assoc_type, datetime.now(timezone.utc)),
+        )
 
     return conn
 
@@ -211,26 +220,34 @@ def memory_lifecycle_data(biological_memory_schema):
     ]
 
     for i, memory in enumerate(raw_memories):
-        conn.execute("""
+        conn.execute(
+            """
             INSERT INTO raw_memories (id, content, metadata)
             VALUES (?, ?, ?)
-        """, (
-            i + 1, 
-            memory, 
-            json.dumps({
-                "source": "daily_work", 
-                "importance": 0.7 + (i * 0.05),
-                "emotional_valence": "positive" if i % 2 == 0 else "neutral"
-            })
-        ))
+        """,
+            (
+                i + 1,
+                memory,
+                json.dumps(
+                    {
+                        "source": "daily_work",
+                        "importance": 0.7 + (i * 0.05),
+                        "emotional_valence": "positive" if i % 2 == 0 else "neutral",
+                    }
+                ),
+            ),
+        )
 
     # Stage 2: Working memory (Miller's 7±2)
     for i in range(min(7, len(raw_memories))):
-        conn.execute("""
+        conn.execute(
+            """
             INSERT INTO working_memory_view 
             (id, content, activation_level, miller_capacity_position)
             VALUES (?, ?, ?, ?)
-        """, (i + 1, raw_memories[i], 0.8 - (i * 0.1), i + 1))
+        """,
+            (i + 1, raw_memories[i], 0.8 - (i * 0.1), i + 1),
+        )
 
     # Stage 3: Short-term memory processing
     stm_processed = [
@@ -243,15 +260,15 @@ def memory_lifecycle_data(biological_memory_schema):
 
     for i, (goal, tasks, actions) in enumerate(stm_processed):
         if i < len(raw_memories):
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO stm_hierarchical_episodes
                 (id, content, level_0_goal, level_1_tasks, atomic_actions, stm_strength, 
                  hebbian_potential, ready_for_consolidation)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                i + 1, raw_memories[i], goal, tasks, actions, 
-                0.6 + (i * 0.15), i + 2, i >= 2
-            ))
+            """,
+                (i + 1, raw_memories[i], goal, tasks, actions, 0.6 + (i * 0.15), i + 2, i >= 2),
+            )
 
     return conn
 
@@ -302,19 +319,24 @@ def performance_test_data(biological_memory_schema):
             outcome=f"Outcome{i%22}",
         )
 
-        conn.execute("""
+        conn.execute(
+            """
             INSERT INTO raw_memories (id, content, metadata)
             VALUES (?, ?, ?)
-        """, (
-            i + 1,
-            content,
-            json.dumps({
-                "batch": i // 100, 
-                "importance": random.uniform(0.3, 0.9),
-                "complexity": random.choice(["low", "medium", "high"]),
-                "domain": random.choice(["technical", "social", "creative", "analytical"])
-            }),
-        ))
+        """,
+            (
+                i + 1,
+                content,
+                json.dumps(
+                    {
+                        "batch": i // 100,
+                        "importance": random.uniform(0.3, 0.9),
+                        "complexity": random.choice(["low", "medium", "high"]),
+                        "domain": random.choice(["technical", "social", "creative", "analytical"]),
+                    }
+                ),
+            ),
+        )
 
     return conn
 
@@ -340,7 +362,7 @@ def performance_benchmark():
         def elapsed(self) -> float:
             """Return elapsed time in seconds."""
             return self.end_time - self.start_time if self.end_time else 0
-        
+
         @property
         def elapsed_ms(self) -> float:
             """Return elapsed time in milliseconds."""
@@ -351,42 +373,42 @@ def performance_benchmark():
 
 class MemoryDataFactory:
     """Factory class for generating realistic biological memory test data."""
-    
+
     @staticmethod
     def create_working_memory_batch(size: int = 7) -> List[Dict[str, Any]]:
         """Create a batch of working memory entries respecting Miller's 7±2."""
         if size > 9:
             size = 9  # Enforce upper bound of Miller's rule
-        
+
         activities = [
             "attended team meeting",
-            "reviewed code changes", 
+            "reviewed code changes",
             "debugged production issue",
             "planned project milestone",
             "researched new technology",
             "mentored junior developer",
             "documented system architecture",
             "analyzed performance metrics",
-            "coordinated with stakeholders"
+            "coordinated with stakeholders",
         ]
-        
+
         return [
             {
                 "id": i + 1,
                 "content": activities[i % len(activities)],
                 "activation_level": 1.0 - (i * 0.1),
-                "timestamp": datetime.now(timezone.utc) - timedelta(minutes=i*5),
-                "miller_position": i + 1
+                "timestamp": datetime.now(timezone.utc) - timedelta(minutes=i * 5),
+                "miller_position": i + 1,
             }
             for i in range(size)
         ]
-    
+
     @staticmethod
     def create_hebbian_associations(count: int = 10) -> List[Dict[str, Any]]:
         """Create realistic Hebbian learning associations."""
         concept_pairs = [
             ("meeting", "collaboration", "semantic"),
-            ("code", "logic", "procedural"), 
+            ("code", "logic", "procedural"),
             ("bug", "debugging", "causal"),
             ("project", "planning", "functional"),
             ("team", "communication", "social"),
@@ -394,9 +416,9 @@ class MemoryDataFactory:
             ("performance", "optimization", "technical"),
             ("architecture", "design", "structural"),
             ("testing", "validation", "procedural"),
-            ("documentation", "knowledge", "informational")
+            ("documentation", "knowledge", "informational"),
         ]
-        
+
         return [
             {
                 "concept_a": pair[0],
@@ -404,7 +426,7 @@ class MemoryDataFactory:
                 "association_type": pair[2],
                 "strength": random.uniform(0.6, 0.95),
                 "co_activation_count": random.randint(1, 50),
-                "timestamp": datetime.now(timezone.utc) - timedelta(hours=random.randint(1, 168))
+                "timestamp": datetime.now(timezone.utc) - timedelta(hours=random.randint(1, 168)),
             }
             for pair in concept_pairs[:count]
         ]

@@ -3,15 +3,17 @@ Mock tests for BMP-001 when live servers are not available
 These tests validate configuration and connection logic without requiring live endpoints
 """
 
-import os
 import json
-from unittest.mock import Mock, patch, MagicMock
+import os
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
+
 from src.infrastructure.environment import (
-    EnvironmentConfig,
-    PostgreSQLConnection,
-    OllamaConnection,
     ConnectionRetry,
+    EnvironmentConfig,
+    OllamaConnection,
+    PostgreSQLConnection,
 )
 
 

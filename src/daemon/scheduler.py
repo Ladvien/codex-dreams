@@ -16,7 +16,8 @@ import traceback
 from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Callable, Dict, Optional, Union
+from types import FrameType
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -25,7 +26,7 @@ try:
     from generate_insights import main as generate_insights_main
 except ImportError:
     # Fallback for when running as installed package
-    def generate_insights_main():
+    def generate_insights_main() -> None:
         """Fallback to run generate_insights as subprocess"""
         try:
             subprocess.run([sys.executable, "-m", "src.generate_insights"], check=True)
@@ -51,14 +52,14 @@ class DaemonMetrics:
         self.last_error: Optional[str] = None
         self.error_count_by_type = defaultdict(int)
 
-    def record_success(self, runtime: timedelta):
+    def record_success(self, runtime: timedelta) -> None:
         """Record a successful run"""
         self.runs_completed += 1
         self.total_runtime += runtime
         self.last_run_time = datetime.now()
         self.last_success_time = datetime.now()
 
-    def record_failure(self, error: str, error_type: str = "unknown"):
+    def record_failure(self, error: str, error_type: str = "unknown") -> None:
         """Record a failed run"""
         self.runs_failed += 1
         self.last_run_time = datetime.now()
@@ -131,7 +132,7 @@ class DaemonScheduler:
 
         return logger
 
-    def _signal_handler(self, signum: int, frame) -> None:
+    def _signal_handler(self, signum: int, frame: Optional[FrameType]) -> None:
         """Handle shutdown signals gracefully"""
         self.logger.info(f"Received signal {signum}, shutting down...")
         self.stop()
@@ -351,7 +352,7 @@ class DaemonScheduler:
         return status_info
 
 
-def main():
+def main() -> None:
     """Main entry point for daemon scheduler"""
     import argparse
 

@@ -10,12 +10,13 @@ This module validates that the test suite meets all requirements:
 """
 
 import os
-import pytest
-from pathlib import Path
-import coverage
-from typing import List, Set
 import tempfile
+from pathlib import Path
+from typing import List, Set
+
+import coverage
 import duckdb
+import pytest
 
 
 class TestSuiteValidation:

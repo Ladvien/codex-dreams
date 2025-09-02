@@ -4,12 +4,13 @@ Live connection testing for BMP-002.
 Tests actual connections to PostgreSQL and Ollama when available.
 """
 
+import json
 import os
 import time
-import json
-import requests
-import duckdb
 from pathlib import Path
+
+import duckdb
+import requests
 
 
 class LiveConnectionTester:
@@ -21,8 +22,10 @@ class LiveConnectionTester:
         )
         # Use TEST_DATABASE_URL if available, fallback to POSTGRES_DB_URL
         self.postgres_url = os.getenv(
-            "TEST_DATABASE_URL", 
-            os.getenv("POSTGRES_DB_URL", "postgresql://codex_user:defaultpassword@localhost:5432/codex_db")
+            "TEST_DATABASE_URL",
+            os.getenv(
+                "POSTGRES_DB_URL", "postgresql://codex_user:defaultpassword@localhost:5432/codex_db"
+            ),
         )
         self.ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
         self.ollama_model = os.getenv("OLLAMA_MODEL", "gpt-oss:20b")
@@ -97,12 +100,13 @@ class LiveConnectionTester:
             return False
         finally:
             conn.close()
-    
+
     def _mask_credentials_in_url(self, url):
         """Mask credentials in database URL for logging."""
         import re
+
         # Replace password with *** in URL for secure logging
-        return re.sub(r'://([^:]+):([^@]+)@', r'://\1:***@', url)
+        return re.sub(r"://([^:]+):([^@]+)@", r"://\1:***@", url)
 
     def test_ollama_connection(self):
         """Test live Ollama connection."""

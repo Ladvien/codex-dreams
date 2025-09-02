@@ -504,7 +504,7 @@ WantedBy=multi-user.target
         return status
 
 
-def main():
+def main() -> None:
     """Main entry point for service management"""
     import argparse
 

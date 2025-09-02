@@ -12,14 +12,15 @@ Test Categories:
 - Edge cases and error handling
 """
 
-import pytest
-import duckdb
 import json
+import os
+import sys
 import time
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
-import sys
-import os
+
+import duckdb
+import pytest
 
 # Add project root to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))

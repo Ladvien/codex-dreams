@@ -2,15 +2,16 @@
 Tests for generate_insights.py module
 """
 
-import pytest
-from unittest.mock import patch, MagicMock, call
 import json
-import uuid
-from datetime import datetime
+import os
 
 # Import the functions to test
 import sys
-import os
+import uuid
+from datetime import datetime
+from unittest.mock import MagicMock, call, patch
+
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.generate_insights import call_ollama, extract_tags, generate_insight, process_memories

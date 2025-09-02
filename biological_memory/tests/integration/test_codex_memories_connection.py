@@ -6,62 +6,68 @@ This validates that the biological memory pipeline can access the external memor
 
 import os
 import sys
-import psycopg2
-from psycopg2 import sql
-import duckdb
 from datetime import datetime
+
+import duckdb
+import psycopg2
 
 # Load environment variables
 from dotenv import load_dotenv
-load_dotenv('/Users/ladvien/codex-dreams/.env')
+from psycopg2 import sql
+
+load_dotenv("/Users/ladvien/codex-dreams/.env")
+
 
 def test_postgresql_connection():
     """Test direct PostgreSQL connection to codex_db"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Testing PostgreSQL Connection to codex_db")
-    print("="*60)
-    
+    print("=" * 60)
+
     try:
         # Connection parameters from environment variables
-        postgres_url = os.getenv('POSTGRES_DB_URL', '')
+        postgres_url = os.getenv("POSTGRES_DB_URL", "")
         if not postgres_url:
             raise ValueError("POSTGRES_DB_URL not set in environment")
-        
+
         # Parse connection string
         # Format: postgresql://username:password@host:port/database
         import re
-        match = re.match(r'postgresql://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)', postgres_url)
+
+        match = re.match(r"postgresql://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)", postgres_url)
         if not match:
             raise ValueError(f"Invalid POSTGRES_DB_URL format: {postgres_url}")
-        
+
         conn_params = {
-            'user': match.group(1),
-            'password': match.group(2),
-            'host': match.group(3),
-            'port': int(match.group(4)),
-            'database': match.group(5)
+            "user": match.group(1),
+            "password": match.group(2),
+            "host": match.group(3),
+            "port": int(match.group(4)),
+            "database": match.group(5),
         }
-        
+
         # Attempt connection with masked logging
         print(f"Connecting to PostgreSQL at {conn_params['host']}:{conn_params['port']}")
         print(f"Database: {conn_params['database']}, User: {conn_params['user']}")
         conn = psycopg2.connect(**conn_params)
         cursor = conn.cursor()
-        
+
         # Test query on memories table
         cursor.execute("SELECT COUNT(*) FROM memories")
         count = cursor.fetchone()[0]
         print(f"✅ Successfully connected to codex_db")
         print(f"✅ Found {count} records in memories table")
-        
+
         # Get sample records
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT id, LEFT(content, 100) as content_preview, created_at 
             FROM memories 
             ORDER BY created_at DESC 
             LIMIT 5
-        """)
-        
+        """
+        )
+
         print("\nSample memories (most recent 5):")
         print("-" * 60)
         for row in cursor.fetchall():
@@ -69,46 +75,48 @@ def test_postgresql_connection():
             print(f"Content: {row[1]}...")
             print(f"Created: {row[2]}")
             print("-" * 60)
-        
+
         cursor.close()
         conn.close()
-        
+
         return True
-        
+
     except Exception as e:
         print(f"❌ PostgreSQL connection failed: {str(e)}")
         return False
 
+
 def test_duckdb_postgres_scanner():
     """Test DuckDB postgres_scanner connection to codex_db"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Testing DuckDB postgres_scanner Connection")
-    print("="*60)
-    
+    print("=" * 60)
+
     try:
         # Create DuckDB connection
-        conn = duckdb.connect(':memory:')
-        
+        conn = duckdb.connect(":memory:")
+
         # Install and load postgres_scanner
         print("Installing postgres_scanner extension...")
         conn.execute("INSTALL postgres_scanner")
         conn.execute("LOAD postgres_scanner")
         print("✅ postgres_scanner extension loaded")
-        
+
         # Create secret for PostgreSQL connection
         print("Creating PostgreSQL connection secret...")
         # Get password from environment
-        postgres_password = os.getenv('POSTGRES_PASSWORD', '')
+        postgres_password = os.getenv("POSTGRES_PASSWORD", "")
         if not postgres_password:
             raise ValueError("POSTGRES_PASSWORD not set in environment")
-        
+
         # Get connection parameters from environment
-        postgres_host = os.getenv('POSTGRES_HOST', 'localhost')
-        postgres_port = os.getenv('POSTGRES_PORT', '5432')
-        postgres_db = os.getenv('POSTGRES_DB', 'codex_db')
-        postgres_user = os.getenv('POSTGRES_USER', 'codex_user')
-        
-        conn.execute(f"""
+        postgres_host = os.getenv("POSTGRES_HOST", "localhost")
+        postgres_port = os.getenv("POSTGRES_PORT", "5432")
+        postgres_db = os.getenv("POSTGRES_DB", "codex_db")
+        postgres_user = os.getenv("POSTGRES_USER", "codex_user")
+
+        conn.execute(
+            f"""
             CREATE OR REPLACE SECRET codex_db_connection (
                 TYPE POSTGRES,
                 HOST '{postgres_host}',
@@ -117,22 +125,24 @@ def test_duckdb_postgres_scanner():
                 USER '{postgres_user}',
                 PASSWORD '{postgres_password}'
             )
-        """)
+        """
+        )
         print("✅ Connection secret created")
-        
+
         # Attach PostgreSQL database
         print("Attaching PostgreSQL database...")
         conn.execute("ATTACH '' AS codex_db (TYPE POSTGRES, SECRET codex_db_connection)")
         print("✅ PostgreSQL database attached")
-        
+
         # Query memories table through postgres_scanner
         print("Querying memories table through postgres_scanner...")
         result = conn.execute("SELECT COUNT(*) as count FROM codex_db.public.memories").fetchone()
         print(f"✅ Successfully queried memories table: {result[0]} records found")
-        
+
         # Test staging model query pattern
         print("\nTesting staging model query pattern...")
-        result = conn.execute("""
+        result = conn.execute(
+            """
             SELECT 
                 COUNT(*) as total_memories,
                 MIN(created_at) as oldest_memory,
@@ -140,45 +150,48 @@ def test_duckdb_postgres_scanner():
             FROM codex_db.public.memories
             WHERE content IS NOT NULL
               AND LENGTH(content) > 0
-        """).fetchone()
-        
+        """
+        ).fetchone()
+
         print(f"✅ Staging query successful:")
         print(f"   Total memories: {result[0]}")
         print(f"   Oldest memory: {result[1]}")
         print(f"   Newest memory: {result[2]}")
-        
+
         conn.close()
         return True
-        
+
     except Exception as e:
         print(f"❌ DuckDB postgres_scanner test failed: {str(e)}")
         return False
 
+
 def test_dbt_source_query():
     """Test the dbt source query pattern"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Testing dbt Source Query Pattern")
-    print("="*60)
-    
+    print("=" * 60)
+
     try:
         # This simulates what dbt would do with {{ source('codex_db', 'memories') }}
-        conn = duckdb.connect(':memory:')
-        
+        conn = duckdb.connect(":memory:")
+
         # Setup postgres_scanner
         conn.execute("INSTALL postgres_scanner")
         conn.execute("LOAD postgres_scanner")
         # Get password from environment
-        postgres_password = os.getenv('POSTGRES_PASSWORD', '')
+        postgres_password = os.getenv("POSTGRES_PASSWORD", "")
         if not postgres_password:
             raise ValueError("POSTGRES_PASSWORD not set in environment")
-        
+
         # Get connection parameters from environment
-        postgres_host = os.getenv('POSTGRES_HOST', 'localhost')
-        postgres_port = os.getenv('POSTGRES_PORT', '5432')
-        postgres_db = os.getenv('POSTGRES_DB', 'codex_db')
-        postgres_user = os.getenv('POSTGRES_USER', 'codex_user')
-        
-        conn.execute(f"""
+        postgres_host = os.getenv("POSTGRES_HOST", "localhost")
+        postgres_port = os.getenv("POSTGRES_PORT", "5432")
+        postgres_db = os.getenv("POSTGRES_DB", "codex_db")
+        postgres_user = os.getenv("POSTGRES_USER", "codex_user")
+
+        conn.execute(
+            f"""
             CREATE OR REPLACE SECRET codex_db_connection (
                 TYPE POSTGRES,
                 HOST '{postgres_host}',
@@ -187,12 +200,14 @@ def test_dbt_source_query():
                 USER '{postgres_user}',
                 PASSWORD '{postgres_password}'
             )
-        """)
+        """
+        )
         conn.execute("ATTACH '' AS codex_db (TYPE POSTGRES, SECRET codex_db_connection)")
-        
+
         # Test the staging model query
         print("Testing staging model transformation...")
-        result = conn.execute("""
+        result = conn.execute(
+            """
             WITH source_memories AS (
                 SELECT 
                     id,
@@ -217,60 +232,63 @@ def test_dbt_source_query():
                 END AS memory_type
             FROM source_memories
             WHERE content IS NOT NULL
-        """).fetchall()
-        
+        """
+        ).fetchall()
+
         print(f"✅ Staging transformation successful: {len(result)} records processed")
-        
+
         if result:
             print("\nSample transformed record:")
             print(f"   Memory ID: {result[0][0]}")
             print(f"   Content: {result[0][1][:100]}...")
             print(f"   Activation Strength: {result[0][2]:.4f}")
             print(f"   Memory Type: {result[0][3]}")
-        
+
         conn.close()
         return True
-        
+
     except Exception as e:
         print(f"❌ dbt source query test failed: {str(e)}")
         return False
 
+
 def main():
     """Run all connection tests"""
-    print("\n" + "#"*60)
+    print("\n" + "#" * 60)
     print("# Codex DB Memories Table Connection Test")
     print(f"# Timestamp: {datetime.now().isoformat()}")
-    print("#"*60)
-    
+    print("#" * 60)
+
     results = []
-    
+
     # Test 1: Direct PostgreSQL connection
     results.append(("PostgreSQL Direct Connection", test_postgresql_connection()))
-    
+
     # Test 2: DuckDB postgres_scanner
     results.append(("DuckDB postgres_scanner", test_duckdb_postgres_scanner()))
-    
+
     # Test 3: dbt source query pattern
     results.append(("dbt Source Query Pattern", test_dbt_source_query()))
-    
+
     # Summary
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("TEST SUMMARY")
-    print("="*60)
-    
+    print("=" * 60)
+
     all_passed = True
     for test_name, passed in results:
         status = "✅ PASSED" if passed else "❌ FAILED"
         print(f"{test_name}: {status}")
         if not passed:
             all_passed = False
-    
+
     if all_passed:
         print("\n🎉 All tests passed! The memories table is successfully integrated.")
         print("You can now use {{ source('codex_db', 'memories') }} in your dbt models.")
     else:
         print("\n⚠️  Some tests failed. Please check the connection configuration.")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

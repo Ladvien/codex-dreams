@@ -22,9 +22,10 @@ import os
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Generator
 
 import duckdb
+import pandas as pd
 import psycopg2
 import psycopg2.extras
 
@@ -114,7 +115,7 @@ class IncrementalProcessor:
             raise
 
     @contextmanager
-    def _get_pg_connection(self):
+    def _get_pg_connection(self) -> Generator[Any, None, None]:
         """Get PostgreSQL connection with automatic cleanup"""
         conn = None
         try:
@@ -453,8 +454,8 @@ class IncrementalProcessor:
             return True
 
     def update_processing_state(
-        self, stage: str, batch: IncrementalBatch, success: bool, records_processed: int = None
-    ):
+        self, stage: str, batch: IncrementalBatch, success: bool, records_processed: Optional[int] = None
+    ) -> None:
         """
         Update processing state after batch completion
 
@@ -622,7 +623,7 @@ class IncrementalProcessor:
             self.logger.error(f"Failed to optimize processing window for {stage}: {e}")
             return {"stage": stage, "error": str(e)}
 
-    def cleanup_old_metadata(self, retention_days: int = 90):
+    def cleanup_old_metadata(self, retention_days: int = 90) -> None:
         """
         Clean up old processing metadata to prevent table bloat
 
@@ -649,7 +650,7 @@ class IncrementalProcessor:
         except Exception as e:
             self.logger.error(f"Failed to cleanup old metadata: {e}")
 
-    def close(self):
+    def close(self) -> None:
         """Close database connections"""
         if self.duckdb_conn:
             self.duckdb_conn.close()

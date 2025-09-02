@@ -6,6 +6,7 @@ Reset Insights - Drop all insights and allow them to rebuild
 import os
 import sys
 from datetime import datetime
+from typing import NoReturn  # For type checking
 
 import psycopg2
 
@@ -25,7 +26,7 @@ if "defaultpassword" in POSTGRES_URL or ("password" in POSTGRES_URL and "://" in
             )
 
 
-def reset_insights():
+def reset_insights() -> None:
     """Drop all insights from the database"""
 
     print("🗑️  Insights Reset Tool")
@@ -82,7 +83,7 @@ def reset_insights():
         sys.exit(1)
 
 
-def reset_specific_time_range():
+def reset_specific_time_range() -> None:
     """Delete insights from a specific time range"""
 
     print("\n📅 Delete insights by date range")
@@ -170,7 +171,7 @@ def reset_specific_time_range():
         sys.exit(1)
 
 
-def main():
+def main() -> None:
     """Main entry point"""
 
     if len(sys.argv) > 1 and sys.argv[1] == "--range":

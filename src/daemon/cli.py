@@ -29,7 +29,7 @@ def setup_logging(level: str = "INFO") -> None:
     )
 
 
-def cmd_install(args) -> int:
+def cmd_install(args: argparse.Namespace) -> int:
     """Install the daemon as a system service"""
     try:
         config = load_config(args.config)
@@ -63,7 +63,7 @@ def cmd_install(args) -> int:
         return 1
 
 
-def cmd_uninstall(args) -> int:
+def cmd_uninstall(args: argparse.Namespace) -> int:
     """Uninstall the daemon service"""
     try:
         config = load_config(args.config)
@@ -84,7 +84,7 @@ def cmd_uninstall(args) -> int:
         return 1
 
 
-def cmd_start(args) -> int:
+def cmd_start(args: argparse.Namespace) -> int:
     """Start the daemon service"""
     try:
         config = load_config(args.config)
@@ -117,7 +117,7 @@ def cmd_start(args) -> int:
         return 1
 
 
-def cmd_stop(args) -> int:
+def cmd_stop(args: argparse.Namespace) -> int:
     """Stop the daemon service"""
     try:
         config = load_config(args.config)
@@ -138,7 +138,7 @@ def cmd_stop(args) -> int:
         return 1
 
 
-def cmd_status(args) -> int:
+def cmd_status(args: argparse.Namespace) -> int:
     """Show daemon service status"""
     try:
         config = load_config(args.config)
@@ -202,7 +202,7 @@ def cmd_status(args) -> int:
         return 1
 
 
-def cmd_config(args) -> int:
+def cmd_config(args: argparse.Namespace) -> int:
     """Manage daemon configuration"""
     try:
         if args.init:
@@ -243,7 +243,7 @@ def cmd_config(args) -> int:
         return 1
 
 
-def cmd_run_once(args) -> int:
+def cmd_run_once(args: argparse.Namespace) -> int:
     """Run insights generation once"""
     try:
         # Import and run the insights generation directly

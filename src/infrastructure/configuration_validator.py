@@ -102,7 +102,7 @@ class ConfigurationValidator:
 
         return len(self.validation_errors) == 0
 
-    def _validate_database_urls(self):
+    def _validate_database_urls(self) -> None:
         """Validate database URL formats"""
 
         db_vars = ["POSTGRES_DB_URL", "TEST_DATABASE_URL"]
@@ -138,7 +138,7 @@ class ConfigurationValidator:
             except Exception as e:
                 self.validation_errors.append(f"{var}: Invalid URL format - {str(e)}")
 
-    def _validate_ollama_configuration(self):
+    def _validate_ollama_configuration(self) -> None:
         """Validate Ollama-related configuration"""
 
         ollama_url = os.getenv("OLLAMA_URL")
@@ -182,7 +182,7 @@ class ConfigurationValidator:
                 f"{self.expected_models['embedding']}"
             )
 
-    def _validate_path_variables(self):
+    def _validate_path_variables(self) -> None:
         """Validate file path variables"""
 
         path_vars = ["DUCKDB_PATH", "LLM_CACHE_PATH", "DBT_PROFILES_DIR", "DBT_PROJECT_DIR"]
@@ -221,7 +221,7 @@ class ConfigurationValidator:
             except Exception as e:
                 self.validation_errors.append(f"{var}: Invalid path - {str(e)}")
 
-    def _validate_timeout_configuration(self):
+    def _validate_timeout_configuration(self) -> None:
         """Validate timeout configuration"""
 
         for var, default_value in self.timeout_defaults.items():

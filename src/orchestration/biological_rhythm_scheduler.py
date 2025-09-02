@@ -39,7 +39,8 @@ from datetime import time as dt_time
 from datetime import timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
+from types import FrameType
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -236,7 +237,7 @@ class BiologicalRhythmScheduler:
 
         return logger
 
-    def _signal_handler(self, signum: int, frame) -> None:
+    def _signal_handler(self, signum: int, frame: Optional[FrameType]) -> None:
         """Handle shutdown signals gracefully"""
         self.logger.info(f"Received signal {signum}, shutting down biological scheduler...")
         self.stop()
@@ -508,7 +509,7 @@ class BiologicalRhythmScheduler:
         }
 
 
-def main():
+def main() -> None:
     """Main entry point for biological rhythm scheduler"""
     import argparse
 

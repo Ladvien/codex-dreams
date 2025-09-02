@@ -7,7 +7,7 @@ Allows switching between local and production configurations.
 import os
 import shutil
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 
 def get_env_config_path(env: str) -> Path:
@@ -84,7 +84,7 @@ def switch_env(env: str) -> bool:
         return False
 
 
-def show_environments():
+def show_environments() -> None:
     """Show available environments and which is active"""
     current = get_current_env()
 
@@ -116,7 +116,7 @@ def show_environments():
     print()
 
 
-def main():
+def main() -> None:
     """CLI entry point for environment management"""
     import sys
 

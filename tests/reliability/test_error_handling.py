@@ -5,13 +5,14 @@ Tests error recovery, connection failures, data corruption handling,
 and system resilience under various failure conditions.
 """
 
-import pytest
-import tempfile
 import os
 import sqlite3
-from unittest.mock import Mock, patch
-import duckdb
+import tempfile
 from datetime import datetime, timezone
+from unittest.mock import Mock, patch
+
+import duckdb
+import pytest
 
 
 class TestDatabaseReliability:
@@ -478,8 +479,9 @@ class TestSystemRecovery:
     def test_memory_leak_prevention(self, test_duckdb):
         """Test that memory operations don't cause leaks."""
         conn = test_duckdb
-        import psutil
         import os
+
+        import psutil
 
         process = psutil.Process(os.getpid())
         initial_memory = process.memory_info().rss

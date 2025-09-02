@@ -20,6 +20,7 @@ import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Dict, List, Optional, Any
 
 # Add src directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -280,7 +281,7 @@ def run_writeback_integration(
         raise
 
 
-def create_dbt_hook_script(output_path: str = None):
+def create_dbt_hook_script(output_path: Optional[str] = None) -> str:
     """
     Create a shell script for dbt post-hook integration
 
@@ -337,7 +338,7 @@ echo "$(date): DBT post-hook write-back completed" >> "$LOG_FILE"
     return output_path
 
 
-def main():
+def main() -> None:
     """CLI entry point"""
     parser = argparse.ArgumentParser(description="DBT Write-back Integration")
     parser.add_argument(

@@ -3,16 +3,18 @@ Edge case tests for BMP-001 Environment Setup
 Tests edge cases, error conditions, and resource limits
 """
 
+import json
 import os
 import time
-import json
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
+
 from src.infrastructure.environment import (
-    EnvironmentConfig,
-    PostgreSQLConnection,
-    OllamaConnection,
     ConnectionRetry,
+    EnvironmentConfig,
+    OllamaConnection,
+    PostgreSQLConnection,
 )
 
 
@@ -323,8 +325,8 @@ def test_ollama_network_errors(mock_get):
 
 def test_environment_config_thread_safety():
     """Test environment configuration in multi-threaded scenarios."""
-    import threading
     import concurrent.futures
+    import threading
 
     env_vars = {
         "POSTGRES_DB_URL": "postgresql://test:test@host:5432/db",

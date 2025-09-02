@@ -6,11 +6,12 @@ and configuration validation as specified in acceptance criteria.
 """
 
 import os
-import pytest
-from unittest.mock import patch, Mock
+from typing import Any, Dict
+from unittest.mock import Mock, patch
+
 import psycopg2
+import pytest
 import requests
-from typing import Dict, Any
 
 
 class TestEnvironmentConfiguration:

@@ -2,7 +2,7 @@
 """
 Biological Rhythm Pipeline Orchestration Launcher
 
-This script launches the biological rhythm scheduler with neuroscience-based 
+This script launches the biological rhythm scheduler with neuroscience-based
 timing patterns for optimal memory consolidation.
 
 Usage:
@@ -13,7 +13,7 @@ Usage:
 
 Research Foundation:
 - Miller (1956): Working memory capacity and timing
-- McGaugh (2000): Memory consolidation windows  
+- McGaugh (2000): Memory consolidation windows
 - Dement & Kleitman (1957): REM sleep patterns
 - Tononi & Cirelli (2006): Synaptic homeostasis
 """
@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 if __name__ == "__main__":
     try:
         from orchestration.biological_rhythm_scheduler import main
+
         main()
     except ImportError as e:
         print(f"Error importing biological rhythm scheduler: {e}")
