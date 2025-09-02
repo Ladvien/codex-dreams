@@ -325,7 +325,8 @@ class TestImportOrder:
                         and imported_name not in ["*", "("]
                         and imported_name.count(content_without_imports) == 0
                     ):
-                        # This is a very basic check - false positives are expected
+                        # This is a very basic check - false positives are
+                        # expected
                         continue
 
             except Exception:

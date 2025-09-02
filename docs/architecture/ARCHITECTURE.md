@@ -58,27 +58,27 @@ Before diving into technical details, let's understand the biological systems we
 
 #### The Four-Stage Memory Model
 
-**Working Memory (Prefrontal Cortex)**  
+**Working Memory (Prefrontal Cortex)**
 Imagine you're in a conversation. You can only actively think about a few things at once - maybe the point you're making, what the other person just said, and what you want to say next. This limitation isn't a bug; it's a feature. By constraining attention, working memory forces us to focus on what matters most.
 
 In the brain, the prefrontal cortex maintains this temporary workspace. Neurons here show sustained firing during the delay period of working memory tasks, literally holding information "online" through persistent activity. The famous limit of 7±2 items comes from George Miller's research showing that people can typically hold between 5 and 9 chunks of information in mind at once.
 
-**Short-Term Memory (Hippocampus)**  
+**Short-Term Memory (Hippocampus)**
 When something stays in working memory long enough, it transfers to the hippocampus for short-term storage. Here, the brain begins organizing isolated moments into coherent episodes. The hippocampus contains several specialized cell types:
 
 - **Place cells** fire when you're in specific locations
-- **Time cells** track when events occur in a sequence  
+- **Time cells** track when events occur in a sequence
 - **Grid cells** create a coordinate system for spatial navigation
 - **Social place cells** respond to the positions of other individuals
 
 Together, these create rich episodic memories that capture not just what happened, but where, when, and with whom.
 
-**Memory Consolidation (Hippocampal-Neocortical Dialog)**  
+**Memory Consolidation (Hippocampal-Neocortical Dialog)**
 During rest and especially during sleep, the hippocampus "replays" recent memories in compressed bursts called sharp-wave ripples. These rapid replays, happening in just 100-200 milliseconds, reactivate the same neural patterns from the original experience.
 
 Each replay strengthens connections between neurons that fired together (Hebbian learning: "neurons that fire together, wire together"). Over many replays, the neocortex gradually extracts statistical regularities - the patterns that appear across multiple experiences.
 
-**Long-Term Memory (Neocortex)**  
+**Long-Term Memory (Neocortex)**
 Eventually, memories become independent of the hippocampus and reside in the neocortex. Here they're stored not as specific episodes but as semantic knowledge - abstract facts, concepts, and principles divorced from their original context.
 
 The neocortex organizes information in a hierarchical, distributed manner across different regions:
@@ -92,7 +92,7 @@ The neocortex organizes information in a hierarchical, distributed manner across
 You might wonder: why not just use a simpler approach? The answer lies in billions of years of evolution. The brain's memory system solves several hard problems:
 
 1. **Relevance Filtering**: Not everything deserves to be remembered
-2. **Pattern Discovery**: Individual experiences must yield general principles  
+2. **Pattern Discovery**: Individual experiences must yield general principles
 3. **Efficient Storage**: Similar memories share representations
 4. **Graceful Forgetting**: Old, unused information fades to make room
 5. **Integration**: New knowledge connects with existing understanding
@@ -112,37 +112,37 @@ graph TB
         CM[(codex-memory<br/>MCP Server<br/>Queryable Insights)]
         OLLAMA[Ollama<br/>Local LLM<br/>gpt-oss model]
     end
-    
+
     subgraph "Codex Dreams Core"
         subgraph "Data Processing Layer"
             DUCK[(DuckDB<br/>Analytical Engine)]
             DBT[dbt Core<br/>Orchestration]
         end
-        
+
         subgraph "Biological Memory Pipeline"
             WM[Working Memory<br/>5-min window<br/>7±2 capacity]
             STM[Short-Term Memory<br/>30-min episodes<br/>Hierarchical structure]
             CONS[Consolidation<br/>Pattern replay<br/>Hebbian learning]
             LTM[Long-Term Memory<br/>Semantic networks<br/>Cortical organization]
         end
-        
+
         subgraph "Support Systems"
             LOG[(Processing Logs<br/>Debug traces)]
             METRIC[Metrics<br/>Health monitoring]
             CACHE[(Prompt Cache<br/>LLM optimization)]
         end
     end
-    
+
     CS -->|postgres_scanner| DUCK
     DUCK -->|SQL transforms| WM
     WM -->|Attention filtering| STM
     STM -->|Ready memories| CONS
     CONS -->|Abstracted knowledge| LTM
     LTM -->|Write back| CM
-    
+
     OLLAMA <-->|HTTP API| DUCK
     DBT -->|Orchestrates| DUCK
-    
+
     WM & STM & CONS & LTM -->|Traces| LOG
     WM & STM & CONS & LTM -->|Stats| METRIC
     DUCK -->|Caches| CACHE
@@ -229,25 +229,25 @@ Let me walk through each schema, explaining not just what fields exist, but why 
 CREATE TABLE memories (
     -- Identity
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    
+
     -- Content
     content TEXT NOT NULL,  -- The actual memory text
     content_hash VARCHAR(64) NOT NULL,  -- For deduplication
-    
+
     -- Context fields help understand why this was saved
     context_fingerprint VARCHAR(64) NOT NULL,
     context TEXT NOT NULL,  -- What prompted this memory
     summary TEXT NOT NULL,  -- Quick overview
-    
+
     -- Organization
     metadata JSONB DEFAULT '{}',  -- Flexible additional data
     tags TEXT[] DEFAULT '{}',     -- User-defined categories
-    
+
     -- For multi-part memories (like long articles)
     chunk_index INTEGER DEFAULT NULL,
     total_chunks INTEGER DEFAULT NULL,
     parent_id UUID DEFAULT NULL,
-    
+
     -- Temporal tracking
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -281,22 +281,22 @@ CREATE TABLE staging.working_memory_buffer (
     memory_id UUID PRIMARY KEY,
     content TEXT NOT NULL,
     created_at TIMESTAMP,
-    
+
     -- Cognitive enrichment from LLM
     cognitive_features JSON,  -- Full LLM response
-    
+
     -- Attention mechanics
     attention_priority FLOAT,  -- Combined importance score
     recency_weight FLOAT,      -- Exponential decay
     wm_slot INTEGER,          -- Position in attention (1-9)
-    
+
     -- Extracted features for filtering
     importance_score FLOAT,
     urgency_score FLOAT,
     emotional_salience FLOAT,
     sentiment VARCHAR(20),
     task_type VARCHAR(50),
-    
+
     -- When this entered working memory
     entered_wm_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -316,28 +316,28 @@ CREATE TABLE biological_memory.episodic_buffer (
     -- Identity
     id UUID PRIMARY KEY,
     original_content TEXT NOT NULL,
-    
+
     -- Hierarchical organization (like how we structure experiences)
     level_0_goal TEXT,        -- "Learn Spanish"
     level_1_tasks TEXT[],     -- ["Study vocabulary", "Practice speaking"]
     atomic_actions TEXT[],    -- ["Reviewed 20 words", "Had 10-min conversation"]
-    
+
     -- Contextual embedding (where/when/who)
     spatial_context JSON,     -- Location information
     temporal_context JSON,    -- Time relationships
     social_context JSON,      -- People involved
     phantom_objects JSON,     -- Objects and affordances
-    
+
     -- Causal understanding
     temporal_marker TEXT,     -- "before lunch", "after meeting"
     causal_links TEXT[],      -- ["led to insight X", "caused by Y"]
-    
+
     -- Memory dynamics
     stm_strength FLOAT,       -- How strong this memory is
     hebbian_potential INTEGER,-- Co-activation count
     consolidation_priority FLOAT,
     ready_for_consolidation BOOLEAN DEFAULT FALSE,
-    
+
     -- Tracking
     entered_wm_at TIMESTAMP,
     entered_stm_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -345,7 +345,7 @@ CREATE TABLE biological_memory.episodic_buffer (
 );
 
 -- Indexes for consolidation selection
-CREATE INDEX idx_stm_ready ON biological_memory.episodic_buffer(ready_for_consolidation) 
+CREATE INDEX idx_stm_ready ON biological_memory.episodic_buffer(ready_for_consolidation)
 WHERE ready_for_consolidation = TRUE;
 CREATE INDEX idx_stm_strength ON biological_memory.episodic_buffer(stm_strength DESC);
 ```
@@ -357,35 +357,35 @@ CREATE INDEX idx_stm_strength ON biological_memory.episodic_buffer(stm_strength 
 CREATE TABLE biological_memory.consolidation_buffer (
     -- Identity
     id UUID PRIMARY KEY,
-    
+
     -- Source episode
     original_content TEXT,
     level_0_goal TEXT,
     level_1_tasks TEXT[],
-    
+
     -- Discovered patterns through replay
     discovered_patterns TEXT[],    -- Recurring themes
     synthesized_insights TEXT[],   -- New understanding
     predictive_patterns TEXT[],    -- If-then rules
     abstract_principles TEXT[],    -- General truths
     contradictions TEXT[],         -- Exceptions noted
-    
+
     -- Association network
     associated_memory_ids UUID[],  -- Related memories
     association_strengths FLOAT[], -- How related
     total_association_strength FLOAT,
-    
+
     -- Semantic transformation
     semantic_gist TEXT,           -- Abstract summary
     semantic_category TEXT,       -- Knowledge domain
     cortical_region TEXT,         -- Where to store
     knowledge_type TEXT,          -- Procedural/declarative
     abstraction_level INTEGER,    -- 1=concrete, 5=abstract
-    
+
     -- Memory strength
     pre_consolidation_strength FLOAT,
     consolidated_strength FLOAT,
-    
+
     -- Temporal tracking
     entered_stm_at TIMESTAMP,
     consolidated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -404,41 +404,41 @@ CREATE TABLE codex_processed.semantic_memory (
     -- Identity
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     source_memory_id UUID NOT NULL,  -- Link to original
-    
+
     -- Semantic content (what we learned)
     semantic_gist TEXT NOT NULL,     -- Core insight
     knowledge_type VARCHAR(50),      -- procedural/declarative/conditional
     abstraction_level INTEGER,       -- How abstract (1-5)
     confidence_score FLOAT,          -- How certain we are
-    
+
     -- Categorization
     semantic_category VARCHAR(100),  -- Domain of knowledge
     cortical_region VARCHAR(50),     -- Metaphorical brain region
-    
+
     -- Discovered knowledge
     patterns TEXT[],                 -- Recurring patterns found
     insights TEXT[],                 -- Key insights extracted
     predictions TEXT[],              -- Predictive rules learned
     principles TEXT[],               -- Abstract principles
     contradictions TEXT[],           -- Noted exceptions
-    
+
     -- Knowledge graph connections
     related_concepts TEXT[],         -- Connected ideas
     integration_points TEXT[],       -- How this connects to existing knowledge
-    
+
     -- Retrieval optimization
     retrieval_strength FLOAT,        -- How easily recalled
     access_count INTEGER DEFAULT 0,  -- Times retrieved
     last_accessed_at TIMESTAMP,
-    
+
     -- Metadata
     processing_version VARCHAR(20),  -- Algorithm version
     created_at TIMESTAMP DEFAULT NOW(),
-    
+
     -- Full-text search
     search_vector tsvector GENERATED ALWAYS AS (
-        to_tsvector('english', 
-            semantic_gist || ' ' || 
+        to_tsvector('english',
+            semantic_gist || ' ' ||
             COALESCE(array_to_string(patterns, ' '), '') || ' ' ||
             COALESCE(array_to_string(insights, ' '), '')
         )
@@ -455,18 +455,18 @@ CREATE INDEX idx_semantic_accessed ON codex_processed.semantic_memory(last_acces
 CREATE TABLE codex_processed.insights (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     memory_id UUID NOT NULL UNIQUE,
-    
+
     -- Simple insight
     key_insight TEXT NOT NULL,
     insight_type VARCHAR(50) CHECK (insight_type IN ('observation', 'pattern', 'question', 'idea')),
     confidence_score FLOAT CHECK (confidence_score BETWEEN 0 AND 1),
-    
+
     -- Basic entities
     people TEXT[] DEFAULT '{}',
-    concepts TEXT[] DEFAULT '{}', 
+    concepts TEXT[] DEFAULT '{}',
     tools TEXT[] DEFAULT '{}',
     locations TEXT[] DEFAULT '{}',
-    
+
     -- Metadata
     extraction_model VARCHAR(100),
     extraction_timestamp TIMESTAMPTZ,
@@ -494,33 +494,33 @@ models:
     staging:
       +materialized: view
       +schema: staging
-    
+
     intermediate:
-      +materialized: view  
+      +materialized: view
       +schema: intermediate
-      
+
     marts:
       +materialized: table
       +schema: marts
       +tags: ['mvp']
-      
+
     # Biological models
     biological:
       working_memory:
         +materialized: view  # Always fresh
         +tags: ['continuous', 'biological']
-        
+
       short_term:
         +materialized: incremental
         +unique_key: id
         +on_schema_change: sync_all_columns
         +tags: ['short_term', 'biological']
-        
+
       consolidation:
         +materialized: incremental
         +unique_key: id
         +tags: ['consolidation', 'biological']
-        
+
       long_term:
         +materialized: table
         +indexes:
@@ -535,11 +535,11 @@ vars:
   ollama_model: "gpt-oss"
   ollama_temperature: 0.3
   ollama_timeout_ms: 30000
-  
+
   # Processing parameters
   batch_size: 100
   max_retry_attempts: 3
-  
+
   # Biological parameters
   working_memory_capacity: 7
   working_memory_window_minutes: 5
@@ -547,7 +547,7 @@ vars:
   consolidation_threshold: 0.5
   hebbian_learning_rate: 0.1
   forgetting_rate: 0.95
-  
+
   # Quality thresholds
   min_confidence_score: 0.3
   min_content_length: 100
@@ -567,7 +567,7 @@ vars:
 
 WITH recent_memories AS (
     -- Get memories from the last 5 minutes (our attention window)
-    SELECT 
+    SELECT
         m.id,
         m.content,
         m.created_at,
@@ -579,7 +579,7 @@ WITH recent_memories AS (
     FROM {{ source('codex_store', 'memories') }} m
     LEFT JOIN {{ source('staging', 'processing_state') }} ps
         ON m.id = ps.memory_id
-    WHERE 
+    WHERE
         -- Only memories within our attention window
         m.created_at > CURRENT_TIMESTAMP - INTERVAL '{{ var("working_memory_window_minutes") }} minutes'
         -- Skip if already processed successfully
@@ -589,7 +589,7 @@ WITH recent_memories AS (
 ),
 
 cognitive_enrichment AS (
-    SELECT 
+    SELECT
         *,
         -- Use Ollama to extract cognitive features
         -- This mimics how the prefrontal cortex evaluates importance
@@ -605,47 +605,47 @@ cognitive_enrichment AS (
             model_name := '{{ var("ollama_model") }}',
             temperature := {{ var("ollama_temperature") }}
         ) as cognitive_features,
-        
+
         -- Exponential decay mimics how recent items stay in attention
         EXP(-age_seconds / 300.0) as recency_weight  -- 5-minute half-life
-        
+
     FROM recent_memories
 ),
 
 attention_scoring AS (
-    SELECT 
+    SELECT
         *,
         -- Safely extract scores with defaults
         COALESCE(
             TRY_CAST(json_extract_string(cognitive_features, '$.importance') AS FLOAT),
             0.5
         ) as importance_score,
-        
+
         COALESCE(
             TRY_CAST(json_extract_string(cognitive_features, '$.urgency') AS FLOAT),
             0.3
         ) as urgency_score,
-        
+
         COALESCE(
             TRY_CAST(json_extract_string(cognitive_features, '$.emotional_weight') AS FLOAT),
             0.3
         ) as emotional_salience,
-        
+
         COALESCE(
             json_extract_string(cognitive_features, '$.sentiment'),
             'neutral'
         ) as sentiment,
-        
+
         COALESCE(
             json_extract_string(cognitive_features, '$.task_type'),
             'observation'
         ) as task_type
-        
+
     FROM cognitive_enrichment
 ),
 
 priority_calculation AS (
-    SELECT 
+    SELECT
         *,
         -- Combine factors like the brain weighs attention
         -- These weights come from attention research
@@ -654,28 +654,28 @@ priority_calculation AS (
             urgency_score * 0.3 +         -- What needs action
             emotional_salience * 0.3      -- What we feel strongly about
         ) * recency_weight as attention_priority
-        
+
     FROM attention_scoring
 ),
 
 capacity_limited AS (
-    SELECT 
+    SELECT
         *,
         -- Assign slots in working memory (1-9)
         ROW_NUMBER() OVER (
             ORDER BY attention_priority DESC
         ) as wm_slot,
-        
+
         -- Add some biological variability to capacity
         -- Real working memory fluctuates with fatigue, mood, etc.
-        {{ var('working_memory_capacity') }} + 
+        {{ var('working_memory_capacity') }} +
         FLOOR(RANDOM() * 3 - 1) as current_capacity
-        
+
     FROM priority_calculation
 )
 
 -- Final selection: only memories that fit in working memory
-SELECT 
+SELECT
     id as memory_id,
     content,
     created_at,
@@ -735,7 +735,7 @@ filtered_memories AS (
 {% endif %}
 
 hierarchical_structuring AS (
-    SELECT 
+    SELECT
         *,
         -- Extract hierarchical episode structure
         -- This mimics how the hippocampus organizes experiences
@@ -752,12 +752,12 @@ hierarchical_structuring AS (
             base_url := '{{ var("ollama_url") }}',
             model_name := '{{ var("ollama_model") }}'
         ) as hierarchical_features
-        
+
     FROM filtered_memories
 ),
 
 spatial_temporal_encoding AS (
-    SELECT 
+    SELECT
         *,
         -- Extract spatial and temporal context
         -- Mimics hippocampal place cells and time cells
@@ -772,30 +772,30 @@ spatial_temporal_encoding AS (
             base_url := '{{ var("ollama_url") }}',
             model_name := '{{ var("ollama_model") }}'
         ) as contextual_features
-        
+
     FROM hierarchical_structuring
 ),
 
 episode_formation AS (
-    SELECT 
+    SELECT
         memory_id,
         content as original_content,
         created_at,
         metadata,
-        
+
         -- Hierarchical structure
         json_extract_string(hierarchical_features, '$.goal') as level_0_goal,
         json_extract(hierarchical_features, '$.tasks') as level_1_tasks,
         json_extract(hierarchical_features, '$.actions') as atomic_actions,
         json_extract_string(hierarchical_features, '$.temporal_marker') as temporal_marker,
         json_extract(hierarchical_features, '$.causal_links') as causal_links,
-        
+
         -- Contextual features
         json_extract(contextual_features, '$.spatial') as spatial_context,
         json_extract(contextual_features, '$.temporal') as temporal_context,
         json_extract(contextual_features, '$.social') as social_context,
         json_extract(contextual_features, '$.objects') as phantom_objects,
-        
+
         -- Working memory features carried forward
         importance_score,
         urgency_score,
@@ -804,46 +804,46 @@ episode_formation AS (
         task_type,
         attention_priority,
         entered_wm_at,
-        
+
         -- Calculate STM strength (how well this will be remembered)
         attention_priority * 0.5 +  -- How much attention it got
-        CASE 
+        CASE
             WHEN sentiment = 'positive' THEN 0.2
-            WHEN sentiment = 'negative' THEN 0.15  
+            WHEN sentiment = 'negative' THEN 0.15
             ELSE 0.1
         END +
         emotional_salience * 0.2 as stm_strength,
-        
+
         CURRENT_TIMESTAMP as entered_stm_at
-        
+
     FROM spatial_temporal_encoding
 ),
 
 hebbian_calculation AS (
     -- Calculate co-activation patterns (Hebbian learning)
     -- Memories about the same goal strengthen each other
-    SELECT 
+    SELECT
         e.*,
-        
+
         -- Count how many related memories are active
         COUNT(*) OVER (
             PARTITION BY level_0_goal
             ORDER BY created_at
             RANGE BETWEEN INTERVAL '1 hour' PRECEDING AND CURRENT ROW
         ) as hebbian_potential,
-        
+
         -- Consolidation priority based on multiple factors
         stm_strength * 0.4 +
         LOG(1 + COUNT(*) OVER (PARTITION BY level_0_goal)) * 0.3 +
-        CASE 
+        CASE
             WHEN emotional_salience > 0.7 THEN 0.3
             ELSE emotional_salience * 0.3
         END as consolidation_priority
-        
+
     FROM episode_formation e
 )
 
-SELECT 
+SELECT
     memory_id,
     original_content,
     created_at,
@@ -860,7 +860,7 @@ SELECT
     stm_strength,
     hebbian_potential,
     consolidation_priority,
-    
+
     -- Ready for consolidation when:
     -- 1. Multiple related memories exist (Hebbian threshold)
     -- 2. OR emotional salience is very high (flashbulb memories)
@@ -871,11 +871,11 @@ SELECT
         WHEN entered_stm_at < CURRENT_TIMESTAMP - INTERVAL '{{ var("stm_duration_minutes") }} minutes' THEN TRUE
         ELSE FALSE
     END as ready_for_consolidation,
-    
+
     entered_wm_at,
     entered_stm_at,
     EXTRACT(EPOCH FROM (entered_stm_at - entered_wm_at)) as wm_duration_seconds
-    
+
 FROM hebbian_calculation
 ```
 
@@ -904,51 +904,51 @@ WITH ready_memories AS (
 -- Find related memories for replay
 -- This mimics hippocampal sharp-wave ripples where related memories are replayed together
 memory_associations AS (
-    SELECT 
+    SELECT
         r1.memory_id as source_id,
         r2.memory_id as target_id,
         r1.level_0_goal as source_goal,
         r2.level_0_goal as target_goal,
-        
+
         -- Calculate association strength based on multiple factors
         CASE
             -- Same goal = strong connection (like neurons for the same concept)
             WHEN r1.level_0_goal = r2.level_0_goal THEN 0.8
-            
+
             -- Overlapping tasks = medium connection
             WHEN ARRAY_LENGTH(
                 list_intersect(r1.level_1_tasks, r2.level_1_tasks)
             ) > 0 THEN 0.5
-            
+
             -- Temporal proximity = weak connection
             WHEN ABS(EXTRACT(EPOCH FROM (r1.created_at - r2.created_at))) < 3600 THEN 0.3
-            
+
             -- Same location = contextual connection
-            WHEN json_extract_string(r1.spatial_context, '$.location') = 
+            WHEN json_extract_string(r1.spatial_context, '$.location') =
                  json_extract_string(r2.spatial_context, '$.location') THEN 0.4
-                 
+
             ELSE 0.1
         END as association_strength
-        
+
     FROM ready_memories r1
     -- Look for related memories in recent STM
     CROSS JOIN {{ ref('stm_episode_formation') }} r2
     WHERE r1.memory_id != r2.memory_id
-    AND r2.created_at BETWEEN r1.created_at - INTERVAL '24 hours' 
+    AND r2.created_at BETWEEN r1.created_at - INTERVAL '24 hours'
                           AND r1.created_at + INTERVAL '24 hours'
 ),
 
 -- Simulate replay cycles where patterns are discovered
 replay_synthesis AS (
-    SELECT 
+    SELECT
         r.*,
-        
+
         -- Aggregate related memories
         LIST(DISTINCT ma.target_id) as associated_memory_ids,
         LIST(ma.association_strength) as association_strengths,
         SUM(ma.association_strength) as total_association_strength,
         COUNT(DISTINCT ma.target_id) as associated_memory_count,
-        
+
         -- Use LLM to discover patterns across replayed memories
         prompt(
             'Analyze these related memories for pattern discovery: ' ||
@@ -962,7 +962,7 @@ replay_synthesis AS (
             base_url := '{{ var("ollama_url") }}',
             model_name := '{{ var("ollama_model") }}'
         ) as pattern_extraction
-        
+
     FROM ready_memories r
     LEFT JOIN memory_associations ma ON r.memory_id = ma.source_id
     GROUP BY r.memory_id, r.original_content, r.created_at, r.metadata,
@@ -975,30 +975,30 @@ replay_synthesis AS (
 
 -- Apply Hebbian learning and consolidation dynamics
 consolidation_dynamics AS (
-    SELECT 
+    SELECT
         *,
-        
+
         -- Extract discovered patterns
         json_extract(pattern_extraction, '$.patterns') as discovered_patterns,
         json_extract(pattern_extraction, '$.insights') as synthesized_insights,
         json_extract(pattern_extraction, '$.predictions') as predictive_patterns,
         json_extract(pattern_extraction, '$.principles') as abstract_principles,
         json_extract(pattern_extraction, '$.contradictions') as contradictions,
-        
+
         -- Calculate consolidated strength
         -- Mimics synaptic strengthening through repeated activation
-        stm_strength * 
+        stm_strength *
         (1 + {{ var('hebbian_learning_rate') }} * associated_memory_count) *
         (1 + LOG(1 + total_association_strength)) as pre_consolidation_strength
-        
+
     FROM replay_synthesis
 ),
 
 -- Generate semantic representation for cortical storage
 cortical_preparation AS (
-    SELECT 
+    SELECT
         *,
-        
+
         -- Transform episodic memory to semantic memory
         -- This mimics the hippocampal-neocortical transfer
         prompt(
@@ -1015,42 +1015,42 @@ cortical_preparation AS (
             base_url := '{{ var("ollama_url") }}',
             model_name := '{{ var("ollama_model") }}'
         ) as semantic_transformation,
-        
+
         -- Apply forgetting to weak memories
-        CASE 
-            WHEN pre_consolidation_strength < {{ var('consolidation_threshold') }} 
+        CASE
+            WHEN pre_consolidation_strength < {{ var('consolidation_threshold') }}
             THEN pre_consolidation_strength * {{ var('forgetting_rate') }}
             ELSE pre_consolidation_strength
         END as consolidated_strength
-        
+
     FROM consolidation_dynamics
 )
 
-SELECT 
+SELECT
     memory_id,
     original_content,
     created_at,
     metadata,
-    
+
     -- Episode structure
     level_0_goal,
     level_1_tasks,
     atomic_actions,
     temporal_marker,
     causal_links,
-    
+
     -- Discovered knowledge
     discovered_patterns,
-    synthesized_insights, 
+    synthesized_insights,
     predictive_patterns,
     abstract_principles,
     contradictions,
-    
+
     -- Associations
     associated_memory_ids,
     association_strengths,
     total_association_strength,
-    
+
     -- Semantic representation
     json_extract_string(semantic_transformation, '$.gist') as semantic_gist,
     json_extract_string(semantic_transformation, '$.category') as semantic_category,
@@ -1061,17 +1061,17 @@ SELECT
         TRY_CAST(json_extract_string(semantic_transformation, '$.abstraction_level') AS INTEGER),
         3
     ) as abstraction_level,
-    
+
     -- Memory dynamics
     pre_consolidation_strength,
     consolidated_strength,
-    
+
     -- Temporal tracking
     entered_wm_at,
     entered_stm_at,
     CURRENT_TIMESTAMP as consolidated_at,
     EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - entered_stm_at))/3600 as stm_duration_hours
-    
+
 FROM cortical_preparation
 WHERE consolidated_strength > {{ var('consolidation_threshold') }}
 ```
@@ -1099,58 +1099,58 @@ WITH consolidated_memories AS (
 -- Build semantic similarity network
 -- This mimics how the cortex organizes related concepts
 semantic_clustering AS (
-    SELECT 
+    SELECT
         c.*,
-        
+
         -- Hash into cortical columns (like real cortical organization)
         -- Related concepts map to nearby columns
         HASH(semantic_category || '::' || cortical_region) % 1000 as minicolumn_id,
         HASH(cortical_region) % 100 as macrocolumn_id,
-        
+
         -- Within-column competition (winner-take-all dynamics)
         RANK() OVER (
             PARTITION BY semantic_category, cortical_region
             ORDER BY consolidated_strength DESC
         ) as column_rank,
-        
+
         -- Count memories in this semantic category
         COUNT(*) OVER (
             PARTITION BY semantic_category
         ) as category_density
-        
+
     FROM consolidated_memories c
 ),
 
 -- Calculate retrieval dynamics based on memory principles
 retrieval_dynamics AS (
-    SELECT 
+    SELECT
         *,
-        
+
         -- Multi-factor retrieval strength calculation
         -- Based on: consolidation, recency, frequency, and importance
         (
             -- Base strength from consolidation
             consolidated_strength * 0.3 +
-            
+
             -- Competition within cortical column
             (1.0 / SQRT(column_rank)) * 0.2 +
-            
+
             -- Recency factor (forgetting curve)
             EXP(-EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - consolidated_at)) / (86400 * 30)) * 0.3 +
-            
+
             -- Frequency factor (assuming access tracking would be added)
             LOG(2) * 0.2  -- Placeholder for access count
-            
+
         ) as retrieval_strength,
-        
+
         -- Categorize by age for forgetting curve analysis
-        CASE 
+        CASE
             WHEN consolidated_at > CURRENT_TIMESTAMP - INTERVAL '1 day' THEN 'recent'
             WHEN consolidated_at > CURRENT_TIMESTAMP - INTERVAL '7 days' THEN 'week_old'
             WHEN consolidated_at > CURRENT_TIMESTAMP - INTERVAL '30 days' THEN 'month_old'
             ELSE 'remote'
         END as memory_age,
-        
+
         -- Determine consolidation state
         CASE
             WHEN abstraction_level >= 4 THEN 'schematized'  -- Highly abstract
@@ -1158,35 +1158,35 @@ retrieval_dynamics AS (
             WHEN abstraction_level >= 3 THEN 'semantic'
             ELSE 'episodic_trace'  -- Still has episodic elements
         END as consolidation_state
-        
+
     FROM semantic_clustering
 ),
 
 -- Final preparation for storage
 final_transformation AS (
-    SELECT 
+    SELECT
         memory_id,
         original_content,
         created_at,
         metadata,
-        
+
         -- Semantic content
         semantic_gist,
         semantic_category,
         cortical_region,
         knowledge_type,
         abstraction_level,
-        
+
         -- Make sure arrays are properly typed
         CAST(discovered_patterns AS TEXT[]) as patterns,
         CAST(synthesized_insights AS TEXT[]) as insights,
         CAST(predictive_patterns AS TEXT[]) as predictions,
         CAST(abstract_principles AS TEXT[]) as principles,
         CAST(contradictions AS TEXT[]) as contradictions,
-        
+
         -- Knowledge graph
         CAST(integration_points AS TEXT[]) as integration_points,
-        
+
         -- Calculate related concepts from various sources
         ARRAY_DISTINCT(
             LIST_CONCAT(
@@ -1194,29 +1194,29 @@ final_transformation AS (
                 CAST(abstract_principles AS TEXT[])
             )
         ) as related_concepts,
-        
+
         -- Memory dynamics
         consolidated_strength,
         retrieval_strength,
         memory_age,
         consolidation_state,
-        
+
         -- Cortical organization
         minicolumn_id,
         macrocolumn_id,
         column_rank,
         category_density,
-        
+
         -- Temporal tracking
         entered_wm_at,
         entered_stm_at,
         consolidated_at,
         CURRENT_TIMESTAMP as entered_ltm_at,
-        
+
         -- Processing metadata
         stm_duration_hours,
         '1.0.0' as processing_version
-        
+
     FROM retrieval_dynamics
     WHERE retrieval_strength > 0.01  -- Minimum threshold for LTM storage
 )
@@ -1241,7 +1241,7 @@ SELECT * FROM final_transformation
 -- This model aggregates logs from all pipeline stages
 WITH stage_logs AS (
     -- Working memory logs
-    SELECT 
+    SELECT
         gen_random_uuid() as log_id,
         memory_id,
         'working_memory' as pipeline_stage,
@@ -1257,11 +1257,11 @@ WITH stage_logs AS (
             'capacity_used': COUNT(*) OVER()
         }) as stage_data
     FROM {{ ref('wm_active_attention') }}
-    
+
     UNION ALL
-    
+
     -- Short-term memory logs
-    SELECT 
+    SELECT
         gen_random_uuid() as log_id,
         memory_id,
         'short_term' as pipeline_stage,
@@ -1277,7 +1277,7 @@ WITH stage_logs AS (
             'ready_for_consolidation': ready_for_consolidation
         }) as stage_data
     FROM {{ ref('stm_episode_formation') }}
-    
+
     -- Continue for other stages...
 )
 
@@ -1301,12 +1301,12 @@ WHERE event_timestamp > (SELECT MAX(event_timestamp) FROM {{ this }})
     )
 {% endmacro %}
 
--- macros/extract_json_array.sql  
+-- macros/extract_json_array.sql
 {% macro extract_json_array(json_field, path) %}
-    CASE 
-        WHEN json_valid({{ json_field }}) 
+    CASE
+        WHEN json_valid({{ json_field }})
         THEN CAST(
-            json_extract({{ json_field }}, '{{ path }}') 
+            json_extract({{ json_field }}, '{{ path }}')
             AS TEXT[]
         )
         ELSE ARRAY[]::TEXT[]
@@ -1328,8 +1328,8 @@ WHERE event_timestamp > (SELECT MAX(event_timestamp) FROM {{ this }})
         '{{ error_message }}',
         CURRENT_TIMESTAMP,
         COALESCE(
-            (SELECT attempt_count + 1 
-             FROM staging.processing_state 
+            (SELECT attempt_count + 1
+             FROM staging.processing_state
              WHERE memory_id = '{{ memory_id }}'),
             1
         )
@@ -1364,16 +1364,16 @@ run_dbt_model() {
     local model_selector=$1
     local log_file=$2
     local mode=${3:-"biological"}
-    
+
     echo "[$(date)] Starting $model_selector" >> $log_file
-    
+
     cd /opt/codex-dreams
     dbt run \
         --select $model_selector \
         --vars "{\"mode\": \"$mode\"}" \
         --profiles-dir /opt/codex-dreams \
         >> $log_file 2>&1
-    
+
     if [ $? -eq 0 ]; then
         echo "[$(date)] Completed $model_selector successfully" >> $log_file
     else
@@ -1388,23 +1388,23 @@ case "$1" in
     "working_memory")
         run_dbt_model "tag:continuous" "$LOG_DIR/working_memory.log"
         ;;
-    
+
     "short_term")
         run_dbt_model "tag:short_term" "$LOG_DIR/short_term.log"
         ;;
-    
+
     "consolidation")
         run_dbt_model "tag:consolidation" "$LOG_DIR/consolidation.log"
         ;;
-    
+
     "long_term")
         run_dbt_model "tag:long_term" "$LOG_DIR/long_term.log"
         ;;
-    
+
     "mvp")
         run_dbt_model "tag:mvp" "$LOG_DIR/mvp.log" "mvp"
         ;;
-    
+
     "full_cycle")
         # Run complete pipeline in sequence
         run_dbt_model "tag:continuous" "$LOG_DIR/full_cycle.log"
@@ -1412,7 +1412,7 @@ case "$1" in
         run_dbt_model "tag:consolidation" "$LOG_DIR/full_cycle.log"
         run_dbt_model "tag:long_term" "$LOG_DIR/full_cycle.log"
         ;;
-    
+
     *)
         echo "Usage: $0 {working_memory|short_term|consolidation|long_term|mvp|full_cycle}"
         exit 1
@@ -1482,12 +1482,12 @@ WITH random_memories AS (
 ),
 
 creative_connections AS (
-    SELECT 
+    SELECT
         m1.memory_id as memory_1,
         m2.memory_id as memory_2,
         m1.semantic_gist as gist_1,
         m2.semantic_gist as gist_2,
-        
+
         -- Use LLM to find creative connections
         prompt(
             'Find creative, non-obvious connections between these two ideas: ' ||
@@ -1500,7 +1500,7 @@ creative_connections AS (
             model_name := '{{ var("ollama_model") }}',
             temperature := 0.8  -- Higher temperature for creativity
         ) as creative_insight
-        
+
     FROM random_memories m1
     CROSS JOIN random_memories m2
     WHERE m1.memory_id < m2.memory_id
@@ -1517,7 +1517,7 @@ INSERT INTO codex_processed.creative_insights (
     discovery_type,
     created_at
 )
-SELECT 
+SELECT
     memory_1,
     memory_2,
     creative_insight,
@@ -1548,11 +1548,11 @@ AND access_count = 0;
 
 -- Rebalance cortical columns
 WITH column_rebalancing AS (
-    SELECT 
+    SELECT
         memory_id,
         minicolumn_id,
         RANK() OVER (
-            PARTITION BY minicolumn_id 
+            PARTITION BY minicolumn_id
             ORDER BY retrieval_strength DESC
         ) as new_rank
     FROM codex_processed.semantic_memory
@@ -1578,36 +1578,36 @@ WHERE sm.memory_id = cr.memory_id;
 
 WITH pipeline_metrics AS (
     -- Current state of each pipeline stage
-    SELECT 
+    SELECT
         'working_memory' as stage,
         COUNT(*) as current_count,
         AVG(attention_priority) as avg_score,
         MAX(entered_wm_at) as last_activity
     FROM {{ ref('wm_active_attention') }}
-    
+
     UNION ALL
-    
-    SELECT 
+
+    SELECT
         'short_term' as stage,
         COUNT(*) as current_count,
         AVG(stm_strength) as avg_score,
         MAX(entered_stm_at) as last_activity
     FROM {{ ref('stm_episode_formation') }}
     WHERE entered_stm_at > CURRENT_TIMESTAMP - INTERVAL '1 hour'
-    
+
     UNION ALL
-    
-    SELECT 
+
+    SELECT
         'consolidation' as stage,
         COUNT(*) as current_count,
         AVG(consolidated_strength) as avg_score,
         MAX(consolidated_at) as last_activity
     FROM {{ ref('memory_replay') }}
     WHERE consolidated_at > CURRENT_TIMESTAMP - INTERVAL '6 hours'
-    
+
     UNION ALL
-    
-    SELECT 
+
+    SELECT
         'long_term' as stage,
         COUNT(*) as current_count,
         AVG(retrieval_strength) as avg_score,
@@ -1617,7 +1617,7 @@ WITH pipeline_metrics AS (
 
 processing_errors AS (
     -- Recent errors by stage
-    SELECT 
+    SELECT
         pipeline_stage,
         COUNT(*) as error_count,
         COUNT(DISTINCT error_message) as unique_errors
@@ -1629,7 +1629,7 @@ processing_errors AS (
 
 throughput_metrics AS (
     -- Processing rate over time
-    SELECT 
+    SELECT
         DATE_TRUNC('hour', event_timestamp) as hour,
         pipeline_stage,
         COUNT(*) as memories_processed,
@@ -1639,38 +1639,38 @@ throughput_metrics AS (
     GROUP BY 1, 2
 )
 
-SELECT 
+SELECT
     pm.stage,
     pm.current_count,
     pm.avg_score,
     pm.last_activity,
     COALESCE(pe.error_count, 0) as recent_errors,
     COALESCE(pe.unique_errors, 0) as error_types,
-    
+
     -- Health status
     CASE
-        WHEN pm.last_activity < CURRENT_TIMESTAMP - INTERVAL '10 minutes' 
+        WHEN pm.last_activity < CURRENT_TIMESTAMP - INTERVAL '10 minutes'
              AND pm.stage = 'working_memory' THEN 'stalled'
         WHEN pe.error_count > 10 THEN 'degraded'
         WHEN pm.current_count = 0 AND pm.stage = 'working_memory' THEN 'idle'
         ELSE 'healthy'
     END as health_status,
-    
+
     -- Stage-specific metrics
     CASE pm.stage
-        WHEN 'working_memory' THEN 
+        WHEN 'working_memory' THEN
             'Capacity: ' || pm.current_count || '/9'
-        WHEN 'short_term' THEN 
+        WHEN 'short_term' THEN
             'Strength: ' || ROUND(pm.avg_score, 2)
-        WHEN 'consolidation' THEN 
+        WHEN 'consolidation' THEN
             'Consolidating: ' || pm.current_count
-        WHEN 'long_term' THEN 
+        WHEN 'long_term' THEN
             'Total: ' || pm.current_count
     END as stage_details
-    
+
 FROM pipeline_metrics pm
 LEFT JOIN processing_errors pe ON pm.stage = pe.pipeline_stage
-ORDER BY 
+ORDER BY
     CASE pm.stage
         WHEN 'working_memory' THEN 1
         WHEN 'short_term' THEN 2
@@ -1689,7 +1689,7 @@ When a memory doesn't appear in search results, trace its journey:
 
 WITH journey AS (
     -- Check source
-    SELECT 
+    SELECT
         1 as step_order,
         'source' as stage,
         CASE WHEN EXISTS (
@@ -1703,14 +1703,14 @@ WITH journey AS (
         }) as details
     FROM {{ source('codex_store', 'memories') }}
     WHERE id = '{{ memory_id }}'
-    
+
     UNION ALL
-    
+
     -- Check working memory
-    SELECT 
+    SELECT
         2 as step_order,
         'working_memory' as stage,
-        CASE 
+        CASE
             WHEN memory_id IS NOT NULL THEN 'processed'
             ELSE 'not_selected'
         END as status,
@@ -1726,14 +1726,14 @@ WITH journey AS (
         }) as details
     FROM {{ ref('wm_active_attention') }}
     WHERE memory_id = '{{ memory_id }}'
-    
+
     UNION ALL
-    
+
     -- Check STM
-    SELECT 
+    SELECT
         3 as step_order,
         'short_term' as stage,
-        CASE 
+        CASE
             WHEN memory_id IS NOT NULL THEN 'encoded'
             ELSE 'not_reached'
         END as status,
@@ -1745,17 +1745,17 @@ WITH journey AS (
         }) as details
     FROM {{ ref('stm_episode_formation') }}
     WHERE memory_id = '{{ memory_id }}'
-    
+
     -- Continue for other stages...
 )
 
-SELECT 
+SELECT
     stage,
     status,
     timestamp,
     details,
-    CASE 
-        WHEN status IN ('missing', 'not_selected', 'not_reached') 
+    CASE
+        WHEN status IN ('missing', 'not_selected', 'not_reached')
         THEN 'Memory stopped at: ' || stage
         ELSE 'Processed'
     END as diagnosis
@@ -1770,7 +1770,7 @@ ORDER BY step_order
 ```sql
 -- models/monitoring/performance_metrics.sql
 WITH hourly_stats AS (
-    SELECT 
+    SELECT
         DATE_TRUNC('hour', event_timestamp) as hour,
         pipeline_stage,
         COUNT(*) as memories_processed,
@@ -1785,7 +1785,7 @@ WITH hourly_stats AS (
 ),
 
 daily_summary AS (
-    SELECT 
+    SELECT
         DATE_TRUNC('day', hour) as day,
         pipeline_stage,
         SUM(memories_processed) as daily_total,
@@ -1795,19 +1795,19 @@ daily_summary AS (
     GROUP BY 1, 2
 )
 
-SELECT 
+SELECT
     day,
     pipeline_stage,
     daily_total,
     ROUND(avg_duration) as avg_ms,
     peak_llm_calls,
-    
+
     -- Calculate processing rate
     ROUND(daily_total::FLOAT / 24, 1) as hourly_rate,
-    
+
     -- Estimate costs (if using cloud)
     ROUND(peak_llm_calls * 0.001, 2) as estimated_cost_usd
-    
+
 FROM daily_summary
 ORDER BY day DESC, pipeline_stage
 ```
@@ -1834,7 +1834,7 @@ models:
           severity: error
           error_if: ">9"
           warn_if: "=0"
-          
+
     columns:
       - name: memory_id
         tests:
@@ -1843,34 +1843,34 @@ models:
           - relationships:
               to: source('codex_store', 'memories')
               field: id
-              
+
       - name: wm_slot
         tests:
           - not_null
           - accepted_values:
               values: [1, 2, 3, 4, 5, 6, 7, 8, 9]
-              
+
       - name: attention_priority
         tests:
           - not_null
           - range:
               min: 0
               max: 1
-              
+
   - name: stm_episode_formation
     description: "Short-term episodic memory buffer"
     tests:
       - recency_test:
           timestamp_column: entered_stm_at
           max_age_hours: 1
-          
+
     columns:
       - name: level_0_goal
         tests:
           - not_null
           - min_length:
               length: 10
-              
+
       - name: stm_strength
         tests:
           - not_null
@@ -1887,7 +1887,7 @@ models:
 
 -- Working memory capacity constraint
 WITH wm_capacity_test AS (
-    SELECT 
+    SELECT
         COUNT(*) as current_capacity,
         MAX(wm_slot) as max_slot
     FROM {{ ref('wm_active_attention') }}
@@ -1899,19 +1899,19 @@ OR max_slot > 9;
 
 -- STM duration test
 WITH stm_duration_test AS (
-    SELECT 
+    SELECT
         memory_id,
         EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - entered_stm_at))/60 as minutes_in_stm
     FROM {{ ref('stm_episode_formation') }}
     WHERE NOT ready_for_consolidation
 )
 SELECT 'stm_exceeded_duration' as test_name
-FROM stm_duration_test  
+FROM stm_duration_test
 WHERE minutes_in_stm > {{ var('stm_duration_minutes') }} * 1.5;
 
 -- Forgetting curve test
 WITH forgetting_test AS (
-    SELECT 
+    SELECT
         memory_age,
         AVG(retrieval_strength) as avg_strength,
         COUNT(*) as count
@@ -1933,7 +1933,7 @@ import pytest
 from datetime import datetime, timedelta
 
 class TestMemoryPipeline:
-    
+
     @pytest.fixture
     def test_memory(self):
         """Insert a test memory and track its journey"""
@@ -1944,21 +1944,21 @@ class TestMemoryPipeline:
             'summary': 'Testing biological memory systems',
             'created_at': datetime.now()
         }
-    
+
     def test_working_memory_selection(self, test_memory):
         """Test that high-priority memories enter working memory"""
         # Insert test memory
         # Run working memory model
         # Assert memory appears with correct slot assignment
         pass
-    
+
     def test_stm_hierarchy_extraction(self, test_memory):
         """Test hierarchical goal-task-action extraction"""
         # Process through working memory to STM
         # Assert goal is extracted correctly
         # Assert tasks are identified
         pass
-    
+
     def test_consolidation_pattern_discovery(self):
         """Test that related memories produce patterns"""
         # Insert multiple related memories
@@ -1966,7 +1966,7 @@ class TestMemoryPipeline:
         # Assert patterns are discovered
         # Assert association strength is calculated
         pass
-    
+
     def test_ltm_semantic_abstraction(self):
         """Test episodic to semantic transformation"""
         # Process memory through full pipeline
@@ -1981,7 +1981,7 @@ class TestMemoryPipeline:
 -- models/validation/quality_checks.sql
 WITH llm_response_quality AS (
     -- Check that LLM responses are valid JSON
-    SELECT 
+    SELECT
         'invalid_json_response' as check_name,
         pipeline_stage,
         COUNT(*) as failure_count,
@@ -1994,12 +1994,12 @@ WITH llm_response_quality AS (
 
 semantic_quality AS (
     -- Check semantic abstractions are actually abstract
-    SELECT 
+    SELECT
         'low_abstraction_quality' as check_name,
         COUNT(*) as failure_count,
         ARRAY_AGG(memory_id LIMIT 5) as sample_ids
     FROM {{ ref('ltm_semantic_network') }}
-    WHERE 
+    WHERE
         -- Semantic gist shouldn't contain specific names/dates
         semantic_gist SIMILAR TO '%([0-9]{4}-[0-9]{2}-[0-9]{2}|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)%'
         OR LENGTH(semantic_gist) > 500  -- Too detailed
@@ -2008,12 +2008,12 @@ semantic_quality AS (
 
 pattern_quality AS (
     -- Ensure discovered patterns are meaningful
-    SELECT 
+    SELECT
         'weak_pattern_discovery' as check_name,
         COUNT(*) as failure_count,
         ARRAY_AGG(memory_id LIMIT 5) as sample_ids
     FROM {{ ref('memory_replay') }}
-    WHERE 
+    WHERE
         ARRAY_LENGTH(discovered_patterns, 1) = 0
         OR ARRAY_LENGTH(abstract_principles, 1) = 0
     AND consolidated_strength > 0.5  -- Strong memories should have patterns
@@ -2022,7 +2022,7 @@ pattern_quality AS (
 SELECT * FROM llm_response_quality
 UNION ALL
 SELECT 'semantic_quality', NULL, failure_count, sample_ids FROM semantic_quality
-UNION ALL  
+UNION ALL
 SELECT 'pattern_quality', NULL, failure_count, sample_ids FROM pattern_quality
 ```
 
@@ -2042,13 +2042,13 @@ DECLARE
     system_load FLOAT;
 BEGIN
     current_hour := EXTRACT(HOUR FROM CURRENT_TIME);
-    
+
     -- Check system load (simplified - would check actual metrics)
-    SELECT AVG(duration_ms) / 1000.0 
+    SELECT AVG(duration_ms) / 1000.0
     INTO system_load
     FROM {{ ref('processing_log') }}
     WHERE event_timestamp > CURRENT_TIMESTAMP - INTERVAL '10 minutes';
-    
+
     -- Adjust batch size based on time and load
     IF current_hour BETWEEN 2 AND 6 THEN
         -- Low activity hours - larger batches
@@ -2094,21 +2094,21 @@ DECLARE
 BEGIN
     -- Generate hash of prompt
     prompt_hash_value := MD5(prompt_text);
-    
+
     -- Check cache
-    SELECT response 
+    SELECT response
     INTO cached_response
     FROM llm_cache
     WHERE prompt_hash = prompt_hash_value
     AND created_at > CURRENT_TIMESTAMP - (cache_duration_hours || ' hours')::INTERVAL;
-    
+
     IF cached_response IS NOT NULL THEN
         -- Update hit count
-        UPDATE llm_cache 
+        UPDATE llm_cache
         SET hit_count = hit_count + 1,
             last_accessed = CURRENT_TIMESTAMP
         WHERE prompt_hash = prompt_hash_value;
-        
+
         RETURN cached_response;
     ELSE
         -- Cache miss - will need to call LLM
@@ -2128,7 +2128,7 @@ SET temp_directory = '/data/codex-dreams/tmp';
 
 -- Use sampling for very large batches
 CREATE OR REPLACE MACRO sample_if_large(table_name, threshold INTEGER = 10000) AS (
-    CASE 
+    CASE
         WHEN (SELECT COUNT(*) FROM table_name) > threshold
         THEN (SELECT * FROM table_name TABLESAMPLE SYSTEM(50))
         ELSE (SELECT * FROM table_name)
@@ -2164,7 +2164,7 @@ For a personal deployment processing ~1000 memories/day:
 
 **Database Sizing:**
 - PostgreSQL (source): ~1MB per 1000 memories
-- DuckDB (processing): ~5MB per 1000 memories  
+- DuckDB (processing): ~5MB per 1000 memories
 - PostgreSQL (insights): ~2MB per 1000 insights
 
 ## Migration Strategy
@@ -2201,7 +2201,7 @@ Compare quality between pipelines:
 ```sql
 -- Quality comparison query
 WITH mvp_insights AS (
-    SELECT 
+    SELECT
         memory_id,
         key_insight as insight,
         confidence_score,
@@ -2209,15 +2209,15 @@ WITH mvp_insights AS (
     FROM codex_processed.insights
 ),
 biological_insights AS (
-    SELECT 
+    SELECT
         source_memory_id as memory_id,
         semantic_gist as insight,
         retrieval_strength as confidence_score,
-        'biological' as source  
+        'biological' as source
     FROM biological_shadow.semantic_memory
 ),
 comparison AS (
-    SELECT 
+    SELECT
         m.memory_id,
         m.insight as mvp_insight,
         b.insight as bio_insight,
@@ -2227,7 +2227,7 @@ comparison AS (
     FROM mvp_insights m
     JOIN biological_insights b ON m.memory_id = b.memory_id
 )
-SELECT 
+SELECT
     COUNT(*) as total_compared,
     AVG(length_ratio) as avg_length_ratio,
     STDDEV(length_ratio) as length_ratio_stddev,
@@ -2244,13 +2244,13 @@ Route increasing percentages to biological pipeline:
 -- Route 10% of queries to biological pipeline
 CREATE OR REPLACE VIEW codex_processed.insights_unified AS
 SELECT * FROM (
-    SELECT *, 'mvp' as pipeline_source 
+    SELECT *, 'mvp' as pipeline_source
     FROM codex_processed.insights
     WHERE RANDOM() > 0.1
-    
+
     UNION ALL
-    
-    SELECT 
+
+    SELECT
         id,
         source_memory_id as memory_id,
         semantic_gist as key_insight,
@@ -2303,7 +2303,7 @@ Model the amygdala-hippocampus interaction for emotional memories:
 CREATE TABLE biological_memory.emotional_tagging (
     memory_id UUID PRIMARY KEY,
     valence FLOAT,  -- Positive/negative (-1 to 1)
-    arousal FLOAT,  -- Activation level (0 to 1)  
+    arousal FLOAT,  -- Activation level (0 to 1)
     discrete_emotion VARCHAR(50),  -- joy, fear, anger, etc.
     emotion_intensity FLOAT,
     somatic_markers TEXT[],  -- Body sensations
@@ -2370,18 +2370,18 @@ Extend beyond text to images and audio:
 CREATE TABLE biological_memory.multimodal_features (
     memory_id UUID PRIMARY KEY,
     modality VARCHAR(20),  -- text, image, audio
-    
+
     -- Visual features (for images)
     detected_objects TEXT[],
     scene_description TEXT,
     color_palette TEXT[],
     spatial_layout JSON,
-    
+
     -- Auditory features (for audio)
     transcription TEXT,
     speaker_count INTEGER,
     emotional_tone VARCHAR(50),
-    
+
     -- Cross-modal binding
     crossmodal_associations UUID[]
 );
@@ -2409,7 +2409,7 @@ CREATE TABLE collective_memory.shared_insights (
 Codex Dreams represents a unique approach to knowledge management - one that doesn't just store information but actively processes it the way a human brain would. By modeling biological memory consolidation, we create a system that:
 
 1. **Filters** - Only important information receives deep processing
-2. **Organizes** - Experiences become structured episodes  
+2. **Organizes** - Experiences become structured episodes
 3. **Learns** - Patterns emerge from individual memories
 4. **Abstracts** - Specific events yield general principles
 5. **Forgets** - Unimportant details fade while insights strengthen

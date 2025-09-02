@@ -260,7 +260,8 @@ class TestFormatting:
 
                 for node in ast.walk(tree):
                     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                        # Skip private functions and special methods for docstring requirement
+                        # Skip private functions and special methods for
+                        # docstring requirement
                         if node.name.startswith("_"):
                             continue
 

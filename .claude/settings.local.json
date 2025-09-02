@@ -13,7 +13,8 @@
       "Bash(mv:*)",
       "Bash(psql:*)",
       "WebSearch",
-      "Bash(RUSTFLAGS=-Awarnings cargo test --no-run)"
+      "Bash(RUSTFLAGS=-Awarnings cargo test --no-run)",
+      "Bash(python3 -m pytest --tb=no -q)"
     ],
     "additionalDirectories": [
       "/Users/ladvien/Library",

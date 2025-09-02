@@ -6,6 +6,8 @@ management and no race conditions.
 """
 
 import multiprocessing
+import os
+import tempfile
 import threading
 import time
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
@@ -35,16 +37,25 @@ class TestParallelCapabilities:
 
     def test_concurrent_database_connections(self):
         """Test that multiple database connections can coexist."""
+        import os
         import tempfile
 
         import duckdb
 
         def create_isolated_connection(worker_id):
             """Create an isolated database connection."""
+            import os
+            import tempfile
+
+            import duckdb
+
             with tempfile.NamedTemporaryFile(
                 delete=False, suffix=f"_worker_{worker_id}.duckdb"
             ) as f:
                 db_path = f.name
+
+            # Remove the empty file so DuckDB can create a proper database
+            os.unlink(db_path)
 
             try:
                 conn = duckdb.connect(db_path)

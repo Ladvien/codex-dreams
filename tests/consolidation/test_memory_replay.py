@@ -82,14 +82,14 @@ class TestMemoryReplayConsolidation:
             """
             CREATE TEMPORARY TABLE stm_hierarchical_episodes AS
             SELECT * FROM VALUES
-            (1, 'Important strategy meeting with client about product launch', 'Product Launch Strategy', 
+            (1, 'Important strategy meeting with client about product launch', 'Product Launch Strategy',
              '["Strategy planning", "Client coordination", "Timeline development"]', '[]', '{}', '{}',
              0.8, 0.9, 5, 0.7, true, CURRENT_TIMESTAMP),
             (2, 'Fix broken coffee machine in office kitchen', 'Operations and Maintenance',
-             '["Equipment diagnosis", "Repair coordination", "Testing"]', '[]', '{}', '{}', 
+             '["Equipment diagnosis", "Repair coordination", "Testing"]', '[]', '{}', '{}',
              0.2, 0.3, 1, 0.1, true, CURRENT_TIMESTAMP)
             AS t(id, content, level_0_goal, level_1_tasks, atomic_actions, phantom_objects, spatial_extraction,
-                 stm_strength, emotional_salience, co_activation_count, hebbian_potential, 
+                 stm_strength, emotional_salience, co_activation_count, hebbian_potential,
                  ready_for_consolidation, processed_at)
         """
         )
@@ -103,15 +103,15 @@ class TestMemoryReplayConsolidation:
             replay_cycles AS (
                 SELECT *,
                     hebbian_potential * 1.1 AS strengthened_weight,
-                    CASE 
+                    CASE
                         WHEN stm_strength < 0.3 THEN stm_strength * 0.8
-                        WHEN stm_strength > 0.7 THEN stm_strength * 1.2  
+                        WHEN stm_strength > 0.7 THEN stm_strength * 1.2
                         ELSE stm_strength * 0.95
                     END as consolidated_strength
                 FROM stm_memories
             )
             SELECT id, content, consolidated_strength, strengthened_weight,
-                   CASE WHEN consolidated_strength > 0.5 THEN 'cortical_transfer' 
+                   CASE WHEN consolidated_strength > 0.5 THEN 'cortical_transfer'
                         ELSE 'hippocampal_retention' END as consolidation_fate
             FROM replay_cycles
         """
@@ -146,7 +146,7 @@ class TestMemoryReplayConsolidation:
 
         conn.execute(
             """
-            CREATE TEMPORARY TABLE hebbian_test AS 
+            CREATE TEMPORARY TABLE hebbian_test AS
             SELECT * FROM VALUES {} AS t(id, hebbian_potential, expected)
         """.format(
                 ",".join(f"({id_}, {pot}, {exp})" for id_, pot, exp in test_data)
@@ -190,15 +190,15 @@ class TestMemoryReplayConsolidation:
         result = conn.execute(
             """
             SELECT id, stm_strength,
-                CASE 
+                CASE
                     WHEN stm_strength < 0.3 THEN stm_strength * 0.8
-                    WHEN stm_strength > 0.7 THEN stm_strength * 1.2  
+                    WHEN stm_strength > 0.7 THEN stm_strength * 1.2
                     ELSE stm_strength * 0.95
                 END as consolidated_strength,
                 expected,
-                ABS(CASE 
+                ABS(CASE
                     WHEN stm_strength < 0.3 THEN stm_strength * 0.8
-                    WHEN stm_strength > 0.7 THEN stm_strength * 1.2  
+                    WHEN stm_strength > 0.7 THEN stm_strength * 1.2
                     ELSE stm_strength * 0.95
                 END - expected) < 0.001 as correct
             FROM forgetting_test
@@ -220,7 +220,7 @@ class TestMemoryReplayConsolidation:
             CREATE TEMPORARY TABLE transfer_test AS
             SELECT * FROM VALUES
             (1, 0.8, 'Product Launch Strategy'),
-            (2, 0.3, 'Operations and Maintenance'), 
+            (2, 0.3, 'Operations and Maintenance'),
             (3, 0.6, 'Communication and Collaboration'),
             (4, 0.1, 'General Task Processing')
             AS t(id, consolidated_strength, level_0_goal)
@@ -233,7 +233,7 @@ class TestMemoryReplayConsolidation:
                 CASE WHEN consolidated_strength > 0.5 THEN 'cortical_transfer'
                      ELSE 'hippocampal_retention' END as fate,
                 CASE WHEN consolidated_strength > 0.5 THEN
-                    CASE WHEN level_0_goal LIKE '%Strategy%' THEN 
+                    CASE WHEN level_0_goal LIKE '%Strategy%' THEN
                          'Strategic planning and goal-oriented thinking process'
                          ELSE 'General processed content'
                     END
@@ -278,11 +278,11 @@ class TestMemoryReplayConsolidation:
                 WITH test_memory AS (
                     SELECT ? as level_0_goal, 0.8 as consolidated_strength
                 )
-                SELECT 
+                SELECT
                     CASE WHEN level_0_goal LIKE '%Strategy%' OR level_0_goal LIKE '%Planning%'
                          THEN json_object(
                              'gist', 'Strategic planning and goal-oriented thinking process',
-                             'category', 'executive_function', 
+                             'category', 'executive_function',
                              'region', 'prefrontal_cortex'
                          )
                          WHEN level_0_goal LIKE '%Communication%' OR level_0_goal LIKE '%Collaboration%'
@@ -295,7 +295,7 @@ class TestMemoryReplayConsolidation:
                          THEN json_object(
                              'gist', 'Resource management and financial decision-making schema',
                              'category', 'quantitative_reasoning',
-                             'region', 'parietal_cortex'  
+                             'region', 'parietal_cortex'
                          )
                          WHEN level_0_goal LIKE '%Operations%' OR level_0_goal LIKE '%Maintenance%'
                          THEN json_object(
@@ -328,12 +328,12 @@ class TestMemoryReplayConsolidation:
                 UNION ALL
                 SELECT n + 1 FROM numbers WHERE n < {batch_size}
             )
-            SELECT 
+            SELECT
                 n as id,
                 'Test memory content ' || n as content,
                 CASE (n % 4)
                     WHEN 0 THEN 'Product Launch Strategy'
-                    WHEN 1 THEN 'Communication and Collaboration' 
+                    WHEN 1 THEN 'Communication and Collaboration'
                     WHEN 2 THEN 'Financial Planning and Management'
                     ELSE 'Operations and Maintenance'
                 END as level_0_goal,
@@ -362,12 +362,12 @@ class TestMemoryReplayConsolidation:
             replay_cycles AS (
                 SELECT *,
                     hebbian_potential * 1.1 AS strengthened_weight,
-                    CASE 
+                    CASE
                         WHEN stm_strength < 0.3 THEN stm_strength * 0.8
-                        WHEN stm_strength > 0.7 THEN stm_strength * 1.2  
+                        WHEN stm_strength > 0.7 THEN stm_strength * 1.2
                         ELSE stm_strength * 0.95
                     END as consolidated_strength,
-                    (stm_strength * 0.3 + emotional_salience * 0.3 + 
+                    (stm_strength * 0.3 + emotional_salience * 0.3 +
                      (co_activation_count / 10.0) * 0.2 + 0.2) as replay_strength
                 FROM stm_memories
             ),
@@ -377,7 +377,7 @@ class TestMemoryReplayConsolidation:
                         json_object('gist', 'Processed semantic content', 'category', 'general')
                         ELSE NULL
                     END as cortical_representation,
-                    CASE 
+                    CASE
                         WHEN consolidated_strength > 0.5 AND replay_strength > 0.6 THEN 'cortical_transfer'
                         WHEN consolidated_strength > 0.3 THEN 'hippocampal_retention'
                         ELSE 'gradual_forgetting'
@@ -439,9 +439,9 @@ class TestMemoryReplayConsolidation:
                 SELECT 1 as id, 'Critical client meeting' as content, 0.9 as activation_strength,
                        CURRENT_TIMESTAMP - INTERVAL '2 minutes' as timestamp
             ),
-            -- Stage 2: Short-Term Memory  
+            -- Stage 2: Short-Term Memory
             short_term_memory AS (
-                SELECT id, content, 
+                SELECT id, content,
                        'Client Relations and Service' as level_0_goal,
                        0.8 as stm_strength, 0.7 as emotional_salience, 4 as co_activation_count,
                        0.6 as hebbian_potential, true as ready_for_consolidation
@@ -450,14 +450,14 @@ class TestMemoryReplayConsolidation:
             ),
             -- Stage 3: Consolidation
             consolidated_memory AS (
-                SELECT *, 
+                SELECT *,
                        hebbian_potential * 1.1 as strengthened_weight,
                        stm_strength * 1.2 as consolidated_strength  -- Strong memory
                 FROM short_term_memory
                 WHERE ready_for_consolidation = true
             )
-            SELECT id, content, consolidated_strength, 
-                   CASE WHEN consolidated_strength > 0.5 THEN 'cortical_transfer' 
+            SELECT id, content, consolidated_strength,
+                   CASE WHEN consolidated_strength > 0.5 THEN 'cortical_transfer'
                         ELSE 'hippocampal_retention' END as final_fate
             FROM consolidated_memory
         """
@@ -500,10 +500,10 @@ class TestMemoryReplayConsolidation:
         # Test consolidation with error handling
         result = conn.execute(
             """
-            SELECT id, 
+            SELECT id,
                    COALESCE(content, 'missing_content') as safe_content,
                    GREATEST(0.0, LEAST(1.0, COALESCE(stm_strength, 0.1))) as safe_strength,
-                   CASE 
+                   CASE
                        WHEN COALESCE(stm_strength, 0) < 0.3 THEN COALESCE(stm_strength, 0) * 0.8
                        WHEN COALESCE(stm_strength, 0) > 0.7 THEN COALESCE(stm_strength, 0) * 1.2
                        ELSE COALESCE(stm_strength, 0) * 0.95

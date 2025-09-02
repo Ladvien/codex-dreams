@@ -277,7 +277,8 @@ class PackageManagementTest:
             os.chdir(self.biological_memory_dir)
 
             try:
-                # Set minimal required environment variables to avoid parsing errors
+                # Set minimal required environment variables to avoid parsing
+                # errors
                 test_env = os.environ.copy()
                 test_env.update(
                     {
@@ -294,7 +295,8 @@ class PackageManagementTest:
                 parse_success = result.returncode == 0
 
                 if not parse_success:
-                    # Check if it's just environment variable issues vs real compilation errors
+                    # Check if it's just environment variable issues vs real
+                    # compilation errors
                     if "Env var required" in result.stderr:
                         # This is expected in test environment
                         parse_success = True
@@ -304,7 +306,8 @@ class PackageManagementTest:
                 else:
                     message = "Macros compile successfully"
 
-                # Also consider successful if stdout shows processing (macros working)
+                # Also consider successful if stdout shows processing (macros
+                # working)
                 if not parse_success and "Processing working memory batch" in result.stdout:
                     parse_success = True
                     message = "Macros compile and execute successfully"

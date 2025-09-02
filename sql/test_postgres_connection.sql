@@ -23,7 +23,7 @@ ATTACH '' AS test_db (TYPE POSTGRES, SECRET test_postgres_connection);
 -- Test PostgreSQL version
 SELECT version() as postgres_version FROM test_db.pg_catalog.pg_stat_database LIMIT 1;
 
--- List tables in public schema  
+-- List tables in public schema
 SELECT schemaname, tablename FROM test_db.pg_catalog.pg_tables WHERE schemaname = 'public';
 
 -- Check if memories table exists and has data

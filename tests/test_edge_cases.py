@@ -55,7 +55,7 @@ class TestDataBoundaryConditions:
         valid_memories = conn.execute(
             """
             SELECT id, content FROM raw_memories
-            WHERE content IS NOT NULL 
+            WHERE content IS NOT NULL
             AND TRIM(content) != ''
             AND LENGTH(TRIM(content)) > 0
         """
@@ -220,7 +220,7 @@ class TestCapacityEdgeCases:
         conn.execute(
             """
             INSERT INTO working_memory_view (id, content, activation_level, miller_capacity_position)
-            SELECT id, content, 
+            SELECT id, content,
                    CAST(JSON_EXTRACT(metadata, '$.importance') AS FLOAT),
                    ROW_NUMBER() OVER (ORDER BY id)
             FROM raw_memories
@@ -276,7 +276,7 @@ class TestCapacityEdgeCases:
         conn.execute(
             """
             WITH ranked_memories AS (
-                SELECT id, content, 
+                SELECT id, content,
                        CAST(JSON_EXTRACT(metadata, '$.importance') AS FLOAT) as importance,
                        ROW_NUMBER() OVER (ORDER BY CAST(JSON_EXTRACT(metadata, '$.importance') AS FLOAT) DESC) as rank
                 FROM raw_memories
@@ -314,7 +314,8 @@ class TestConcurrencyEdgeCases:
 
         # Insert in interleaved order to simulate concurrency
         all_memories = memories_batch_1 + memories_batch_2
-        all_memories.sort(key=lambda x: x[0])  # Sort by ID to simulate race conditions
+        # Sort by ID to simulate race conditions
+        all_memories.sort(key=lambda x: x[0])
 
         for memory_id, content in all_memories:
             conn.execute(
@@ -334,7 +335,7 @@ class TestConcurrencyEdgeCases:
             # Simulate concurrent activation level updates
             conn.execute(
                 """
-                INSERT OR REPLACE INTO working_memory_view 
+                INSERT OR REPLACE INTO working_memory_view
                 (id, content, activation_level)
                 VALUES (?, ?, ?)
             """,
@@ -509,7 +510,7 @@ class TestResourceExhaustionScenarios:
         processed_memories = conn.execute(
             """
             SELECT id, content, metadata,
-                   CASE 
+                   CASE
                        WHEN metadata IS NULL THEN '{"source": "unknown"}'
                        WHEN JSON_VALID(metadata) = 1 THEN metadata
                        ELSE '{"source": "malformed", "original": "' || REPLACE(metadata, '"', '\\"') || '"}'
@@ -554,7 +555,7 @@ class TestSystemStabilityEdgeCases:
             # Delete half of them
             conn.execute(
                 """
-                DELETE FROM raw_memories 
+                DELETE FROM raw_memories
                 WHERE id >= ? AND id < ? AND id % 2 = 0
             """,
                 (cycle * 10, (cycle + 1) * 10),
@@ -616,7 +617,7 @@ class TestSystemStabilityEdgeCases:
         # Test timestamp-based queries work
         recent_memories = conn.execute(
             """
-            SELECT COUNT(*) FROM raw_memories 
+            SELECT COUNT(*) FROM raw_memories
             WHERE timestamp > datetime('now', '-1 day')
         """
         ).fetchall()

@@ -201,8 +201,8 @@ def test_ollama_connection_mock(mock_post, mock_get):
 
         # Test model availability
         model_result = ollama.test_model_availability()
-        assert model_result["llm_available"] == True
-        assert model_result["embedding_available"] == True
+        assert model_result["llm_available"]
+        assert model_result["embedding_available"]
 
         # Test generation
         gen_result = ollama.test_generation()
@@ -216,7 +216,9 @@ def test_ollama_embeddings_mock(mock_post):
     """Test Ollama embedding generation with mock."""
     # Mock embedding response
     mock_post.return_value.json.return_value = {
-        "embedding": [0.1, 0.2, 0.3, 0.4, 0.5] + [0.0] * 763  # 768 dimensions total
+        # 768 dimensions total
+        "embedding": [0.1, 0.2, 0.3, 0.4, 0.5]
+        + [0.0] * 763
     }
     mock_post.return_value.raise_for_status = Mock()
 

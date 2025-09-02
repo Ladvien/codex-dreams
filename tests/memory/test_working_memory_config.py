@@ -122,7 +122,8 @@ class TestWorkingMemoryConfiguration:
         assert "{{ config(" in content, "Should contain dbt config block"
         assert "{{ var(" in content, "Should use dbt variables"
 
-        # Should not contain syntax errors like dangling commas or incomplete statements
+        # Should not contain syntax errors like dangling commas or incomplete
+        # statements
         lines = content.split("\n")
         for i, line in enumerate(lines, 1):
             stripped = line.strip()

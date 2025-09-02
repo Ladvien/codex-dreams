@@ -27,8 +27,8 @@ import uuid
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple, Generator
 from types import TracebackType
+from typing import Any, Dict, Generator, List, Optional, Tuple
 
 import duckdb
 import psycopg2
@@ -245,7 +245,7 @@ class MemoryWritebackService:
         """Extract processed memories from DuckDB models"""
         query = """
         WITH consolidated_memories AS (
-            SELECT 
+            SELECT
                 id,
                 content,
                 level_0_goal,
@@ -265,28 +265,28 @@ class MemoryWritebackService:
             FROM memory_replay
             WHERE consolidated_at > CURRENT_TIMESTAMP - INTERVAL '1 hour'
         ),
-        
+
         stable_memories AS (
             SELECT
                 memory_id,
                 concepts,
                 activation_strength,
                 created_at
-            FROM stable_memories  
+            FROM main.stable_memories
             WHERE last_processed_at > CURRENT_TIMESTAMP - INTERVAL '1 hour'
         )
-        
-        SELECT 
+
+        SELECT
             cm.id as source_memory_id,
             cm.level_0_goal,
-            list(cm.level_1_tasks) as level_1_tasks,
-            list(cm.level_2_actions) as level_2_actions,
+            cm.level_1_tasks as level_1_tasks,
+            cm.level_2_actions as level_2_actions,
             cm.phantom_objects,
             cm.consolidated_strength,
             cm.consolidation_fate,
             cm.hebbian_strength,
             cm.semantic_gist,
-            cm.semantic_category, 
+            cm.semantic_category,
             cm.cortical_region,
             cm.retrieval_accessibility,
             cm.stm_strength,
@@ -417,7 +417,7 @@ class MemoryWritebackService:
         try:
             # Extract insights from DuckDB MVP model
             insights_query = """
-            SELECT 
+            SELECT
                 memory_id,
                 content,
                 suggested_tags,
@@ -437,7 +437,8 @@ class MemoryWritebackService:
             insights = []
             for row in result:
                 insight_dict = dict(zip(columns, row))
-                # Generate insight from the prepared prompt (would call LLM in production)
+                # Generate insight from the prepared prompt (would call LLM in
+                # production)
                 insight_text = f"Memory shows {insight_dict.get('connection_count', 0)} connections with patterns in {insight_dict.get('suggested_tags', [])}"
 
                 insights.append(
@@ -475,7 +476,7 @@ class MemoryWritebackService:
         insert_query = """
         INSERT INTO codex_processed.generated_insights (
             source_memory_ids, insight_text, insight_type, insight_category,
-            insight_confidence, novelty_score, relevance_score, 
+            insight_confidence, novelty_score, relevance_score,
             suggested_tags, generated_at
         ) VALUES (
             %(source_memory_ids)s, %(insight_text)s, %(insight_type)s, %(insight_category)s,
@@ -505,7 +506,7 @@ class MemoryWritebackService:
         try:
             # Extract associations from DuckDB semantic model
             associations_query = """
-            SELECT 
+            SELECT
                 source_concept,
                 target_concept,
                 association_strength,
@@ -532,8 +533,10 @@ class MemoryWritebackService:
                 # For now, create placeholder associations
                 associations.append(
                     {
-                        "source_memory_id": str(uuid.uuid4()),  # Would map from concept
-                        "target_memory_id": str(uuid.uuid4()),  # Would map from concept
+                        # Would map from concept
+                        "source_memory_id": str(uuid.uuid4()),
+                        # Would map from concept
+                        "target_memory_id": str(uuid.uuid4()),
                         "association_type": "semantic",
                         "association_strength": assoc_dict.get("association_strength", 0.0),
                         "semantic_similarity": assoc_dict.get("semantic_similarity", 0.0),
@@ -594,7 +597,9 @@ class MemoryWritebackService:
                     self.logger.error(f"Failed to write associations batch: {str(e)}")
                     raise
 
-    def write_processing_metadata(self, batch_id: str, additional_metadata: Optional[Dict[str, Any]] = None) -> None:
+    def write_processing_metadata(
+        self, batch_id: str, additional_metadata: Optional[Dict[str, Any]] = None
+    ) -> None:
         """Write processing metadata to PostgreSQL for tracking and monitoring"""
 
         metrics = self.processing_metrics.get(batch_id)
@@ -726,7 +731,12 @@ class MemoryWritebackService:
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type: Optional[type], exc_val: Optional[Exception], exc_tb: Optional[TracebackType]) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[type],
+        exc_val: Optional[Exception],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
         self.cleanup()
 
 

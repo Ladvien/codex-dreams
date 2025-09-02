@@ -22,7 +22,7 @@ import os
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Set, Generator
+from typing import Any, Dict, Generator, List, Optional, Set
 
 import duckdb
 import pandas as pd
@@ -146,13 +146,13 @@ class IncrementalProcessor:
     def _load_processing_state_from_db(self, stage_name: str) -> Optional[ProcessingState]:
         """Load processing state from PostgreSQL metadata table"""
         query = """
-        SELECT 
+        SELECT
             processing_stage,
             processing_end_time,
             batch_id,
             total_memories_processed
         FROM codex_processed.processing_metadata
-        WHERE processing_stage = %s 
+        WHERE processing_stage = %s
           AND processing_status = 'completed'
         ORDER BY processing_end_time DESC
         LIMIT 1
@@ -257,7 +257,7 @@ class IncrementalProcessor:
         """Get incremental processed memories from DuckDB"""
         query = f"""
         WITH recent_consolidations AS (
-            SELECT 
+            SELECT
                 id as source_memory_id,
                 level_0_goal,
                 level_1_tasks,
@@ -278,8 +278,8 @@ class IncrementalProcessor:
             ORDER BY consolidated_at DESC
             LIMIT {max_records}
         )
-        
-        SELECT 
+
+        SELECT
             *,
             -- Add content hash for change detection
             md5(CONCAT(
@@ -314,7 +314,7 @@ class IncrementalProcessor:
     ) -> List[Dict[str, Any]]:
         """Get incremental insights from DuckDB MVP model"""
         query = f"""
-        SELECT 
+        SELECT
             memory_id,
             content,
             suggested_tags,
@@ -355,7 +355,7 @@ class IncrementalProcessor:
     ) -> List[Dict[str, Any]]:
         """Get incremental associations from DuckDB semantic model"""
         query = f"""
-        SELECT 
+        SELECT
             source_concept,
             target_concept,
             association_strength,
@@ -454,7 +454,11 @@ class IncrementalProcessor:
             return True
 
     def update_processing_state(
-        self, stage: str, batch: IncrementalBatch, success: bool, records_processed: Optional[int] = None
+        self,
+        stage: str,
+        batch: IncrementalBatch,
+        success: bool,
+        records_processed: Optional[int] = None,
     ) -> None:
         """
         Update processing state after batch completion
@@ -537,7 +541,7 @@ class IncrementalProcessor:
             Dictionary with optimization recommendations
         """
         analysis_query = """
-        SELECT 
+        SELECT
             processing_stage,
             AVG(total_memories_processed) as avg_batch_size,
             AVG(processing_duration_seconds) as avg_duration,

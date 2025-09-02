@@ -33,6 +33,9 @@ EXCLUDED_FILES = {
     ".pytest_cache",
     "target",  # dbt compiled files
     "database_paths_test.py",  # This test file itself
+    ".venv",  # Virtual environment files
+    "venv",  # Alternative virtual environment directory
+    "env",  # Another common virtual environment directory
 }
 
 # Extensions of files to check
@@ -58,13 +61,15 @@ class DatabasePathValidator:
                 for line_num, line in enumerate(f, 1):
                     for pattern in HARDCODED_PATH_PATTERNS:
                         if re.search(pattern, line):
-                            # Skip lines that are just setting defaults in environment variable calls
+                            # Skip lines that are just setting defaults in
+                            # environment variable calls
                             if "os.getenv(" in line and ", " in line:
                                 continue
                             # Skip commented examples in config files
                             if line.strip().startswith("#") or line.strip().startswith("--"):
                                 continue
-                            # Skip test files with mock data (they need hardcoded values for testing)
+                            # Skip test files with mock data (they need
+                            # hardcoded values for testing)
                             if "test_" in str(file_path) or "_test" in str(file_path):
                                 continue
                             # Skip SQL getenv calls with defaults

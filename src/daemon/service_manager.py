@@ -35,7 +35,7 @@ class ServiceManager:
                 import ctypes
 
                 return ctypes.windll.shell32.IsUserAnAdmin() != 0
-            except:
+            except BaseException:
                 return False
         else:
             return os.geteuid() == 0

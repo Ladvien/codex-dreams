@@ -20,13 +20,13 @@ import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
+
+from src.services.incremental_processor import IncrementalProcessor
+from src.services.memory_writeback_service import MemoryWritebackService
 
 # Add src directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from services.incremental_processor import IncrementalProcessor
-from services.memory_writeback_service import MemoryWritebackService
 
 
 def setup_logging(log_level: str = "INFO") -> logging.Logger:
@@ -289,7 +289,9 @@ def create_dbt_hook_script(output_path: Optional[str] = None) -> str:
         output_path: Path where to write the hook script
     """
     if not output_path:
-        output_path = "/Users/ladvien/codex-dreams/scripts/dbt_post_hook_writeback.sh"
+        output_path = os.path.join(
+            os.getenv("DBT_PROJECT_DIR", "."), "scripts/dbt_post_hook_writeback.sh"
+        )
 
     hook_script = f"""#!/bin/bash
 # DBT Post-Hook Write-back Integration Script
@@ -315,7 +317,7 @@ if [ -f "$DBT_TARGET_DIR/run_results.json" ]; then
         --log-level INFO >> "$LOG_FILE" 2>&1
 else
     echo "$(date): No dbt results file found, running basic write-back" >> "$LOG_FILE"
-    
+
     # Run write-back without validation
     python3 "$WRITEBACK_SCRIPT" \\
         --incremental \\

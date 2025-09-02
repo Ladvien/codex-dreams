@@ -167,8 +167,10 @@ class TestSemanticNetworkPerformance:
                     (i % 1000) + 1,  # cortical_minicolumn_id
                     cortical_regions[i % len(cortical_regions)],
                     semantic_categories[i % len(semantic_categories)],
-                    0.3 + (i % 100) / 100.0 * 0.6,  # activation_strength (0.3-0.9)
-                    0.2 + (i % 80) / 80.0 * 0.7,  # retrieval_strength (0.2-0.9)
+                    # activation_strength (0.3-0.9)
+                    0.3 + (i % 100) / 100.0 * 0.6,
+                    # retrieval_strength (0.2-0.9)
+                    0.2 + (i % 80) / 80.0 * 0.7,
                     (i % 50) / 50.0,  # network_centrality_score
                     0.4 + (i % 60) / 60.0 * 0.5,  # stability_score (0.4-0.9)
                     ["high_fidelity", "medium_fidelity", "low_fidelity"][i % 3],
@@ -200,11 +202,11 @@ class TestSemanticNetworkPerformance:
             # Simplified cosine similarity query for performance testing
             result = conn.execute(
                 """
-                SELECT 
+                SELECT
                     memory_id,
                     content,
                     -- Simplified similarity calculation
-                    CASE 
+                    CASE
                         WHEN array_length(cached_embedding, 1) > 0 THEN
                             activation_strength * network_centrality_score
                         ELSE 0.0
@@ -224,8 +226,8 @@ class TestSemanticNetworkPerformance:
             # Log performance metric
             conn.execute(
                 """
-                INSERT INTO vector_performance_metrics 
-                (metric_id, operation_name, execution_time_ms, target_time_ms, 
+                INSERT INTO vector_performance_metrics
+                (metric_id, operation_name, execution_time_ms, target_time_ms,
                  performance_ratio, vector_count, dimensions)
                 VALUES (?, 'vector_similarity_search', ?, 100.0, ?, ?, 256)
             """,
@@ -263,7 +265,7 @@ class TestSemanticNetworkPerformance:
             (
                 "semantic_category_summary",
                 """
-                SELECT semantic_category, 
+                SELECT semantic_category,
                        COUNT(*) as memory_count,
                        AVG(retrieval_strength) as avg_retrieval,
                        MAX(stability_score) as max_stability
@@ -324,7 +326,7 @@ class TestSemanticNetworkPerformance:
                 # Log performance
                 conn.execute(
                     """
-                    INSERT INTO vector_performance_metrics 
+                    INSERT INTO vector_performance_metrics
                     (metric_id, operation_name, execution_time_ms, target_time_ms, performance_ratio)
                     VALUES (?, ?, ?, 50.0, ?)
                 """,
@@ -375,7 +377,7 @@ class TestSemanticNetworkPerformance:
                         0.3 + (i % 40) / 100.0,
                         0.6 + (i % 30) / 100.0,
                         "medium_fidelity",
-                        embeddings[i],
+                        json.dumps(embeddings[i]),
                         datetime.now(timezone.utc),
                         datetime.now(timezone.utc),
                         1,
@@ -401,7 +403,7 @@ class TestSemanticNetworkPerformance:
             # Batch semantic processing simulation
             conn.execute(
                 """
-                UPDATE optimized_semantic_network 
+                UPDATE optimized_semantic_network
                 SET network_centrality_score = activation_strength * retrieval_strength,
                     stability_score = (activation_strength + retrieval_strength) / 2.0
                 WHERE memory_id >= ? AND memory_id < ?
@@ -418,8 +420,8 @@ class TestSemanticNetworkPerformance:
             # Log performance
             conn.execute(
                 """
-                INSERT INTO vector_performance_metrics 
-                (metric_id, operation_name, execution_time_ms, target_time_ms, 
+                INSERT INTO vector_performance_metrics
+                (metric_id, operation_name, execution_time_ms, target_time_ms,
                  performance_ratio, vector_count)
                 VALUES (?, 'batch_processing', ?, 6000.0, ?, ?)
             """,
@@ -460,11 +462,11 @@ class TestSemanticNetworkPerformance:
             conn.execute(
                 """
                 CREATE OR REPLACE TEMPORARY TABLE static_clustering AS
-                SELECT 
+                SELECT
                     memory_id,
                     content,
                     (ABS(HASH(content)) % 1000) + 1 as cortical_minicolumn_id,
-                    CASE 
+                    CASE
                         WHEN (ABS(HASH(content)) % 1000) < 100 THEN 'prefrontal_cortex'
                         WHEN (ABS(HASH(content)) % 1000) < 200 THEN 'temporal_cortex'
                         ELSE 'parietal_cortex'
@@ -486,7 +488,7 @@ class TestSemanticNetworkPerformance:
                 """
                 CREATE OR REPLACE TEMPORARY TABLE adaptive_clustering AS
                 WITH cluster_centers AS (
-                    SELECT 
+                    SELECT
                         (ROW_NUMBER() OVER (ORDER BY RANDOM()) - 1) % 100 + 1 as cluster_id,
                         AVG(network_centrality_score) as cluster_centrality,
                         semantic_category
@@ -494,11 +496,11 @@ class TestSemanticNetworkPerformance:
                     GROUP BY semantic_category, cluster_id
                 ),
                 memory_clusters AS (
-                    SELECT 
+                    SELECT
                         osn.memory_id,
                         osn.content,
                         cc.cluster_id as cortical_minicolumn_id,
-                        CASE 
+                        CASE
                             WHEN cc.cluster_centrality > 0.7 THEN 'prefrontal_cortex'
                             WHEN cc.cluster_centrality > 0.4 THEN 'temporal_cortex'
                             ELSE 'parietal_cortex'
@@ -594,7 +596,7 @@ class TestSemanticNetworkPerformance:
                 "semantic_category_stats",
                 """
                 SELECT semantic_category, COUNT(*), AVG(stability_score)
-                FROM optimized_semantic_network 
+                FROM optimized_semantic_network
                 GROUP BY semantic_category
             """,
                 50.0,

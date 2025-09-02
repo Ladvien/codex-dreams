@@ -53,7 +53,7 @@ else
     PLIST_DIR="/Library/LaunchDaemons"
     LOG_DIR="/var/log/codex-dreams"
     LAUNCHCTL_DOMAIN="system"
-    
+
     # Check for admin privileges
     if [ "$EUID" -ne 0 ]; then
         echo "Error: System service installation requires sudo privileges"
@@ -105,10 +105,10 @@ cat > "$PLIST_PATH" << EOF
 <dict>
     <key>Label</key>
     <string>$SERVICE_NAME</string>
-    
+
     <key>Program</key>
     <string>$PYTHON_EXE</string>
-    
+
     <key>ProgramArguments</key>
     <array>
         <string>$PYTHON_EXE</string>
@@ -116,13 +116,13 @@ cat > "$PLIST_PATH" << EOF
         <string>src.daemon.scheduler</string>
         <string>--daemon</string>
     </array>
-    
+
     <key>WorkingDirectory</key>
     <string>$PROJECT_DIR</string>
-    
+
     <key>RunAtLoad</key>
     <true/>
-    
+
     <key>KeepAlive</key>
     <dict>
         <key>SuccessfulExit</key>
@@ -130,16 +130,16 @@ cat > "$PLIST_PATH" << EOF
         <key>Crashed</key>
         <true/>
     </dict>
-    
+
     <key>ProcessType</key>
     <string>Background</string>
-    
+
     <key>StandardOutPath</key>
     <string>$LOG_DIR/daemon.log</string>
-    
+
     <key>StandardErrorPath</key>
     <string>$LOG_DIR/daemon.log</string>
-    
+
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
@@ -147,7 +147,7 @@ cat > "$PLIST_PATH" << EOF
         <key>PYTHONPATH</key>
         <string>$PROJECT_DIR</string>
     </dict>
-    
+
     <key>ThrottleInterval</key>
     <integer>10</integer>
 </dict>

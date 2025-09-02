@@ -1,8 +1,8 @@
 # SQL Compatibility Insights - PostgreSQL to DuckDB Migration
 
-**Date**: 2025-09-01  
-**Agent**: Agent-DBT-010  
-**Story**: STORY-DBT-010 - DuckDB SQL Compatibility & Post-hook Fixes  
+**Date**: 2025-09-01
+**Agent**: Agent-DBT-010
+**Story**: STORY-DBT-010 - DuckDB SQL Compatibility & Post-hook Fixes
 
 ## Key Lessons Learned
 

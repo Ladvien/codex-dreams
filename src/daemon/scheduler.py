@@ -16,8 +16,10 @@ import traceback
 from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Callable, Dict, Optional, Union
 from types import FrameType
+from typing import Callable, Dict, Optional, Union
+
+from .config import DaemonConfig, load_config
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -36,7 +38,6 @@ except ImportError:
 
 
 # Import config from the new module
-from .config import DaemonConfig, load_config
 
 
 class DaemonMetrics:

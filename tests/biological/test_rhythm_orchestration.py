@@ -14,6 +14,7 @@ Research validation:
 
 import json
 import os
+import subprocess
 import sys
 import threading
 import time
@@ -24,16 +25,16 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-# Add src to path for testing
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
-
-from daemon.config import DaemonConfig
-from orchestration.biological_rhythm_scheduler import (
+from src.daemon.config import DaemonConfig
+from src.orchestration.biological_rhythm_scheduler import (
     BiologicalMemoryProcessor,
     BiologicalRhythmScheduler,
     BiologicalRhythmType,
     CircadianPhase,
 )
+
+# Add src to path for testing
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 
 class TestCircadianPhaseDetection:
@@ -53,7 +54,7 @@ class TestCircadianPhaseDetection:
         ]
 
         for hour, expected_phase in test_times:
-            with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+            with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
                 mock_dt.now.return_value = datetime(2025, 9, 1, hour, 0, 0)
                 phase = self.scheduler._get_current_circadian_phase()
                 assert phase == expected_phase, f"Hour {hour} should be {expected_phase.value}"
@@ -72,7 +73,7 @@ class TestCircadianPhaseDetection:
         ]
 
         for hour, expected_phase in test_times:
-            with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+            with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
                 mock_dt.now.return_value = datetime(2025, 9, 1, hour, 0, 0)
                 phase = self.scheduler._get_current_circadian_phase()
                 assert phase == expected_phase, f"Hour {hour} should be {expected_phase.value}"
@@ -105,7 +106,7 @@ class TestBiologicalTimingConstraints:
         ]
 
         for test_time, should_run in test_cases:
-            with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+            with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
                 mock_dt.now.return_value = test_time
                 # Simulate wake hours
                 self.scheduler._get_current_circadian_phase = Mock(
@@ -129,7 +130,7 @@ class TestBiologicalTimingConstraints:
         future_time = datetime(2025, 9, 1, 12, 10, 0)
 
         for phase in sleep_phases:
-            with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+            with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
                 mock_dt.now.return_value = future_time
                 self.scheduler._get_current_circadian_phase = Mock(return_value=phase)
 
@@ -143,13 +144,14 @@ class TestBiologicalTimingConstraints:
         base_time = datetime(2025, 9, 1, 12, 0, 0)
 
         test_cases = [
-            (base_time + timedelta(minutes=19, seconds=59), False),  # Just under 20 min
+            # Just under 20 min
+            (base_time + timedelta(minutes=19, seconds=59), False),
             (base_time + timedelta(minutes=20), True),  # Exactly 20 min
             (base_time + timedelta(minutes=25), True),  # Over 20 min
         ]
 
         for test_time, should_run in test_cases:
-            with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+            with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
                 mock_dt.now.return_value = test_time
 
                 result = self.scheduler._should_run_short_term()
@@ -162,13 +164,14 @@ class TestBiologicalTimingConstraints:
         base_time = datetime(2025, 9, 1, 12, 0, 0)
 
         test_cases = [
-            (base_time + timedelta(minutes=89, seconds=59), False),  # Just under 90 min
+            # Just under 90 min
+            (base_time + timedelta(minutes=89, seconds=59), False),
             (base_time + timedelta(minutes=90), True),  # Exactly 90 min
             (base_time + timedelta(minutes=120), True),  # Over 90 min
         ]
 
         for test_time, should_run in test_cases:
-            with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+            with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
                 mock_dt.now.return_value = test_time
 
                 result = self.scheduler._should_run_long_term()
@@ -181,7 +184,7 @@ class TestBiologicalTimingConstraints:
         # Test during deep sleep window (2-4 AM)
         deep_sleep_time = datetime(2025, 9, 2, 3, 0, 0)  # Tuesday 3 AM
 
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = deep_sleep_time
             self.scheduler._get_current_circadian_phase = Mock(
                 return_value=CircadianPhase.DEEP_SLEEP
@@ -195,7 +198,7 @@ class TestBiologicalTimingConstraints:
         # Test outside deep sleep window
         wake_time = datetime(2025, 9, 2, 10, 0, 0)  # Tuesday 10 AM
 
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = wake_time
             self.scheduler._get_current_circadian_phase = Mock(
                 return_value=CircadianPhase.WAKE_ACTIVE
@@ -209,7 +212,7 @@ class TestBiologicalTimingConstraints:
         # Test during REM-dominant phase
         rem_time = datetime(2025, 9, 1, 5, 0, 0)  # 5 AM
 
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = rem_time
             self.scheduler._get_current_circadian_phase = Mock(
                 return_value=CircadianPhase.REM_DOMINANT
@@ -223,7 +226,7 @@ class TestBiologicalTimingConstraints:
         # Test outside REM window
         day_time = datetime(2025, 9, 1, 12, 0, 0)  # Noon
 
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = day_time
             self.scheduler._get_current_circadian_phase = Mock(
                 return_value=CircadianPhase.WAKE_ACTIVE
@@ -237,7 +240,7 @@ class TestBiologicalTimingConstraints:
         # Test on Sunday 3 AM (correct timing)
         sunday_3am = datetime(2025, 9, 7, 3, 0, 0)  # Sunday 3 AM
 
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = sunday_3am
             # Set last homeostasis to previous week
             self.scheduler.last_homeostasis = sunday_3am - timedelta(days=8)
@@ -248,7 +251,7 @@ class TestBiologicalTimingConstraints:
         # Test wrong day (Monday 3 AM)
         monday_3am = datetime(2025, 9, 1, 3, 0, 0)  # Monday 3 AM
 
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = monday_3am
 
             result = self.scheduler._should_run_homeostasis()
@@ -257,7 +260,7 @@ class TestBiologicalTimingConstraints:
         # Test wrong time (Sunday 10 AM)
         sunday_10am = datetime(2025, 9, 7, 10, 0, 0)  # Sunday 10 AM
 
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = sunday_10am
 
             result = self.scheduler._should_run_homeostasis()
@@ -452,8 +455,9 @@ class TestChronobiologyValidation:
         """Validate deep sleep consolidation timing follows McGaugh (2000)"""
         scheduler = BiologicalRhythmScheduler()
 
-        # McGaugh's research shows optimal consolidation during deep sleep (2-4 AM)
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        # McGaugh's research shows optimal consolidation during deep sleep (2-4
+        # AM)
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             # Test 3 AM (peak deep sleep)
             mock_dt.now.return_value = datetime(2025, 9, 1, 3, 0, 0)
             phase = scheduler._get_current_circadian_phase()
@@ -491,7 +495,7 @@ class TestChronobiologyValidation:
         }
 
         for hour, expected_phase in neuroscience_phases.items():
-            with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+            with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
                 mock_dt.now.return_value = datetime(2025, 9, 1, hour, 0, 0)
                 actual_phase = scheduler._get_current_circadian_phase()
 

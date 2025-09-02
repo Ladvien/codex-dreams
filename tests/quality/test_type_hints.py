@@ -53,7 +53,8 @@ def analyze_function_type_hints(file_path: Path) -> Dict[str, bool]:
                 # and all non-self/cls arguments are typed
                 is_properly_typed = has_return_annotation and has_arg_annotations
 
-                # Special cases for certain functions that don't need return types
+                # Special cases for certain functions that don't need return
+                # types
                 special_functions = {"__init__", "__enter__", "__exit__", "__post_init__"}
                 if node.name in special_functions:
                     # These functions only need parameter annotations

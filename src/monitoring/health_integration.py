@@ -15,12 +15,15 @@ import logging
 import sys
 import time
 from datetime import datetime
+from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Any, Dict, Optional, Type
-from http.server import BaseHTTPRequestHandler
 
-sys.path.append("/Users/ladvien/codex-dreams/biological_memory")
-from health_check_service import ComprehensiveHealthMonitor, HealthCheckResult, ServiceStatus
+from src.services.health_check_service import (
+    ComprehensiveHealthMonitor,
+    HealthCheckResult,
+    ServiceStatus,
+)
 
 # Import biological parameter monitoring
 from .biological_parameter_monitor import get_biological_parameter_monitor
@@ -114,10 +117,10 @@ class BiologicalHealthIntegration:
             return HealthCheckResult(
                 service_name=service_name,
                 status=status,
-                response_time_ms=response_time_ms,
+                message=error_message or "OK",
                 timestamp=datetime.now(),
                 details=details,
-                error_message=error_message,
+                latency_ms=response_time_ms,
             )
 
         except Exception as e:
@@ -128,10 +131,10 @@ class BiologicalHealthIntegration:
             return HealthCheckResult(
                 service_name=service_name,
                 status=ServiceStatus.CRITICAL,
-                response_time_ms=response_time_ms,
+                message=error_msg,
                 timestamp=datetime.now(),
                 details={"monitoring_error": True},
-                error_message=error_msg,
+                latency_ms=response_time_ms,
             )
 
     def _calculate_parameter_health_score(
@@ -198,7 +201,8 @@ class EnhancedHealthHTTPHandler:
 
     @staticmethod
     def add_biological_endpoints(
-        handler_class: Type[BaseHTTPRequestHandler], biological_integration: BiologicalHealthIntegration
+        handler_class: Type[BaseHTTPRequestHandler],
+        biological_integration: BiologicalHealthIntegration,
     ) -> Type[BaseHTTPRequestHandler]:
         """Add biological monitoring endpoints to existing HTTP handler"""
 

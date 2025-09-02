@@ -72,7 +72,7 @@ else
     LOG_DIR="/var/log/codex-dreams"
     DATA_DIR="/var/lib/codex-dreams"
     SYSTEMCTL_CMD="systemctl"
-    
+
     # Check for root privileges
     if [ "$EUID" -ne 0 ]; then
         echo "Error: System service installation requires sudo privileges"

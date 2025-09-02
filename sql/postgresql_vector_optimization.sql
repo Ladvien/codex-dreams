@@ -25,29 +25,29 @@ DO $$
 BEGIN
     -- Add embedding columns using PostgreSQL native arrays
     IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
+        SELECT 1 FROM information_schema.columns
         WHERE table_name = 'memories' AND column_name = 'embedding_vector'
     ) THEN
         ALTER TABLE memories ADD COLUMN embedding_vector REAL[];
     END IF;
-    
+
     IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
+        SELECT 1 FROM information_schema.columns
         WHERE table_name = 'memories' AND column_name = 'embedding_reduced'
     ) THEN
         ALTER TABLE memories ADD COLUMN embedding_reduced REAL[];  -- 256-dim for performance
     END IF;
-    
+
     -- Add performance optimization columns
     IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
+        SELECT 1 FROM information_schema.columns
         WHERE table_name = 'memories' AND column_name = 'vector_magnitude'
     ) THEN
         ALTER TABLE memories ADD COLUMN vector_magnitude REAL;
     END IF;
-    
+
     IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
+        SELECT 1 FROM information_schema.columns
         WHERE table_name = 'memories' AND column_name = 'last_similarity_calc'
     ) THEN
         ALTER TABLE memories ADD COLUMN last_similarity_calc TIMESTAMP;
@@ -60,40 +60,40 @@ $$;
 -- ===========================================
 
 -- Core performance indexes for biological memory queries
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_activation_strength_desc 
-ON memories (activation_strength DESC) 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_activation_strength_desc
+ON memories (activation_strength DESC)
 WHERE activation_strength > 0.3;
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_created_at_desc 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_created_at_desc
 ON memories (created_at DESC);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_last_accessed_desc 
-ON memories (last_accessed_at DESC) 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_last_accessed_desc
+ON memories (last_accessed_at DESC)
 WHERE last_accessed_at IS NOT NULL;
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_memory_type_activation 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_memory_type_activation
 ON memories (memory_type, activation_strength DESC);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_access_count_desc 
-ON memories (access_count DESC) 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_access_count_desc
+ON memories (access_count DESC)
 WHERE access_count > 1;
 
 -- Composite index for working memory queries (<100ms target)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_working_memory_fast 
-ON memories (created_at DESC, activation_strength DESC, access_count DESC) 
-WHERE created_at > NOW() - INTERVAL '1 hour' 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_working_memory_fast
+ON memories (created_at DESC, activation_strength DESC, access_count DESC)
+WHERE created_at > NOW() - INTERVAL '1 hour'
   AND activation_strength > 0.5;
 
 -- Composite index for consolidation queries
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_consolidation_candidates 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_consolidation_candidates
 ON memories (consolidation_priority DESC, activation_strength DESC, created_at DESC)
-WHERE consolidation_priority > 0.5 
+WHERE consolidation_priority > 0.5
   AND activation_strength > 0.4;
 
 -- Partial index for high-quality memories
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_high_quality 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_high_quality
 ON memories (retrieval_strength DESC, stability_score DESC)
-WHERE retrieval_strength > 0.7 
+WHERE retrieval_strength > 0.7
   AND stability_score > 0.7;
 
 -- ===========================================
@@ -102,18 +102,18 @@ WHERE retrieval_strength > 0.7
 
 -- Uncomment if pgvector extension is available:
 -- HNSW index for high-dimensional vector similarity (768 dimensions)
--- CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_embedding_hnsw 
--- ON memories USING hnsw (embedding_vector vector_cosine_ops) 
+-- CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_embedding_hnsw
+-- ON memories USING hnsw (embedding_vector vector_cosine_ops)
 -- WITH (m = 16, ef_construction = 64);
 
 -- HNSW index for reduced-dimension vectors (256 dimensions - faster)
--- CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_embedding_reduced_hnsw 
--- ON memories USING hnsw (embedding_reduced vector_cosine_ops) 
+-- CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_embedding_reduced_hnsw
+-- ON memories USING hnsw (embedding_reduced vector_cosine_ops)
 -- WITH (m = 16, ef_construction = 64);
 
 -- IVFFlat index alternative (if HNSW not available)
--- CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_embedding_ivfflat 
--- ON memories USING ivfflat (embedding_vector vector_cosine_ops) 
+-- CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_embedding_ivfflat
+-- ON memories USING ivfflat (embedding_vector vector_cosine_ops)
 -- WITH (lists = 100);
 
 -- ===========================================
@@ -121,12 +121,12 @@ WHERE retrieval_strength > 0.7
 -- ===========================================
 
 -- GIN index for array-based embedding search (PostgreSQL native)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_embedding_gin 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_embedding_gin
 ON memories USING gin (embedding_vector);
 
 -- Expression index for vector magnitude (performance optimization)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_vector_magnitude 
-ON memories (vector_magnitude) 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_vector_magnitude
+ON memories (vector_magnitude)
 WHERE vector_magnitude IS NOT NULL;
 
 -- ===========================================
@@ -134,12 +134,12 @@ WHERE vector_magnitude IS NOT NULL;
 -- ===========================================
 
 -- Index for semantic category queries
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_semantic_category 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_semantic_category
 ON memories (semantic_category, retrieval_strength DESC)
 WHERE semantic_category IS NOT NULL;
 
 -- Index for cortical region queries
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_cortical_region 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_cortical_region
 ON memories (cortical_region, network_centrality_score DESC)
 WHERE cortical_region IS NOT NULL;
 
@@ -149,7 +149,7 @@ WHERE cortical_region IS NOT NULL;
 
 -- Working memory materialized view (refresh every 30 seconds)
 CREATE MATERIALIZED VIEW IF NOT EXISTS mv_working_memory AS
-SELECT 
+SELECT
     memory_id,
     content,
     concepts,
@@ -167,15 +167,15 @@ ORDER BY activation_strength DESC, created_at DESC
 LIMIT 50;
 
 -- Index on materialized view
-CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_working_memory_rank 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_working_memory_rank
 ON mv_working_memory (rank);
 
-CREATE INDEX IF NOT EXISTS idx_mv_working_memory_activation 
+CREATE INDEX IF NOT EXISTS idx_mv_working_memory_activation
 ON mv_working_memory (activation_strength DESC);
 
 -- Consolidation candidates materialized view (refresh every 5 minutes)
 CREATE MATERIALIZED VIEW IF NOT EXISTS mv_consolidation_candidates AS
-SELECT 
+SELECT
     memory_id,
     content,
     concepts,
@@ -192,7 +192,7 @@ ORDER BY consolidation_score DESC
 LIMIT 1000;
 
 -- Index on consolidation view
-CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_consolidation_score 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_consolidation_score
 ON mv_consolidation_candidates (consolidation_score DESC, memory_id);
 
 -- ===========================================
@@ -212,19 +212,19 @@ BEGIN
     IF a IS NULL OR b IS NULL OR array_length(a, 1) IS NULL OR array_length(b, 1) IS NULL THEN
         RETURN 0.0;
     END IF;
-    
+
     -- Calculate dot product and magnitudes
     FOR i IN 1..LEAST(array_length(a, 1), array_length(b, 1)) LOOP
         dot_product := dot_product + (a[i] * b[i]);
         magnitude_a := magnitude_a + (a[i] * a[i]);
         magnitude_b := magnitude_b + (b[i] * b[i]);
     END LOOP;
-    
+
     -- Avoid division by zero
     IF magnitude_a = 0 OR magnitude_b = 0 THEN
         RETURN 0.0;
     END IF;
-    
+
     RETURN dot_product / (sqrt(magnitude_a) * sqrt(magnitude_b));
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
@@ -235,13 +235,13 @@ RETURNS INTEGER AS $$
 DECLARE
     updated_count INTEGER := 0;
 BEGIN
-    UPDATE memories 
+    UPDATE memories
     SET vector_magnitude = sqrt(
         (SELECT sum(val * val) FROM unnest(embedding_vector) AS val)
     )
-    WHERE embedding_vector IS NOT NULL 
+    WHERE embedding_vector IS NOT NULL
       AND (vector_magnitude IS NULL OR last_similarity_calc IS NULL);
-    
+
     GET DIAGNOSTICS updated_count = ROW_COUNT;
     RETURN updated_count;
 END;
@@ -257,18 +257,18 @@ LANGUAGE plpgsql AS $$
 BEGIN
     -- Refresh working memory view (called every 30 seconds)
     REFRESH MATERIALIZED VIEW CONCURRENTLY mv_working_memory;
-    
+
     -- Refresh consolidation candidates (called every 5 minutes)
     REFRESH MATERIALIZED VIEW CONCURRENTLY mv_consolidation_candidates;
-    
+
     -- Update vector magnitudes for performance
     PERFORM update_vector_magnitudes();
-    
+
     -- Update statistics
     ANALYZE memories;
     ANALYZE mv_working_memory;
     ANALYZE mv_consolidation_candidates;
-    
+
     RAISE NOTICE 'Performance views refreshed at %', NOW();
 END;
 $$;
@@ -341,10 +341,10 @@ CREATE TABLE IF NOT EXISTS postgres_performance_metrics (
 );
 
 -- Index for performance metrics
-CREATE INDEX IF NOT EXISTS idx_postgres_perf_timestamp 
+CREATE INDEX IF NOT EXISTS idx_postgres_perf_timestamp
 ON postgres_performance_metrics (metric_timestamp DESC);
 
-CREATE INDEX IF NOT EXISTS idx_postgres_perf_query_type 
+CREATE INDEX IF NOT EXISTS idx_postgres_perf_query_type
 ON postgres_performance_metrics (query_type, metric_timestamp DESC);
 
 -- ===========================================
@@ -371,53 +371,53 @@ BEGIN
         start_time := clock_timestamp();
         SELECT COUNT(*) INTO temp_count FROM mv_working_memory WHERE rank <= 7;
         end_time := clock_timestamp();
-        query_times := array_append(query_times, 
+        query_times := array_append(query_times,
             EXTRACT(EPOCH FROM (end_time - start_time)) * 1000);
     END LOOP;
-    
+
     query_name := 'working_memory_top_7';
     avg_time_ms := (SELECT avg(unnest) FROM unnest(query_times));
     p95_time_ms := (SELECT percentile_cont(0.95) WITHIN GROUP (ORDER BY unnest) FROM unnest(query_times));
     rows_returned := temp_count;
     RETURN NEXT;
-    
+
     -- Reset for next benchmark
     query_times := ARRAY[]::REAL[];
-    
+
     -- Benchmark 2: Consolidation candidates
     FOR i IN 1..10 LOOP
         start_time := clock_timestamp();
         SELECT COUNT(*) INTO temp_count FROM mv_consolidation_candidates WHERE consolidation_score > 0.5;
         end_time := clock_timestamp();
-        query_times := array_append(query_times, 
+        query_times := array_append(query_times,
             EXTRACT(EPOCH FROM (end_time - start_time)) * 1000);
     END LOOP;
-    
+
     query_name := 'consolidation_candidates';
     avg_time_ms := (SELECT avg(unnest) FROM unnest(query_times));
     p95_time_ms := (SELECT percentile_cont(0.95) WITHIN GROUP (ORDER BY unnest) FROM unnest(query_times));
     rows_returned := temp_count;
     RETURN NEXT;
-    
+
     -- Reset for next benchmark
     query_times := ARRAY[]::REAL[];
-    
+
     -- Benchmark 3: High activation memories
     FOR i IN 1..10 LOOP
         start_time := clock_timestamp();
-        SELECT COUNT(*) INTO temp_count FROM memories 
+        SELECT COUNT(*) INTO temp_count FROM memories
         WHERE activation_strength > 0.7 AND access_count > 5;
         end_time := clock_timestamp();
-        query_times := array_append(query_times, 
+        query_times := array_append(query_times,
             EXTRACT(EPOCH FROM (end_time - start_time)) * 1000);
     END LOOP;
-    
+
     query_name := 'high_activation_memories';
     avg_time_ms := (SELECT avg(unnest) FROM unnest(query_times));
     p95_time_ms := (SELECT percentile_cont(0.95) WITHIN GROUP (ORDER BY unnest) FROM unnest(query_times));
     rows_returned := temp_count;
     RETURN NEXT;
-    
+
 END;
 $$ LANGUAGE plpgsql;
 
@@ -430,7 +430,7 @@ SELECT update_vector_magnitudes() as vectors_updated;
 CALL refresh_performance_views();
 
 -- Display optimization summary
-SELECT 
+SELECT
     'PostgreSQL vector optimization completed' as status,
     count(*) FILTER (WHERE indexname LIKE 'idx_memories_%') as memory_indexes_created,
     count(*) FILTER (WHERE matviewname LIKE 'mv_%') as materialized_views_created,
@@ -439,7 +439,7 @@ FROM pg_indexes, pg_matviews
 WHERE tablename = 'memories' OR matviewname LIKE 'mv_%';
 
 -- Log successful optimization
-INSERT INTO postgres_performance_metrics 
+INSERT INTO postgres_performance_metrics
 (query_type, execution_time_ms, rows_processed)
 VALUES ('optimization_complete', 0.0, 0);
 

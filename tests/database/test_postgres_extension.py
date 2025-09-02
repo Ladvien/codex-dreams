@@ -59,7 +59,8 @@ class TestPostgreSQLExtensionStandardization(unittest.TestCase):
         )
 
         # Should NOT use incorrect 'postgres' extension
-        # Check context around extensions to avoid false positives from connection strings
+        # Check context around extensions to avoid false positives from
+        # connection strings
         lines = content.split("\n")
         for i, line in enumerate(lines):
             # Look for extension definitions
@@ -165,7 +166,8 @@ class TestPostgreSQLExtensionStandardization(unittest.TestCase):
             self.monitor_sql_path,
         ]
 
-        # Sensitive patterns to avoid (allow the bio setup file as it's for testing)
+        # Sensitive patterns to avoid (allow the bio setup file as it's for
+        # testing)
         sensitive_patterns = ["PASSWORD '", 'PASSWORD "', "password:", "pwd="]
 
         for file_path in all_files:
@@ -173,16 +175,19 @@ class TestPostgreSQLExtensionStandardization(unittest.TestCase):
                 with self.subTest(file=str(file_path)):
                     content = file_path.read_text()
 
-                    # Check for hardcoded credentials (but allow environment variable usage)
+                    # Check for hardcoded credentials (but allow environment
+                    # variable usage)
                     for pattern in sensitive_patterns:
                         if pattern in content:
-                            # Make sure it's not followed by getenv or environment variable
+                            # Make sure it's not followed by getenv or
+                            # environment variable
                             lines_with_pattern = [
                                 line for line in content.split("\n") if pattern in line
                             ]
                             for line in lines_with_pattern:
                                 if "getenv(" not in line and "$" not in line:
-                                    # Allow the bio setup file as it has test credentials
+                                    # Allow the bio setup file as it has test
+                                    # credentials
                                     if file_path == self.bio_setup_sql_path:
                                         continue
                                     self.fail(

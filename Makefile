@@ -76,7 +76,7 @@ validate-suite:
 # Quality targets
 lint:
 	flake8 tests/ --max-line-length=100 --extend-ignore=E203,W503
-	
+
 format:
 	black tests/
 	isort tests/
@@ -176,24 +176,24 @@ health-check:
 	@echo "Running test suite health check..."
 	$(MAKE) validate-suite
 	@echo "✅ Test suite structure validated"
-	
+
 	@echo "Checking test naming conventions..."
 	@find tests/ -name "*.py" -not -name "conftest.py" -not -name "__init__.py" | \
 		grep -v "_test.py$$" | grep -v "^test_" && \
 		echo "❌ Found files not following _test.py convention" || \
 		echo "✅ Test naming convention verified"
-	
+
 	@echo "Checking test coverage configuration..."
 	@grep -q "cov-fail-under=90" pytest.ini && \
 		echo "✅ 90% coverage threshold configured" || \
 		echo "❌ Coverage threshold not properly configured"
-	
+
 	@echo "Test suite health check completed"
 
 # Documentation generation (when implemented)
 docs-tests:
 	@echo "Test documentation would be generated here"
 
-# Docker test environment (when implemented)  
+# Docker test environment (when implemented)
 docker-test:
 	@echo "Docker test environment would be set up here"

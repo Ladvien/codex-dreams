@@ -1,0 +1,47 @@
+version: 2
+
+models:
+  - name: wm_active_context
+    description: Working memory active context implementing Miller's 7±2 constraint
+    columns:
+      - name: memory_id
+        description: Unique identifier for the memory
+        tests:
+          - unique
+          - not_null
+      - name: content
+        description: Memory content text
+        tests:
+          - not_null
+      - name: final_priority
+        description: Final priority score for memory selection
+      - name: wm_slot
+        description: Working memory slot assignment (1-7)
+        tests:
+          - not_null
+          
+  - name: stm_buffer
+    description: Short-term memory buffer with 30-minute retention
+    columns:
+      - name: memory_id
+        description: Unique identifier
+      - name: stm_strength
+        description: Short-term memory strength (0-1)
+        
+  - name: consolidation_candidates
+    description: Memories ready for hippocampal consolidation
+    columns:
+      - name: memory_id
+        description: Memory identifier
+      - name: consolidation_priority
+        description: Priority for consolidation processing
+        
+  - name: ltm_semantic_network
+    description: Long-term semantic memory network
+    columns:
+      - name: memory_id
+        description: Memory identifier
+      - name: semantic_cluster
+        description: Semantic cluster assignment
+      - name: abstraction_level
+        description: Level of abstraction (1-5)

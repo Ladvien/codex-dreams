@@ -1,239 +1,212 @@
-# dbt Project Configuration for Biological Memory Pipeline
-# This project models biological memory processes using dbt transformations
-
 name: 'biological_memory'
 version: '1.0.0'
 config-version: 2
 
-# This setting configures which "profile" dbt uses for this project.
-profile: 'biological_memory'
+# MATERIALIZATION STRATEGY:
+# - Working Memory: VIEW (real-time updates, Miller's 7±2 constraint)  
+# - Short-term Memory: INCREMENTAL (merge strategy, 30-minute window)
+# - Consolidation: INCREMENTAL (Hebbian learning patterns)
+# - Long-term Memory: TABLE (partitioned by consolidation date)
+# - Semantic Networks: INCREMENTAL (connection-based updates)
 
-# These configurations specify where dbt should look for different types of files.
+# Project directories
 model-paths: ["models"]
-analysis-paths: ["analysis"]
+analysis-paths: ["analyses"]
 test-paths: ["tests"]
 seed-paths: ["data"]
 macro-paths: ["macros"]
 snapshot-paths: ["snapshots"]
-
+target-path: "target"
 clean-targets:
   - "target"
   - "dbt_packages"
-  - "tmp"
 
-# Biological Memory Processing Variables
+# Database configuration
+profile: 'biological_memory'
+
+# Model configurations
+models:
+  biological_memory:
+    # Working Memory Stage
+    working_memory:
+      +materialized: view
+      +tags: ['biological', 'working_memory', 'continuous', 'rapid', 'performance_critical', 'real_time']
+      +description: "Miller's 7±2 working memory with 5-minute window"
+      +pre-hook:
+        - "SET threads TO 4"
+        - "SET force_hash_join TO true"
+
+    # Short-Term Memory Stage
+    short_term_memory:
+      +tags: ['biological', 'short_term_memory', 'short_term', 'rapid']
+      +materialized: incremental
+      +unique_key: 'memory_id'
+      +incremental_strategy: 'merge'
+      +on_schema_change: 'sync_all_columns'
+
+    # Short-term (alias for test compatibility)
+    short_term:
+      +tags: ['biological', 'short_term_memory', 'short_term', 'rapid']
+      +materialized: incremental
+      +unique_key: 'id'
+      +incremental_strategy: 'merge'
+
+    # Consolidation Stage
+    consolidation:
+      +tags: ['biological', 'consolidation', 'hourly', 'deep_sleep']
+      +materialized: incremental
+      +unique_key: 'memory_id'
+      +incremental_strategy: 'merge'
+      +indexes:
+        - columns: ['memory_id']
+        - columns: ['consolidation_timestamp']
+      +pre-hook:
+        - "SET memory_limit TO '2GB'"
+      +post-hook:
+        - "ANALYZE"
+        - "DELETE FROM {{ this }} WHERE strength < 0.1"
+
+    # Long-Term Memory Stage
+    long_term_memory:
+      +tags: ['biological', 'long_term_memory', 'long_term', 'deep_sleep', 'weekly']
+      +materialized: table
+      +unique_key: 'memory_id'
+      +partition_by:
+        field: 'consolidation_date'
+        data_type: 'date'
+
+    # Long-term (alias for test compatibility)
+    long_term:
+      +tags: ['biological', 'long_term_memory', 'long_term', 'deep_sleep', 'weekly']
+      +materialized: table
+      +unique_key: 'memory_id'
+      +post-hook:
+        - "CREATE INDEX IF NOT EXISTS idx_memory_consolidation ON {{ this }} (consolidation_date)"
+        - "ANALYZE"
+
+    # Semantic Networks
+    semantic:
+      +tags: ['biological', 'semantic', 'long_term']
+      +materialized: incremental
+      +unique_key: 'connection_id'
+      +incremental_strategy: 'merge'
+
+    # Analytics Views
+    analytics:
+      +tags: ['biological', 'analytics']
+      +materialized: view
+
+    # Insights Views
+    insights:
+      +tags: ['biological', 'insights']
+      +materialized: view
+
+    # Performance Monitoring
+    performance:
+      +tags: ['biological', 'performance']
+      +materialized: ephemeral
+
+# Variables for biological parameters
 vars:
-  # Core biological parameters
-  working_memory_capacity: 7  # Miller's Law: 7±2 items (base capacity)
-  working_memory_capacity_base: 7  # Base capacity per Miller (1956) - for biological orchestration
-  working_memory_capacity_variance: 2  # Variance range (±2) for dynamic capacity limits
-  working_memory_duration: 300  # seconds (5 minutes) - attention window per Miller (1956) & Cowan (2001)
-  short_term_memory_duration: 1800  # seconds (30 minutes) - biological accuracy per Peterson & Peterson (1959)
-  long_term_memory_threshold: 0.7  # activation strength threshold
-  
-  # Ollama LLM configuration - using environment variables for security
-  ollama_url: "{{ env_var('OLLAMA_URL', 'http://192.168.1.110:11434') }}"  # Ollama server endpoint
-  ollama_model: "{{ env_var('OLLAMA_MODEL', 'llama2') }}"  # Default model for biological processing
-  ollama_temperature: 0.7  # Temperature for creative and consolidation processes
-  
-  # Memory strength and quality thresholds
-  strong_connection_threshold: 0.7  # Strong memory connections
-  medium_quality_threshold: 0.6    # Medium quality memories
-  high_quality_threshold: 0.8      # High quality memories  
-  consolidation_threshold: 0.5     # Minimum for consolidation - biological accuracy per McGaugh (2000)
-  stability_threshold: 0.5         # Basic stability requirement
-  overload_threshold: 0.9          # Working memory overload
-  
-  # Memory decay and strengthening factors
-  weak_memory_decay_factor: 0.8    # Decay rate for weak memories
-  strong_memory_boost_factor: 1.2  # Boost rate for strong memories
-  gradual_forgetting_rate: 0.9     # Rate of gradual memory loss
-  default_decay_factor: 0.7        # Standard decay rate
-  
-  # Creative and semantic association parameters
-  plausibility_threshold: 0.6      # Minimum plausibility for associations
-  novelty_score_threshold: 0.5     # Minimum novelty for creative associations
-  creativity_temperature: 0.7      # LLM temperature for creative tasks
-  
-  # Temporal windows for memory processing (in hours)
-  recent_activity_window: 24       # Recent activity classification
-  short_processing_window: 1       # Short-term processing window
-  weekly_memory_window: 168        # 7 days in hours
-  monthly_memory_window: 720       # 30 days in hours
-  memory_cleanup_window: 24        # Hours before cleanup
-  
-  # Hebbian learning parameters  
-  hebbian_learning_rate: 0.1       # Enhanced learning rate for BMP-009
+  # Miller's Magic Number
+  working_memory_capacity: 7
+  working_memory_capacity_base: 7
+  working_memory_capacity_variance: 2
+  working_memory_duration: 300  # 5 minutes in seconds
+  working_memory_window_minutes: 5
+
+  # Short-term memory duration
+  short_term_memory_duration: 1800  # 30 minutes in seconds
+  stm_duration_minutes: 30
+  stm_decay_rate: 0.1
+
+  # Memory thresholds
+  consolidation_threshold: 0.5
+  long_term_memory_threshold: 0.7
+  strong_connection_threshold: 0.8
+  medium_quality_threshold: 0.5
+  high_quality_threshold: 0.7
+  stability_threshold: 0.6
+  overload_threshold: 0.9
+  consolidation_interval_hours: 1
+
+  # Hebbian learning parameters
+  hebbian_learning_rate: 0.1
   synaptic_decay_rate: 0.001
   homeostasis_target: 0.5
   plasticity_threshold: 0.6
-  
-  # Advanced synaptic mechanisms parameters (STORY-MEM-004)
-  # LTP/LTD thresholds (biological accuracy)
-  ltp_threshold_low: -0.050        # -50mV NMDA receptor activation
-  ltp_threshold_high: -0.040       # -40mV strong LTP threshold
-  ltd_threshold_low: -0.070        # -70mV weak depolarization  
-  ltd_threshold_high: -0.060       # -60mV LTD threshold
-  
-  # Metaplasticity factors (BCM theory)
-  metaplasticity_time_constant: 3600  # 1 hour in seconds
-  bcm_threshold_multiplier: 1.2    # BCM threshold modification factor
-  
-  # STDP parameters (spike-timing dependent plasticity)
-  stdp_window_ms: 40               # ±40ms biological STDP window
-  stdp_optimal_window_ms: 20       # ±20ms optimal timing
-  stdp_max_strength: 1.0           # Maximum LTP strength
-  stdp_depression_strength: -0.5   # LTD strength
-  
-  # Competition and lateral inhibition
-  competition_winner_ratio: 0.3    # Top 30% get full strengthening
-  lateral_inhibition_strength: 0.2 # Strength for losing connections
-  
-  # Synaptic tagging parameters (Frey & Morris 1997)
-  synaptic_tag_threshold: 3        # Minimum co-activations for tagging
-  tag_duration_hours: 2            # Duration of synaptic tag
-  protein_synthesis_delay_min: 30  # Minutes for protein synthesis
-  
-  # Synaptic homeostasis parameters
-  homeostasis_adjustment_rate: 0.05
-  weak_connection_threshold: 0.01  # Prune connections below this threshold
-  
-  # REM-sleep creative association parameters
-  rem_association_batch_size: 100
-  rem_creativity_factor: 0.8
-  creative_connection_threshold: 0.4
-  association_strengthening_rate: 0.15
-  
-  # Consolidation parameters
-  consolidation_batch_size: 1000
-  consolidation_window_hours: 24
-  semantic_association_threshold: 0.8
-  
-  # Performance optimization
-  incremental_batch_size: 10000
-  max_memory_threads: 4
-  temp_materialization_threshold: 100000
+  hebbian_decay_factor: 0.95
+  stdp_window_ms: 20
+  ltp_threshold: 0.6
+  ltd_threshold: -0.4
 
-# Model configurations - Optimized for <50ms query performance
-# 
-# MATERIALIZATION STRATEGY:
-# - working_memory: view (real-time access, matches model overrides)
-# - short_term_memory: incremental (real-time updates with performance optimization)  
-# - long_term_memory: table (comprehensive indexing for complex queries)
-# - semantic: incremental (efficient semantic graph updates, matches model overrides)
-# - analytics: view (flexibility with performance hints)
-# - insights: view (for MVP pipeline)
-# - performance: ephemeral (real-time monitoring, temporary calculations)
-# - consolidation: incremental (heavy optimization with merge strategy)
-models:
+  # Forgetting curve parameters
+  forgetting_rate: 0.05
+  forgetting_time_constant: 24  # hours
+
+  # Network parameters
+  synaptic_scaling_factor: 1.5
+  homeostatic_target: 0.5
+
+  # Ollama configuration
+  ollama_url: "{{ env_var('OLLAMA_URL') }}"
+  ollama_host: "{{ env_var('OLLAMA_HOST', 'localhost') }}"
+  ollama_model: "{{ env_var('OLLAMA_MODEL', 'llama2') }}"
+  ollama_temperature: 0.7
+  ollama_timeout: 30
+  embedding_model: "{{ env_var('EMBEDDING_MODEL', 'nomic-embed-text') }}"
+
+  # Database configuration
+  postgres_url: "{{ env_var('POSTGRES_DB_URL', 'postgresql://localhost:5432/codex_db') }}"
+  duckdb_path: "{{ env_var('DUCKDB_PATH', './biological_memory.duckdb') }}"
+
+  # Performance settings
+  max_connections: 100
+  connection_timeout: 30
+  query_timeout: 120
+
+  # Biological timing parameters
+  circadian_peak_hour: 14  # 2 PM
+  circadian_trough_hour: 3  # 3 AM
+  ultradian_cycle_minutes: 90
+
+  # Memory thresholds
+  importance_threshold: 0.3
+  emotional_salience_weight: 1.2
+  novelty_bonus: 0.15
+
+# Seeds configuration
+seeds:
   biological_memory:
-    # Working memory models (view for real-time access - matching model overrides)
-    working_memory:
-      +materialized: view
-      +pre-hook: [
-        "{{ log('Processing working memory batch', info=true) }}",
-        "SET threads = 4",
-        "SET enable_hash_join = true"
-      ]
-      +post-hook: "{{ calculate_memory_stats('working_memory') }}"
-      +tags: ["performance_critical", "real_time", "continuous"]
-      
-    # Short-term memory (incremental for real-time updates with performance optimization)
-    short_term_memory:
-      +materialized: incremental
-      +unique_key: memory_id
-      +on_schema_change: append_new_columns
-      +incremental_strategy: merge
-      +pre-hook: [
-        "{{ synaptic_homeostasis() }}",
-        "SET memory_limit = '4GB'",
-        "SET enable_parallel_aggregation = true"
-      ]
-      +post-hook: [
-        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_memory_id ON {{ this }} (memory_id)",
-        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_created_at ON {{ this }} (created_at DESC)"
-        # PostgreSQL ANALYZE not supported in DuckDB - DuckDB auto-analyzes
-        # "ANALYZE {{ this }}"
-      ]
-      +tags: ["performance_optimized", "incremental", "short_term"]
-      
-    # Long-term memory (tables with comprehensive indexing for complex queries)
-    long_term_memory:
-      +materialized: table
-      +pre-hook: "SET memory_limit = '6GB'"
-      +post-hook: [
-        "{{ create_memory_indexes() }}",
-        # PostgreSQL GIN index syntax not supported in DuckDB
-        # "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_semantic_search ON {{ this }} USING gin(concepts)",
-        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_stability ON {{ this }} (stability_score DESC, created_at DESC)"
-        # PostgreSQL ANALYZE not supported in DuckDB - DuckDB auto-analyzes
-        # "ANALYZE {{ this }}"
-      ]
-      +tags: ["core", "memory", "production", "indexed", "long_term"]
-      
-    # Semantic associations (incremental for efficient semantic graph updates - matching model overrides)
-    semantic:
-      +materialized: incremental
-      +unique_key: [source_concept, target_concept]
-      +pre-hook: [
-        "{{ strengthen_associations() }}",
-        "SET memory_limit = '8GB'",
-        "SET enable_hash_join = true"
-      ]
-      +post-hook: [
-        "{{ update_semantic_graph() }}",
-        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_source_target ON {{ this }} (source_concept, target_concept)",
-        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_similarity ON {{ this }} (similarity_score DESC)"
-        # PostgreSQL ANALYZE not supported in DuckDB - DuckDB auto-analyzes
-        # "ANALYZE {{ this }}"
-      ]
-      +tags: ["semantic", "performance_intensive", "long_term"]
-      
-    # Analytics and reporting (views for flexibility with performance hints)
-    analytics:
-      +materialized: view
-      +pre-hook: "SET enable_index_scan = true"
-      +tags: ["analytics", "dashboard", "reporting"]
-      
-    # Insights models (for MVP pipeline)
-    insights:
-      +materialized: view
-      +tags: ["insights", "mvp"]
-      
-    # Performance models (ephemeral for real-time monitoring)
-    performance:
-      +materialized: ephemeral
-      +pre-hook: "SET threads = 2"
-      +tags: ["monitoring", "performance_tracking"]
-      
-    # Consolidation models (incremental with heavy optimization)
-    consolidation:
-      +materialized: incremental  
-      +unique_key: id
-      +incremental_strategy: merge
-      +pre-hook: [
-        "SET memory_limit = '10GB'",
-        "SET threads = 4",
-        "SET enable_parallel_aggregation = true"
-      ]
-      +post-hook: [
-        # PostgreSQL VACUUM ANALYZE not supported in DuckDB - DuckDB handles optimization automatically
-        # "VACUUM ANALYZE {{ this }}",
-        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_consolidated_strength ON {{ this }} (consolidated_strength DESC)",
-        "DELETE FROM {{ this }} WHERE consolidated_strength < {{ var('weak_connection_threshold') }}"
-      ]
-      +tags: ["consolidation", "memory_intensive"]
+    +quote_columns: false
 
-# Snapshot configurations for tracking memory evolution
+# Snapshots configuration
 snapshots:
   biological_memory:
-    +target_schema: memory_snapshots
-    +unique_key: memory_id
+    +target_schema: snapshots
     +strategy: timestamp
-    +updated_at: last_modified_at
+    +updated_at: updated_at
 
-# Test configurations
-tests:
-  biological_memory:
-    +store_failures: true
-    +schema: test_results
+# On-run hooks for biological orchestration
+on-run-start:
+  - "{{ log('Starting biological memory pipeline', info=True) }}"
+  - "SELECT 'Biological memory pipeline started at ' || CURRENT_TIMESTAMP"
+
+on-run-end:
+  - "{{ log('Biological memory pipeline complete', info=True) }}"
+  - "SELECT 'Biological memory pipeline completed at ' || CURRENT_TIMESTAMP"
+
+# Query comments for debugging
+query-comment:
+  comment: "{{ query_comment }}"
+  append: true
+
+# Log settings
+logs:
+  use_colors: true
+
+# Quoting behavior
+quoting:
+  database: false
+  schema: false
+  identifier: false

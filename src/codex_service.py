@@ -10,8 +10,8 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Optional
 from types import FrameType
+from typing import Optional
 
 import psutil
 
@@ -73,7 +73,8 @@ class CodexService:
             interval_minutes = self.config.parse_schedule()
             interval_seconds = interval_minutes * 60
 
-            # Simple approximation - actual next run depends on when process started
+            # Simple approximation - actual next run depends on when process
+            # started
             time_since_start = uptime_seconds % interval_seconds
             next_run_seconds = interval_seconds - time_since_start
 
@@ -126,7 +127,8 @@ class CodexService:
                         cmd,
                         stdout=log_file,
                         stderr=log_file,
-                        cwd=Path(__file__).parent.parent,  # codex-dreams directory
+                        # codex-dreams directory
+                        cwd=Path(__file__).parent.parent,
                     )
 
                 # Write PID file

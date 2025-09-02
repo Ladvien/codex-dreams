@@ -23,7 +23,8 @@ POSTGRESQL_PATTERNS = {
     "analyze_table": r"ANALYZE\s+\{\{.*?\}\}",
     "refresh_materialized_view": r"REFRESH\s+MATERIALIZED\s+VIEW",
     "fts_index": r"USING\s+fts\s*\(",
-    "postgresql_interval": r"INTERVAL\s+'[^']*'\s+SECOND",  # Some interval formats
+    # Some interval formats
+    "postgresql_interval": r"INTERVAL\s+'[^']*'\s+SECOND",
     "create_extension": r"CREATE\s+EXTENSION",
     "pg_stat_functions": r"pg_stat_",
     "current_setting": r"current_setting\s*\(",

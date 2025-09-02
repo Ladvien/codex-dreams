@@ -96,7 +96,7 @@ def reset_specific_time_range() -> None:
         # Show date range of existing insights
         cursor.execute(
             """
-            SELECT 
+            SELECT
                 MIN(created_at)::date as earliest,
                 MAX(created_at)::date as latest,
                 COUNT(*) as total

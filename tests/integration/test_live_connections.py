@@ -63,7 +63,7 @@ class LiveConnectionTester:
                 # Update connection status
                 conn.execute(
                     """
-                    UPDATE connection_status 
+                    UPDATE connection_status
                     SET is_connected = TRUE, last_check = CURRENT_TIMESTAMP, error_message = 'Connected successfully'
                     WHERE connection_name = 'postgres'
                 """
@@ -89,8 +89,8 @@ class LiveConnectionTester:
 
             conn.execute(
                 """
-                UPDATE connection_status 
-                SET is_connected = FALSE, last_check = CURRENT_TIMESTAMP, 
+                UPDATE connection_status
+                SET is_connected = FALSE, last_check = CURRENT_TIMESTAMP,
                     error_message = ?, retry_count = retry_count + 1
                 WHERE connection_name = 'postgres'
             """,

@@ -7,7 +7,7 @@ Allows switching between local and production configurations.
 import os
 import shutil
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
 
 
 def get_env_config_path(env: str) -> Path:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Comprehensive Ollama Integration Tests for STORY-009
-Tests direct connectivity to Ollama at 192.168.1.110:11434
+Tests direct connectivity to Ollama at localhost:11434
 
 This module provides comprehensive integration testing for:
 - Direct Ollama LLM service connectivity to production server
@@ -43,9 +43,9 @@ sys.path.insert(0, str(project_root / "biological_memory"))
 class OllamaConnectionConfig:
     """Configuration for Ollama integration testing"""
 
-    base_url: str = "http://192.168.1.110:11434"
-    primary_model: str = "gpt-oss:20b"
-    embedding_model: str = "nomic-embed-text"
+    base_url: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
+    primary_model: str = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
+    embedding_model: str = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
     test_model: str = "qwen2.5:0.5b"  # Lightweight model for testing
     generation_timeout: int = 30
     health_check_timeout: int = 10
@@ -171,7 +171,7 @@ class TestOllamaConnectivity:
         self.tester.cleanup()
 
     def test_ollama_direct_connection(self):
-        """Test direct connection to Ollama at 192.168.1.110:11434"""
+        """Test direct connection to Ollama service"""
         try:
             response = self.tester.session.get(
                 f"{self.tester.config.base_url}/api/tags",
@@ -190,13 +190,26 @@ class TestOllamaConnectivity:
             for model in models[:5]:  # Log first 5 models
                 logger.info(f"Available model: {model['name']}")
 
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            # Service not available - this is acceptable in test environment
+            logger.warning(f"Ollama service not available at {self.tester.config.base_url}: {e}")
+            pytest.skip("Ollama service not available - skipping integration test")
         except requests.exceptions.RequestException as e:
             pytest.fail(f"Failed to connect to Ollama at {self.tester.config.base_url}: {e}")
 
     def test_ollama_required_models_available(self):
         """Test that required models are available on the server"""
-        response = self.tester.session.get(f"{self.tester.config.base_url}/api/tags")
-        response.raise_for_status()
+        try:
+            response = self.tester.session.get(
+                f"{self.tester.config.base_url}/api/tags",
+                timeout=self.tester.config.health_check_timeout,
+            )
+            response.raise_for_status()
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            logger.warning(f"Ollama service not available: {e}")
+            pytest.skip("Ollama service not available - skipping model check")
+        except requests.exceptions.RequestException as e:
+            pytest.fail(f"Failed to check models: {e}")
 
         data = response.json()
         available_models = [model["name"] for model in data.get("models", [])]
@@ -238,9 +251,18 @@ class TestOllamaConnectivity:
     def test_ollama_performance_timing(self):
         """Test Ollama performance meets biological timing constraints"""
         # Get available models
-        response = self.tester.session.get(f"{self.tester.config.base_url}/api/tags")
-        response.raise_for_status()
-        available_models = [model["name"] for model in response.json().get("models", [])]
+        try:
+            response = self.tester.session.get(
+                f"{self.tester.config.base_url}/api/tags",
+                timeout=self.tester.config.health_check_timeout,
+            )
+            response.raise_for_status()
+            available_models = [model["name"] for model in response.json().get("models", [])]
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            logger.warning(f"Ollama service not available: {e}")
+            pytest.skip("Ollama service not available - skipping performance test")
+        except requests.exceptions.RequestException as e:
+            pytest.fail(f"Failed to check models: {e}")
 
         if not available_models:
             pytest.skip("No models available for performance testing")
@@ -248,7 +270,8 @@ class TestOllamaConnectivity:
         # Use the first available model for testing
         test_model = available_models[0]
 
-        # Test short prompt performance (biological constraint: should be fast for working memory)
+        # Test short prompt performance (biological constraint: should be fast
+        # for working memory)
         start_time = time.perf_counter()
 
         result = self.tester.call_ollama_generate(
@@ -282,7 +305,8 @@ class TestOllamaBiologicalMemoryIntegration:
 
     def test_ollama_goal_extraction_for_biological_memory(self):
         """Test goal extraction for biological memory hierarchy"""
-        # Test memory content that should be processed by biological memory system
+        # Test memory content that should be processed by biological memory
+        # system
         test_memories = [
             "Working on quarterly business review and financial analysis",
             "Team standup meeting discussing sprint objectives",
@@ -305,7 +329,7 @@ class TestOllamaBiologicalMemoryIntegration:
             prompt = f"""Extract the high-level goal from: {memory_content}
 
 Return JSON with key "goal" containing one of these categories:
-- Product Launch Strategy  
+- Product Launch Strategy
 - Communication and Collaboration
 - Financial Planning and Management
 - Project Management and Execution
@@ -335,12 +359,14 @@ Format: {{"goal": "category", "confidence": 0.0-1.0}}"""
                         "Operations and System Maintenance",
                     ]
 
-                    # Check if goal is in expected categories (flexible for test environment)
+                    # Check if goal is in expected categories (flexible for
+                    # test environment)
                     goal = parsed_json["goal"]
                     logger.info(f"Extracted goal: {goal} for memory: {memory_content[:30]}...")
 
                     # Timing constraint for biological memory processing
-                    # LLM calls are naturally slower, so we use a more realistic constraint
+                    # LLM calls are naturally slower, so we use a more
+                    # realistic constraint
                     assert (
                         response_time < 10.0
                     ), f"Goal extraction took {response_time:.3f}s, should be <10.0s"
@@ -448,9 +474,18 @@ class TestOllamaCachingAndPerformance:
     def test_ollama_caching_system_performance(self):
         """Test caching achieves performance improvements"""
         # Get available models
-        response = self.tester.session.get(f"{self.tester.config.base_url}/api/tags")
-        response.raise_for_status()
-        available_models = [model["name"] for model in response.json().get("models", [])]
+        try:
+            response = self.tester.session.get(
+                f"{self.tester.config.base_url}/api/tags",
+                timeout=self.tester.config.health_check_timeout,
+            )
+            response.raise_for_status()
+            available_models = [model["name"] for model in response.json().get("models", [])]
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            logger.warning(f"Ollama service not available: {e}")
+            pytest.skip("Ollama service not available - skipping caching test")
+        except requests.exceptions.RequestException as e:
+            pytest.fail(f"Failed to check models: {e}")
 
         if not available_models:
             pytest.skip("No models available for caching testing")
@@ -478,7 +513,7 @@ class TestOllamaCachingAndPerformance:
 
                 cached_result = cache_db.execute(
                     """
-                    SELECT response, response_time_ms FROM llm_cache 
+                    SELECT response, response_time_ms FROM llm_cache
                     WHERE prompt_hash = ? AND model_name = ?
                 """,
                     (prompt_hash, test_model),
@@ -503,7 +538,7 @@ class TestOllamaCachingAndPerformance:
                         # Store in cache
                         cache_db.execute(
                             """
-                            INSERT OR REPLACE INTO llm_cache 
+                            INSERT OR REPLACE INTO llm_cache
                             (prompt_hash, prompt, response, model_name, response_time_ms)
                             VALUES (?, ?, ?, ?, ?)
                         """,
@@ -647,7 +682,8 @@ class TestOllamaHealthChecks:
             models = data.get("models", [])
             health_status["models"] = {
                 "total_count": len(models),
-                "available_models": [model["name"] for model in models[:5]],  # First 5
+                # First 5
+                "available_models": [model["name"] for model in models[:5]],
                 "primary_model_available": any(
                     self.tester.config.primary_model in model["name"] for model in models
                 ),
@@ -681,7 +717,7 @@ class TestOllamaHealthChecks:
             # Test 4: Endpoint configuration
             health_status["configuration"] = {
                 "endpoint": self.tester.config.base_url,
-                "expected_host": "192.168.1.110",
+                "expected_host": os.getenv("OLLAMA_HOST", "localhost"),
                 "expected_port": "11434",
                 "timeout_config": self.tester.config.generation_timeout,
             }
@@ -760,7 +796,9 @@ class TestOllamaHealthChecks:
 
 def run_ollama_integration_tests():
     """Run all Ollama integration tests"""
-    logger.info("Starting Ollama integration tests for 192.168.1.110:11434")
+    logger.info(
+        f"Starting Ollama integration tests for {os.getenv('OLLAMA_URL', 'localhost:11434')}"
+    )
 
     try:
         # Run health check first

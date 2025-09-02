@@ -7,7 +7,7 @@
 -- Load the postgres_scanner extension
 LOAD postgres_scanner;
 
--- Create PostgreSQL connection secret using environment variables  
+-- Create PostgreSQL connection secret using environment variables
 CREATE OR REPLACE SECRET codex_db_connection (
     TYPE POSTGRES,
     HOST getenv('POSTGRES_HOST', '192.168.1.104'),

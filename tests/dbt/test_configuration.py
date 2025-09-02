@@ -44,8 +44,9 @@ class DbtConfigurationTest(unittest.TestCase):
     def test_ollama_configuration_variables(self):
         """Test STORY-002 requirement: Ollama configuration variables."""
         # Required Ollama variables
+        # Note: ollama_url should not have hardcoded defaults for security
         required_ollama_vars = {
-            "ollama_url": "http://192.168.1.110:11434",
+            "ollama_url": None,  # Should not have default for security
             "ollama_model": "llama2",
             "ollama_temperature": 0.7,
         }
@@ -65,9 +66,16 @@ class DbtConfigurationTest(unittest.TestCase):
                     var_value,
                     f"{var_name} should use environment variable for security",
                 )
-                self.assertIn(
-                    expected_default, var_value, f"{var_name} should have correct default value"
-                )
+                # For security-sensitive variables, don't expect hardcoded defaults
+                if expected_default is not None:
+                    self.assertIn(
+                        expected_default, var_value, f"{var_name} should have correct default value"
+                    )
+                else:
+                    # Security-sensitive variables should not have defaults
+                    self.assertNotIn(
+                        "localhost", var_value, f"{var_name} should not contain hardcoded localhost"
+                    )
             else:
                 # ollama_temperature is directly set
                 self.assertEqual(

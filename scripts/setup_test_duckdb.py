@@ -66,8 +66,8 @@ def setup_test_duckdb():
         # Verify connection by querying test data
         result = conn.execute(
             """
-            SELECT COUNT(*) as count 
-            FROM postgres_db.public.memories 
+            SELECT COUNT(*) as count
+            FROM postgres_db.public.memories
             WHERE content LIKE 'Test memory%'
         """
         ).fetchone()

@@ -248,7 +248,8 @@ class TestCustomMacros:
             "strengthen_associations",
         ]
 
-        # For now, test that concepts exist (macros will be implemented by other agents)
+        # For now, test that concepts exist (macros will be implemented by
+        # other agents)
         for macro in expected_macros:
             # These are the biological processes that should have macros
             assert macro in [

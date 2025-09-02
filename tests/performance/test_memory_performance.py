@@ -30,7 +30,7 @@ class TestMemoryPerformance:
             result = conn.execute(
                 """
                 SELECT id, content, timestamp, metadata
-                FROM raw_memories 
+                FROM raw_memories
                 WHERE timestamp > NOW() - INTERVAL '5 minutes'
                 ORDER BY timestamp DESC
                 LIMIT 7
@@ -207,8 +207,8 @@ class TestMemoryPerformance:
             result = conn.execute(
                 """
                 SELECT id, concept_a, concept_b,
-                       CAST(co_occurrence_count AS FLOAT) / 
-                       SQRT(CAST(total_occurrences_a AS FLOAT) * CAST(total_occurrences_b AS FLOAT)) 
+                       CAST(co_occurrence_count AS FLOAT) /
+                       SQRT(CAST(total_occurrences_a AS FLOAT) * CAST(total_occurrences_b AS FLOAT))
                        AS hebbian_strength
                 FROM test_associations
                 ORDER BY hebbian_strength DESC
@@ -238,7 +238,7 @@ class TestMemoryPerformance:
         conn.execute(
             """
             CREATE TABLE processed_memories (
-                id INTEGER, content TEXT, goal TEXT, tasks TEXT, 
+                id INTEGER, content TEXT, goal TEXT, tasks TEXT,
                 actions TEXT, strength FLOAT
             )
         """
@@ -268,7 +268,8 @@ class TestMemoryPerformance:
                 processed_goal = f"Goal for memory {memory[0]}"
                 processed_tasks = f"Tasks for memory {memory[0]}"
                 processed_actions = f"Actions for memory {memory[0]}"
-                strength = 0.5 + (memory[0] * 0.05)  # Simulated strength calculation
+                # Simulated strength calculation
+                strength = 0.5 + (memory[0] * 0.05)
 
                 # 3. Insert into processed table
                 conn.execute(
@@ -329,7 +330,7 @@ class TestMemoryCapacityLimits:
             # Simulate working memory operations
             active_items = conn.execute(
                 """
-                SELECT * FROM working_memory_items 
+                SELECT * FROM working_memory_items
                 WHERE activation_level > 0.7
                 ORDER BY activation_level DESC
                 LIMIT 7
@@ -369,7 +370,7 @@ class TestMemoryCapacityLimits:
             # System should efficiently select top 7 items
             selected_items = conn.execute(
                 """
-                SELECT * FROM overflow_test 
+                SELECT * FROM overflow_test
                 ORDER BY priority DESC
                 LIMIT 7
             """

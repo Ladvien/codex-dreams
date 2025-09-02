@@ -160,12 +160,14 @@ class TestSchemaDocumentation:
                         model_name = model.get("name", "unknown")
 
                         if "columns" in model:
-                            # Check for ID columns that should have not_null and unique tests
+                            # Check for ID columns that should have not_null
+                            # and unique tests
                             for column in model["columns"]:
                                 column_name = column.get("name", "")
                                 tests = column.get("tests", [])
 
-                                # ID columns should have not_null and unique tests
+                                # ID columns should have not_null and unique
+                                # tests
                                 if column_name in ["id", "memory_id"]:
                                     has_not_null = any("not_null" in str(test) for test in tests)
                                     has_unique = any("unique" in str(test) for test in tests)

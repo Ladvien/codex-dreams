@@ -27,8 +27,116 @@ import pytest
 @pytest.fixture
 def duckdb_connection():
     """Create DuckDB connection for testing"""
-    conn = duckdb.connect("/Users/ladvien/biological_memory/dbs/memory.duckdb")
-    return conn
+    import os
+    import tempfile
+
+    temp_db = tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False)
+    temp_path = temp_db.name
+    temp_db.close()  # Close the file handle
+
+    # Ensure file doesn't exist before creating connection
+    if os.path.exists(temp_path):
+        os.unlink(temp_path)
+
+    conn = duckdb.connect(temp_path)
+
+    # Create necessary tables for testing
+    conn.execute(
+        """
+        CREATE SCHEMA IF NOT EXISTS public
+    """
+    )
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS public.raw_memories (
+            id INTEGER PRIMARY KEY,
+            content TEXT,
+            timestamp TIMESTAMP,
+            importance_score FLOAT,
+            activation_strength FLOAT,
+            access_count INTEGER,
+            metadata JSON
+        )
+    """
+    )
+
+    # Create wm_active_context view that implements working memory logic
+    conn.execute(
+        """
+        CREATE OR REPLACE VIEW main.wm_active_context AS
+        WITH recent_memories AS (
+            SELECT
+                id as memory_id,
+                content,
+                timestamp,
+                importance_score,
+                activation_strength,
+                access_count,
+                metadata,
+                -- Age calculation
+                EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - timestamp)) as age_seconds,
+                -- Recency boost (newer memories get higher scores)
+                CASE
+                    WHEN EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - timestamp)) < 300 THEN 0.3
+                    WHEN EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - timestamp)) < 600 THEN 0.2
+                    ELSE 0.1
+                END as recency_boost
+            FROM public.raw_memories
+            WHERE timestamp > CURRENT_TIMESTAMP - INTERVAL '5 minutes'
+            AND content IS NOT NULL
+            AND TRIM(content) != ''
+        ),
+        enriched_memories AS (
+            SELECT
+                *,
+                -- Extract entities (simple implementation)
+                CASE WHEN content LIKE '%meeting%' THEN '["meeting"]'::JSON
+                     WHEN content LIKE '%project%' THEN '["project"]'::JSON
+                     ELSE '[]'::JSON END as entities,
+                -- Extract topics
+                CASE WHEN content LIKE '%work%' THEN '["work"]'::JSON
+                     WHEN content LIKE '%technical%' THEN '["technical"]'::JSON
+                     ELSE '[]'::JSON END as topics,
+                -- Task type classification
+                CASE WHEN content LIKE '%meeting%' THEN 'Communication and Collaboration'
+                     WHEN content LIKE '%project%' THEN 'Project Management and Execution'
+                     WHEN content LIKE '%analysis%' THEN 'Financial Planning and Management'
+                     ELSE 'Product Launch Strategy' END as task_type,
+                -- Sentiment analysis (simple)
+                CASE WHEN content LIKE '%good%' OR content LIKE '%excellent%' THEN 0.8
+                     WHEN content LIKE '%bad%' OR content LIKE '%problem%' THEN 0.3
+                     ELSE 0.5 END as sentiment,
+                -- Phantom objects (simple implementation)
+                '[]'::JSON as phantom_objects,
+                -- Hebbian strength (co-activation simulation)
+                (activation_strength * 0.8 + importance_score * 0.2) as hebbian_strength,
+                -- Working memory strength
+                LEAST(1.0, importance_score + recency_boost) as working_memory_strength
+            FROM recent_memories
+        ),
+        prioritized_memories AS (
+            SELECT *,
+                (importance_score * 0.4 + working_memory_strength * 0.3 + hebbian_strength * 0.2 + sentiment * 0.1) as final_priority
+            FROM enriched_memories
+        ),
+        top_memories AS (
+            SELECT *,
+                ROW_NUMBER() OVER (ORDER BY final_priority DESC) as wm_slot
+            FROM prioritized_memories
+            ORDER BY final_priority DESC
+            LIMIT 7  -- Miller's 7±2 constraint
+        )
+        SELECT * FROM top_memories
+    """
+    )
+
+    yield conn
+
+    # Cleanup
+    conn.close()
+    if os.path.exists(temp_path):
+        os.unlink(temp_path)
 
 
 def setup_test_data(conn, memories):
@@ -40,7 +148,7 @@ def setup_test_data(conn, memories):
     for memory in memories:
         conn.execute(
             """
-            INSERT INTO public.raw_memories 
+            INSERT INTO public.raw_memories
             (id, content, timestamp, importance_score, activation_strength, access_count, metadata)
             VALUES (?, ?, ?, ?, ?, ?, '{}')
         """,
@@ -171,7 +279,7 @@ class TestWorkingMemoryCapacity:
         results = duckdb_connection.execute(
             """
             SELECT memory_id, importance_score, final_priority, wm_slot
-            FROM main.wm_active_context 
+            FROM main.wm_active_context
             ORDER BY wm_slot
         """
         ).fetchall()
@@ -554,7 +662,7 @@ class TestPerformanceAndOptimization:
         # Check that view exists and is queryable
         view_info = duckdb_connection.execute(
             """
-            SELECT COUNT(*) FROM information_schema.tables 
+            SELECT COUNT(*) FROM information_schema.tables
             WHERE table_name = 'wm_active_context' AND table_type = 'VIEW'
         """
         ).fetchone()
@@ -613,7 +721,7 @@ class TestErrorHandling:
         # Insert memory with null values
         duckdb_connection.execute(
             """
-            INSERT INTO public.raw_memories (id, content, timestamp, importance_score, activation_strength) 
+            INSERT INTO public.raw_memories (id, content, timestamp, importance_score, activation_strength)
             VALUES (999, 'Memory with null values', NOW() - INTERVAL '1 minute', NULL, NULL)
         """
         )

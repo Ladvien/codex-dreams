@@ -30,8 +30,10 @@ class TestDatabaseReliability:
         conn.close()
 
         # Should be able to reconnect and recover
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".duckdb") as f:
-            new_db_path = f.name
+        # Create a new database path without creating the file
+        import os
+
+        new_db_path = tempfile.mktemp(suffix=".duckdb")
 
         new_conn = duckdb.connect(new_db_path)
         new_conn.execute("CREATE TABLE test_recovery (id INTEGER, data TEXT)")
@@ -86,11 +88,11 @@ class TestDatabaseReliability:
         # Should handle corrupted data gracefully
         result = conn.execute(
             """
-            SELECT id, content, 
-                   CASE 
-                       WHEN metadata IS NULL OR metadata = 'invalid json' 
+            SELECT id, content,
+                   CASE
+                       WHEN metadata IS NULL OR metadata = 'invalid json'
                        THEN '{"source": "unknown"}'
-                       ELSE metadata 
+                       ELSE metadata
                    END as safe_metadata
             FROM memory_data
             ORDER BY id
@@ -99,7 +101,8 @@ class TestDatabaseReliability:
 
         assert len(result) == 3
         assert result[0][2] == '{"source": "test"}'  # Valid data preserved
-        assert result[1][2] == '{"source": "unknown"}'  # Corrupted data handled
+        # Corrupted data handled
+        assert result[1][2] == '{"source": "unknown"}'
         assert result[2][2] == '{"source": "unknown"}'  # NULL data handled
 
     def test_transaction_rollback_on_error(self, test_duckdb):
@@ -174,7 +177,7 @@ class TestDatabaseReliability:
 class TestOllamaConnectionReliability:
     """Test Ollama service connection reliability."""
 
-    def test_ollama_connection_timeout(self, mock_http_requests):
+    def test_ollama_connection_timeout(self):
         """Test handling of Ollama connection timeouts."""
         import responses
 
@@ -185,27 +188,27 @@ class TestOllamaConnectionReliability:
             body=requests.ConnectionError("Connection timeout"),
         )
 
-        with mock_http_requests():
-            # Should handle timeout gracefully and return error response
-            with pytest.raises(Exception) as exc_info:
-                import requests
+        # Should handle timeout gracefully and return error response
+        with pytest.raises(Exception) as exc_info:
+            import requests
 
-                requests.post(
-                    "http://localhost:11434/api/generate", json={"prompt": "test"}, timeout=1
-                )
+            requests.post("http://localhost:11434/api/generate", json={"prompt": "test"}, timeout=1)
 
         assert "Connection" in str(exc_info.value)
 
-    def test_ollama_service_unavailable(self, mock_ollama):
+    def test_ollama_service_unavailable(self):
         """Test handling when Ollama service is unavailable."""
-        # Mock should work even when real service is down
-        response = mock_ollama("Test prompt when service down")
+        # Test should handle unavailable service gracefully
+        from src.services.llm_integration_service import LLMIntegrationService
+
+        service = LLMIntegrationService(base_url="http://localhost:99999")  # Invalid port
+        response = service.generate("Test prompt when service down")
 
         assert response is not None
         assert isinstance(response, str)
         assert len(response) > 0
 
-    def test_ollama_malformed_response_handling(self, mock_ollama):
+    def test_ollama_malformed_response_handling(self):
         """Test handling of malformed responses from Ollama."""
         with patch("duckdb.DuckDBPyConnection.execute") as mock_execute:
             # Mock malformed JSON response
@@ -370,7 +373,7 @@ class TestMemoryProcessingReliability:
 
             conn.execute(
                 """
-                UPDATE stm_episodes 
+                UPDATE stm_episodes
                 SET consolidated = TRUE, consolidation_attempts = consolidation_attempts + 1
                 WHERE id = ?
             """,
@@ -380,7 +383,7 @@ class TestMemoryProcessingReliability:
         # Third episode fails - increment attempt counter
         conn.execute(
             """
-            UPDATE stm_episodes 
+            UPDATE stm_episodes
             SET consolidation_attempts = consolidation_attempts + 1
             WHERE id = 3
         """
@@ -389,7 +392,7 @@ class TestMemoryProcessingReliability:
         # Find failed consolidations for retry
         failed_episodes = conn.execute(
             """
-            SELECT * FROM stm_episodes 
+            SELECT * FROM stm_episodes
             WHERE consolidated = FALSE AND consolidation_attempts > 0
         """
         ).fetchall()
@@ -408,7 +411,7 @@ class TestMemoryProcessingReliability:
 
         conn.execute(
             """
-            UPDATE stm_episodes 
+            UPDATE stm_episodes
             SET consolidated = TRUE, consolidation_attempts = consolidation_attempts + 1
             WHERE id = ?
         """,
@@ -457,7 +460,7 @@ class TestMemoryProcessingReliability:
 
             conn.execute(
                 """
-                UPDATE shared_memory 
+                UPDATE shared_memory
                 SET access_count = ?, last_accessed = ?
                 WHERE id = 1
             """,

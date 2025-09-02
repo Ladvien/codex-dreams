@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Comprehensive PostgreSQL Integration Tests for STORY-009
-Tests direct connectivity to PostgreSQL at 192.168.1.104:5432
+Tests direct connectivity to PostgreSQL database
 
 This module provides comprehensive integration testing for:
 - Direct PostgreSQL connectivity to production server
@@ -41,7 +41,7 @@ sys.path.insert(0, str(project_root))
 class PostgreSQLConnectionConfig:
     """Configuration for PostgreSQL integration testing"""
 
-    host: str = "192.168.1.104"
+    host: str = os.getenv("POSTGRES_HOST", "localhost")
     port: int = 5432
     database: str = "codex_db"
     test_database: str = "codex_test_db"
@@ -75,8 +75,11 @@ class PostgreSQLIntegrationTester:
             )
             conn.autocommit = True
             yield conn
+        except (psycopg2.OperationalError, psycopg2.DatabaseError) as e:
+            logger.warning(f"PostgreSQL connection failed: {e}")
+            pytest.skip(f"PostgreSQL not available: {e}")
         except Exception as e:
-            logger.error(f"PostgreSQL connection failed: {e}")
+            logger.error(f"Unexpected error: {e}")
             raise
         finally:
             if "conn" in locals():
@@ -137,7 +140,7 @@ class TestPostgreSQLConnectivity:
         self.tester.cleanup_test_data()
 
     def test_postgresql_direct_connection(self):
-        """Test direct connection to PostgreSQL at 192.168.1.104"""
+        """Test direct connection to PostgreSQL database"""
         with self.tester.get_postgres_connection() as conn:
             with conn.cursor() as cursor:
                 # Test basic connectivity
@@ -154,7 +157,8 @@ class TestPostgreSQLConnectivity:
                 if server_ip and server_ip[0]:
                     logger.info(f"Connected to server IP: {server_ip[0]}")
                     # Note: inet_server_addr() returns None for Unix domain sockets
-                    # or when connecting via localhost, so we don't assert IP match
+                    # or when connecting via localhost, so we don't assert IP
+                    # match
 
     def test_postgresql_performance_timing(self):
         """Test PostgreSQL query performance meets biological timing constraints (<50ms)"""
@@ -180,7 +184,7 @@ class TestPostgreSQLConnectivity:
                 for i in range(100):
                     cursor.execute(
                         f"""
-                        INSERT INTO {test_table} (content, metadata) 
+                        INSERT INTO {test_table} (content, metadata)
                         VALUES (%s, %s)
                     """,
                         (f"Test content {i}", json.dumps({"test": True, "index": i})),
@@ -191,10 +195,10 @@ class TestPostgreSQLConnectivity:
                 start_time = time.perf_counter()
                 cursor.execute(
                     f"""
-                    SELECT id, content, created_at 
-                    FROM {test_table} 
+                    SELECT id, content, created_at
+                    FROM {test_table}
                     WHERE metadata->>'test' = 'true'
-                    ORDER BY created_at DESC 
+                    ORDER BY created_at DESC
                     LIMIT 7
                 """
                 )
@@ -266,7 +270,7 @@ class TestPostgreSQLConnectivity:
                 # Test Miller's 7±2 constraint
                 cursor.execute(
                     f"""
-                    INSERT INTO {self.tester.test_schema_name}.working_memory_episodes 
+                    INSERT INTO {self.tester.test_schema_name}.working_memory_episodes
                     (id, content, activation_level, miller_capacity_position, attention_window_start, attention_window_end)
                     VALUES (%s, %s, %s, %s, %s, %s)
                 """,
@@ -337,7 +341,7 @@ class TestPostgreSQLConnectivity:
             for conn in connections:
                 try:
                     conn.close()
-                except:
+                except BaseException:
                     pass
 
 
@@ -368,8 +372,8 @@ class TestDuckDBPostgreSQLIntegration:
             # Test that we can list PostgreSQL tables
             tables = duckdb_conn.execute(
                 """
-                SELECT table_name 
-                FROM information_schema.tables 
+                SELECT table_name
+                FROM information_schema.tables
                 WHERE table_schema = 'public'
             """
             ).fetchall()
@@ -444,7 +448,7 @@ class TestDuckDBPostgreSQLIntegration:
             # Test DuckDB analytical processing on PostgreSQL data
             analytical_result = duckdb_conn.execute(
                 f"""
-                SELECT 
+                SELECT
                     COUNT(*) as total_memories,
                     AVG(importance_score) as avg_importance,
                     MAX(importance_score) as max_importance,
@@ -664,7 +668,8 @@ class TestPostgreSQLHealthChecks:
             logger.info("PostgreSQL error recovery test passed")
 
         except psycopg2.OperationalError as e:
-            # If connection fails due to timeout, that's acceptable for this test
+            # If connection fails due to timeout, that's acceptable for this
+            # test
             logger.info(f"Expected timeout behavior: {e}")
 
         finally:
@@ -674,7 +679,9 @@ class TestPostgreSQLHealthChecks:
 # Test runner function for integration
 def run_postgresql_integration_tests():
     """Run all PostgreSQL integration tests"""
-    logger.info("Starting PostgreSQL integration tests for 192.168.1.104")
+    logger.info(
+        f"Starting PostgreSQL integration tests for {os.getenv('POSTGRES_HOST', 'localhost')}"
+    )
 
     # Check if we have required environment variables
     required_env_vars = ["POSTGRES_PASSWORD"]

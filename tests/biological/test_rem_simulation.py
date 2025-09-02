@@ -17,15 +17,15 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-# Add src to path for testing
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
-
-from orchestration.biological_rhythm_scheduler import (
+from src.orchestration.biological_rhythm_scheduler import (
     BiologicalMemoryProcessor,
     BiologicalRhythmScheduler,
     BiologicalRhythmType,
     CircadianPhase,
 )
+
+# Add src to path for testing
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 
 class TestREMSleepTiming:
@@ -45,7 +45,7 @@ class TestREMSleepTiming:
         ]
 
         for hour, expected_phase in rem_times:
-            with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+            with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
                 mock_dt.now.return_value = datetime(2025, 9, 1, hour, 0, 0)
                 phase = self.scheduler._get_current_circadian_phase()
 
@@ -60,7 +60,7 @@ class TestREMSleepTiming:
         self.scheduler.last_long_term = base_time - timedelta(minutes=91)
 
         # Test during REM-dominant phase
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = base_time
             self.scheduler._get_current_circadian_phase = Mock(
                 return_value=CircadianPhase.REM_DOMINANT
@@ -78,7 +78,7 @@ class TestREMSleepTiming:
         ]
 
         for phase in non_rem_phases:
-            with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+            with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
                 mock_dt.now.return_value = base_time
                 self.scheduler._get_current_circadian_phase = Mock(return_value=phase)
 
@@ -92,7 +92,7 @@ class TestREMSleepTiming:
         rem_time = datetime(2025, 9, 1, 5, 0, 0)  # 5 AM (REM phase)
 
         # Test that insufficient time since last long-term cycle blocks REM
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = rem_time
             self.scheduler._get_current_circadian_phase = Mock(
                 return_value=CircadianPhase.REM_DOMINANT
@@ -106,7 +106,7 @@ class TestREMSleepTiming:
             ), "REM simulation should wait for full 90-minute ultradian cycle"
 
         # Test that sufficient time allows REM simulation
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = rem_time
             self.scheduler._get_current_circadian_phase = Mock(
                 return_value=CircadianPhase.REM_DOMINANT
@@ -199,7 +199,7 @@ class TestREMCreativityValidation:
         # and after sufficient ultradian cycle time
         rem_time = datetime(2025, 9, 1, 5, 0, 0)  # 5 AM
 
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = rem_time
             scheduler._get_current_circadian_phase = Mock(return_value=CircadianPhase.REM_DOMINANT)
             scheduler.last_long_term = rem_time - timedelta(minutes=90)
@@ -218,7 +218,7 @@ class TestREMCreativityValidation:
         creative_hours = [4, 5]  # 4-6 AM REM peak
 
         for hour in creative_hours:
-            with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+            with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
                 mock_dt.now.return_value = datetime(2025, 9, 1, hour, 0, 0)
                 phase = scheduler._get_current_circadian_phase()
 
@@ -244,7 +244,7 @@ class TestREMIntegrationWithConsolidation:
         # Set long-term consolidation to have occurred 90 minutes ago
         self.scheduler.last_long_term = base_time - timedelta(minutes=90)
 
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = base_time
             self.scheduler._get_current_circadian_phase = Mock(
                 return_value=CircadianPhase.REM_DOMINANT
@@ -275,7 +275,7 @@ class TestREMIntegrationWithConsolidation:
 
         base_time = datetime(2025, 9, 1, 5, 0, 0)  # 5 AM
 
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = base_time
             scheduler._get_current_circadian_phase = Mock(return_value=CircadianPhase.REM_DOMINANT)
             # Set up timing for both processes
@@ -364,7 +364,7 @@ class TestREMCircadianInteraction:
         ]
 
         for hour, phase in wake_times:
-            with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+            with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
                 mock_dt.now.return_value = datetime(2025, 9, 1, hour, 0, 0)
                 self.scheduler._get_current_circadian_phase = Mock(return_value=phase)
                 # Set ultradian timing to be ready
@@ -383,7 +383,7 @@ class TestREMCircadianInteraction:
         ]
 
         for hour, phase in non_rem_sleep_times:
-            with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+            with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
                 mock_dt.now.return_value = datetime(2025, 9, 1, hour, 0, 0)
                 self.scheduler._get_current_circadian_phase = Mock(return_value=phase)
                 # Set ultradian timing to be ready

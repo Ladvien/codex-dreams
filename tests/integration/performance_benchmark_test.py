@@ -60,13 +60,13 @@ class PerformanceMetrics(NamedTuple):
 class PerformanceBenchmarkConfig:
     """Configuration for performance benchmarking"""
 
-    postgres_host: str = "192.168.1.104"
+    postgres_host: str = os.getenv("POSTGRES_HOST", "localhost")
     postgres_port: int = 5432
     postgres_database: str = "codex_test_db"
     postgres_user: str = os.getenv("POSTGRES_USER", "codex_user")
     postgres_password: str = os.getenv("POSTGRES_PASSWORD", "")
 
-    ollama_url: str = "http://192.168.1.110:11434"
+    ollama_url: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
     ollama_model: str = "gpt-oss:20b"
 
     # Biological timing constraints (milliseconds)
@@ -126,6 +126,9 @@ class BiologicalMemoryPerformanceTester:
             )
             conn.autocommit = True
             yield conn
+        except (psycopg2.OperationalError, psycopg2.DatabaseError) as e:
+            logger.warning(f"PostgreSQL connection failed: {e}")
+            pytest.skip(f"PostgreSQL not available for performance test: {e}")
         finally:
             if "conn" in locals():
                 conn.close()
@@ -140,7 +143,13 @@ class BiologicalMemoryPerformanceTester:
             conn = duckdb.connect(self.temp_duckdb)
             conn.execute("LOAD postgres")
             conn.execute("LOAD json")
-            conn.execute(f"ATTACH '{postgres_url}' AS pg_perf (TYPE postgres)")
+            try:
+                conn.execute(f"ATTACH '{postgres_url}' AS pg_perf (TYPE postgres)")
+            except Exception as e:
+                if "Connection refused" in str(e) or "could not connect" in str(e).lower():
+                    pytest.skip(f"PostgreSQL not available for DuckDB: {e}")
+                else:
+                    raise
             yield conn
         finally:
             if "conn" in locals():
@@ -245,7 +254,8 @@ class BiologicalMemoryPerformanceTester:
                     batch_values = []
                     for i in range(batch_start, min(batch_start + batch_size, num_records)):
                         content = f"Performance test memory item {i} with detailed content for realistic testing"
-                        importance = 0.1 + (0.9 * (i % 100) / 100)  # Varied importance 0.1-1.0
+                        # Varied importance 0.1-1.0
+                        importance = 0.1 + (0.9 * (i % 100) / 100)
                         category = categories[i % len(categories)]
                         timestamp_offset = timedelta(minutes=i // 10)  # Spread over time
                         test_timestamp = datetime.now(timezone.utc) - timestamp_offset
@@ -374,7 +384,8 @@ class TestDatabaseQueryPerformance:
 
                     # Process each candidate
                     for memory_id, content, importance in candidates:
-                        # Simulate hierarchy extraction (without actual LLM for performance testing)
+                        # Simulate hierarchy extraction (without actual LLM for
+                        # performance testing)
                         goal_category = "Project Management and Execution"  # Mock result
                         stm_strength = min(1.0, importance + 0.1)
 
@@ -428,7 +439,7 @@ class TestDatabaseQueryPerformance:
                     CREATE TABLE semantic_associations (
                         id INTEGER PRIMARY KEY,
                         concept_a VARCHAR(100),
-                        concept_b VARCHAR(100), 
+                        concept_b VARCHAR(100),
                         strength FLOAT,
                         consolidation_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
@@ -450,7 +461,8 @@ class TestDatabaseQueryPerformance:
                     # Create semantic associations
                     associations_created = 0
                     for memory_id, content, category, importance in candidates:
-                        # Create concept associations (simplified for performance testing)
+                        # Create concept associations (simplified for
+                        # performance testing)
                         associations = [
                             (category, "memory_content", importance * 0.9),
                             ("episodic", category, importance * 0.8),
@@ -773,7 +785,7 @@ class TestBiologicalRhythmPerformance:
                     # Process memories within 5-minute attention window
                     return conn.execute(
                         f"""
-                        SELECT 
+                        SELECT
                             COUNT(*) as total_in_window,
                             AVG(importance_score) as avg_importance,
                             COUNT(*) FILTER (WHERE importance_score > 0.8) as high_priority
@@ -834,7 +846,7 @@ class TestBiologicalRhythmPerformance:
                     # Apply exponential forgetting curve
                     return conn.execute(
                         """
-                        UPDATE memory_strengths 
+                        UPDATE memory_strengths
                         SET strength = strength * EXP(-0.05 * age_days)
                         WHERE age_days > 0
                     """

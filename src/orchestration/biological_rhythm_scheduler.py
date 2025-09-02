@@ -39,13 +39,13 @@ from datetime import time as dt_time
 from datetime import timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple
 from types import FrameType
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+from src.daemon.config import DaemonConfig
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from daemon.config import DaemonConfig
 
 
 class BiologicalRhythmType(Enum):
@@ -219,7 +219,7 @@ class BiologicalRhythmScheduler:
         """Create default configuration for biological rhythm scheduling"""
         config = DaemonConfig()
         config.log_level = "INFO"
-        config.working_directory = "/Users/ladvien/codex-dreams"
+        config.working_directory = os.getenv("DBT_PROJECT_DIR", os.getcwd())
         return config
 
     def _setup_logging(self) -> logging.Logger:
@@ -370,7 +370,19 @@ class BiologicalRhythmScheduler:
         except Exception as e:
             self.logger.error(f"💥 Exception in {rhythm_type.value} cycle: {e}")
             self.logger.debug(f"Traceback: {traceback.format_exc()}")
-            self.cycle_metrics[rhythm_type.value]["failures"] += 1
+
+            # Update metrics for failed attempt
+            duration = (datetime.now() - start_time).total_seconds()
+            metrics = self.cycle_metrics[rhythm_type.value]
+            metrics["count"] += 1
+            metrics["failures"] += 1
+
+            # Update average duration (exponential moving average)
+            if metrics["avg_duration"] == 0:
+                metrics["avg_duration"] = duration
+            else:
+                metrics["avg_duration"] = 0.8 * metrics["avg_duration"] + 0.2 * duration
+
             return False
 
     def _log_biological_status(self) -> None:

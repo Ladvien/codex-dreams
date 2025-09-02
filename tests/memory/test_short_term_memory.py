@@ -121,8 +121,8 @@ class TestShortTermMemory:
             """
             CREATE OR REPLACE VIEW wm_active_context AS
             SELECT * FROM (VALUES
-                (1, 'Schedule important client presentation for next week', NOW() - INTERVAL '2 minutes', 
-                 '{"priority": "high"}'::JSON, ARRAY['client', 'business_contact'], 
+                (1, 'Schedule important client presentation for next week', NOW() - INTERVAL '2 minutes',
+                 '{"priority": "high"}'::JSON, ARRAY['client', 'business_contact'],
                  ARRAY['social_interaction', 'communication'], 'positive', 0.9, 'goal',
                  '[{"name": "presentation_slides", "affordances": ["present", "review", "edit"]}]'::JSON,
                  0.8, 0.95),
@@ -131,7 +131,7 @@ class TestShortTermMemory:
                  ARRAY['problem_solving', 'maintenance'], 'negative', 0.6, 'action',
                  '[{"name": "coffee_machine", "affordances": ["fix", "maintain"]}]'::JSON,
                  0.7, 0.65)
-            ) AS t(memory_id, content, timestamp, metadata, entities, topics, sentiment, 
+            ) AS t(memory_id, content, timestamp, metadata, entities, topics, sentiment,
                    importance_score, task_type, phantom_objects, working_memory_strength, final_priority)
         """
         )
@@ -141,7 +141,7 @@ class TestShortTermMemory:
             """
             WITH hierarchical AS (
                 SELECT *,
-                    CASE 
+                    CASE
                         WHEN LOWER(content) LIKE '%launch%' OR LOWER(content) LIKE '%strategy%' OR LOWER(content) LIKE '%campaign%'
                             THEN 'Strategic Planning'
                         WHEN LOWER(content) LIKE '%client%' OR LOWER(content) LIKE '%customer%' OR LOWER(content) LIKE '%presentation%'
@@ -179,8 +179,8 @@ class TestShortTermMemory:
         for content, expected_location, expected_egocentric in test_cases:
             result = memory_db.execute(
                 f"""
-                SELECT 
-                    CASE 
+                SELECT
+                    CASE
                         WHEN LOWER('{content}') LIKE '%office%' OR LOWER('{content}') LIKE '%conference room%' OR LOWER('{content}') LIKE '%meeting room%'
                             THEN JSON('{{"location": "office", "egocentric": "workplace environment", "allocentric": "corporate facility", "objects": ["desk", "computer", "phone", "documents"]}}')
                         WHEN LOWER('{content}') LIKE '%client site%' OR LOWER('{content}') LIKE '%their site%'
@@ -217,7 +217,7 @@ class TestShortTermMemory:
         # Test recency factor (exponential decay)
         result = memory_db.execute(
             """
-            SELECT id, 
+            SELECT id,
                    EXP(-EXTRACT(EPOCH FROM (NOW() - timestamp)) / 3600.0) as recency_factor
             FROM test_memories
             ORDER BY recency_factor DESC
@@ -232,11 +232,11 @@ class TestShortTermMemory:
         result = memory_db.execute(
             """
             SELECT id,
-                   importance_score * 0.4 + 
-                   CASE sentiment 
-                       WHEN 'positive' THEN 0.3 
+                   importance_score * 0.4 +
+                   CASE sentiment
+                       WHEN 'positive' THEN 0.3
                        WHEN 'negative' THEN 0.2
-                       ELSE 0.1 
+                       ELSE 0.1
                    END as emotional_salience
             FROM test_memories
         """
@@ -251,8 +251,8 @@ class TestShortTermMemory:
             """
             SELECT id,
                    COUNT(*) OVER (
-                       PARTITION BY level_0_goal 
-                       ORDER BY timestamp 
+                       PARTITION BY level_0_goal
+                       ORDER BY timestamp
                        RANGE BETWEEN INTERVAL '1 hour' PRECEDING AND CURRENT ROW
                    ) as co_activation_count
             FROM test_memories
@@ -280,7 +280,7 @@ class TestShortTermMemory:
         for co_activation_count, emotional_salience, expected_ready in test_cases:
             result = memory_db.execute(
                 f"""
-                SELECT CASE 
+                SELECT CASE
                     WHEN {co_activation_count} >= 3 AND {emotional_salience} > 0.5 THEN TRUE
                     ELSE FALSE
                 END as ready_for_consolidation
@@ -297,7 +297,7 @@ class TestShortTermMemory:
         result = memory_db.execute(
             """
             WITH test_data AS (
-                SELECT 
+                SELECT
                     0.8 as recency_factor,
                     0.6 as emotional_salience
             )
@@ -307,7 +307,8 @@ class TestShortTermMemory:
         ).fetchone()[0]
 
         expected_strength = 0.8 * 0.6
-        assert abs(float(result) - expected_strength) < 0.001  # Float precision tolerance
+        # Float precision tolerance
+        assert abs(float(result) - expected_strength) < 0.001
 
     def test_incremental_processing_logic(self, memory_db):
         """Test incremental processing WHERE clause logic"""
@@ -373,7 +374,7 @@ class TestShortTermMemory:
         """Test memory type and episode type classification"""
         result = memory_db.execute(
             """
-            SELECT 
+            SELECT
                 'short_term_memory' as memory_type,
                 'hierarchical_episode' as episode_type
         """
@@ -395,7 +396,7 @@ class TestShortTermMemory:
                 UNION ALL
                 SELECT x+1 FROM series WHERE x<1000
             )
-            SELECT 
+            SELECT
                 x as id,
                 'Test memory content ' || x as content,
                 NOW() - (x * INTERVAL '1 minute') as timestamp,
@@ -410,7 +411,7 @@ class TestShortTermMemory:
         start_time = time.time()
         memory_db.execute(
             """
-            SELECT COUNT(*) FROM large_test_data 
+            SELECT COUNT(*) FROM large_test_data
             WHERE timestamp > NOW() - INTERVAL '1 hour'
         """
         ).fetchone()

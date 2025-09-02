@@ -17,7 +17,7 @@ def check_postgres_available():
         )
         conn.close()
         return True
-    except:
+    except BaseException:
         return False
 
 
@@ -28,7 +28,7 @@ def check_ollama_available():
             f"{os.getenv('OLLAMA_URL', 'http://localhost:11434')}/api/tags", timeout=1
         )
         return response.status_code == 200
-    except:
+    except BaseException:
         return False
 
 

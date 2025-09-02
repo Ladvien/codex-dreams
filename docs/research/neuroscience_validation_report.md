@@ -1,10 +1,10 @@
 # Neuroscience Research Validation Report
 ## CODEX DREAMS Biological Memory System
 
-**Generated:** 2025-09-01  
-**Author:** Cognitive Memory Research Team  
-**System Version:** 1.0.0  
-**Biological Accuracy Score:** 94/100  
+**Generated:** 2025-09-01
+**Author:** Cognitive Memory Research Team
+**System Version:** 1.0.0
+**Biological Accuracy Score:** 94/100
 
 ---
 
@@ -60,11 +60,11 @@ WHERE memory_rank <= ({{ var('working_memory_capacity') }} + FLOOR(RANDOM() * 3 
 **Biological Architecture:**
 ```sql
 -- Episodic to semantic transformation during consolidation
-CASE 
+CASE
     WHEN consolidated_strength > {{ var('stability_threshold') }} THEN
         -- Generate semantic gist for neocortical storage
-        '{"gist": "Strategic planning and goal-oriented thinking process", 
-          "category": "executive_function", 
+        '{"gist": "Strategic planning and goal-oriented thinking process",
+          "category": "executive_function",
           "region": "prefrontal_cortex"}'
 ```
 
@@ -147,7 +147,7 @@ replay_cycles AS (
 **Hebbian Formula Implementation:**
 ```sql
 -- Biologically accurate Hebbian learning with STDP
-COALESCE(hebbian_potential, 0.1) * (1.0 + {{ var('hebbian_learning_rate') }} * 
+COALESCE(hebbian_potential, 0.1) * (1.0 + {{ var('hebbian_learning_rate') }} *
     (COALESCE(stm_strength, 0.1) * COALESCE(co_activation_count, 1.0) / 10.0))
 ```
 
@@ -172,9 +172,9 @@ COALESCE(hebbian_potential, 0.1) * (1.0 + {{ var('hebbian_learning_rate') }} *
 **Consolidation Process:**
 ```sql
 -- Systems consolidation with emotional enhancement
-(COALESCE(stm_strength, 0.1) * 0.3 + 
- COALESCE(emotional_salience, 0.1) * 0.3 + 
- {{ safe_divide('COALESCE(co_activation_count, 1)', '10.0', '0.0') }} * 0.2 + 
+(COALESCE(stm_strength, 0.1) * 0.3 +
+ COALESCE(emotional_salience, 0.1) * 0.3 +
+ {{ safe_divide('COALESCE(co_activation_count, 1)', '10.0', '0.0') }} * 0.2 +
  COALESCE(recency_factor, 0.1) * 0.2) as replay_strength
 ```
 
@@ -224,10 +224,10 @@ ORDER BY activation_strength DESC, recency_score DESC, frequency_score DESC
 **Homeostatic Implementation:**
 ```sql
 -- Biologically accurate synaptic homeostasis with proportional scaling
-CASE 
+CASE
     WHEN ns.mean_strength > {{ var('homeostasis_target') }} * 1.5 THEN
         {{ var('homeostasis_target') }} / NULLIF(ns.mean_strength, 0)  -- Scale down
-    WHEN ns.mean_strength < {{ var('homeostasis_target') }} * {{ var('homeostasis_target') }} THEN  
+    WHEN ns.mean_strength < {{ var('homeostasis_target') }} * {{ var('homeostasis_target') }} THEN
         {{ var('homeostasis_target') }} / NULLIF(ns.mean_strength, 0)  -- Scale up
 ```
 
@@ -353,7 +353,7 @@ CASE
 ### 5.1 Core Memory Tests
 
 - **Working Memory Capacity:** ✅ 15/15 tests passing
-- **STM Duration Limits:** ✅ 12/12 tests passing  
+- **STM Duration Limits:** ✅ 12/12 tests passing
 - **LTM Consolidation:** ✅ 18/18 tests passing
 - **Hebbian Learning:** ✅ 9/9 tests passing
 - **Synaptic Homeostasis:** ✅ 11/11 tests passing
@@ -415,7 +415,7 @@ This system establishes a new standard for biologically-inspired computational m
 
 ---
 
-**Report Generated:** 2025-09-01  
-**Validation Methodology:** Comprehensive literature review, parameter analysis, and biological compliance testing  
-**System Status:** Production-ready with research-grade biological accuracy  
+**Report Generated:** 2025-09-01
+**Validation Methodology:** Comprehensive literature review, parameter analysis, and biological compliance testing
+**System Status:** Production-ready with research-grade biological accuracy
 **Next Review:** Quarterly assessment for research updates and accuracy improvements

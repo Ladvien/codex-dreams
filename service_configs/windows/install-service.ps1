@@ -54,31 +54,31 @@ try {
     if ($UseNSSM -and (Get-Command "nssm" -ErrorAction SilentlyContinue)) {
         # Use NSSM (Non-Sucking Service Manager)
         Write-Host "Installing service using NSSM..."
-        
+
         & nssm install $ServiceName $PythonExe $ServicePath $ServiceArgs
         & nssm set $ServiceName Description $Description
         & nssm set $ServiceName DisplayName $DisplayName
         & nssm set $ServiceName AppDirectory $ProjectPath
         & nssm set $ServiceName Start SERVICE_AUTO_START
         & nssm set $ServiceName ObjectName LocalSystem
-        
+
         Write-Host "Service installed successfully using NSSM!"
-        
+
     } else {
         # Use built-in New-Service
         Write-Host "Installing service using PowerShell New-Service..."
-        
+
         $BinaryPathName = "`"$PythonExe`" `"$ServicePath`" $ServiceArgs"
-        
+
         New-Service -Name $ServiceName `
                    -BinaryPathName $BinaryPathName `
                    -DisplayName $DisplayName `
                    -Description $Description `
                    -StartupType Automatic
-        
+
         Write-Host "Service installed successfully!"
     }
-    
+
     Write-Host ""
     Write-Host "To start the service:"
     Write-Host "  Start-Service -Name $ServiceName"
@@ -87,7 +87,7 @@ try {
     Write-Host "  Get-Service -Name $ServiceName"
     Write-Host ""
     Write-Host "To view service logs, check the configured log file in the daemon configuration."
-    
+
 } catch {
     Write-Error "Failed to install service: $_"
     exit 1

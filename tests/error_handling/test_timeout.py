@@ -249,7 +249,8 @@ class TestTimeoutHandling:
             attempt = operation_with_progressive_timeout.attempt
             operation_with_progressive_timeout.attempt += 1
 
-            required_time = 0.15 * (attempt + 1)  # Needs progressively more time
+            # Needs progressively more time
+            required_time = 0.15 * (attempt + 1)
             time.sleep(required_time)
 
             return f"Completed on attempt {attempt + 1} (took {required_time:.2f}s)"

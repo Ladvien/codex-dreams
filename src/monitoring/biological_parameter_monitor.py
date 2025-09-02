@@ -366,26 +366,36 @@ class BiologicalParameterMonitor:
         # Check critical ranges first
         if value < param.critical_min or value > param.critical_max:
             param.status = ParameterStatus.CRITICAL
-            return (
+            status_result = (
                 param.status,
                 f"{param_name}={value} outside critical range [{param.critical_min}, {param.critical_max}]",
             )
-
         # Check optimal ranges
-        if param.optimal_min <= value <= param.optimal_max:
+        elif param.optimal_min <= value <= param.optimal_max:
             param.status = ParameterStatus.OPTIMAL
-            return param.status, None
-
+            status_result = param.status, None
         # Check warning ranges
-        if param.critical_min <= value <= param.critical_max:
+        elif param.critical_min <= value <= param.critical_max:
             param.status = ParameterStatus.WARNING
-            return (
+            status_result = (
                 param.status,
                 f"{param_name}={value} outside optimal range [{param.optimal_min}, {param.optimal_max}]",
             )
+        else:
+            param.status = ParameterStatus.ACCEPTABLE
+            status_result = param.status, None
 
-        param.status = ParameterStatus.ACCEPTABLE
-        return param.status, None
+        # Add to history
+        self.parameter_history[param_name].append(
+            {
+                "timestamp": datetime.now(),
+                "value": value,
+                "status": param.status.value,
+                "message": status_result[1],
+            }
+        )
+
+        return status_result
 
     def validate_all_parameters(self) -> Dict[str, Tuple[ParameterStatus, Optional[str]]]:
         """Validate all parameters and return status summary"""
@@ -415,7 +425,7 @@ class BiologicalParameterMonitor:
                 result = conn.execute(
                     """
                     SELECT COUNT(*) as active_memories
-                    FROM information_schema.tables 
+                    FROM information_schema.tables
                     WHERE table_name LIKE '%working_memory%' OR table_name LIKE '%wm_%'
                 """
                 ).fetchone()
@@ -425,8 +435,8 @@ class BiologicalParameterMonitor:
                     try:
                         wm_count = conn.execute(
                             """
-                            SELECT COUNT(*) 
-                            FROM working_memory 
+                            SELECT COUNT(*)
+                            FROM working_memory
                             WHERE activation_strength > 0
                         """
                         ).fetchone()
@@ -596,6 +606,9 @@ class BiologicalParameterMonitor:
         alerts_logger = logging.getLogger("BiologicalParameterAlerts")
         alert_data = asdict(alert)
         alert_data["timestamp"] = alert.timestamp.isoformat()
+        # Convert enum values to strings for JSON serialization
+        alert_data["alert_type"] = alert_data["alert_type"].value
+        alert_data["severity"] = alert_data["severity"].value
         alerts_logger.info(json.dumps(alert_data))
 
     def run_comprehensive_monitoring(self) -> Dict[str, Any]:

@@ -50,7 +50,8 @@ class TestHebbianLearningBiologicalAccuracy:
         initial_weight = 0.3
         learning_rate = 0.1
         pre_synaptic_activity = 0.8  # STM strength
-        post_synaptic_activity = 0.6  # Co-activation strength (normalized by /10)
+        # Co-activation strength (normalized by /10)
+        post_synaptic_activity = 0.6
 
         # Expected Hebbian calculation from memory_replay.sql:
         # strengthened_weight = hebbian_potential * (1.0 + learning_rate * (stm_strength * co_activation_count / 10.0))
@@ -109,7 +110,8 @@ class TestHebbianLearningBiologicalAccuracy:
             strengthened_weight > initial_weight
         ), "Pre-before-post timing should strengthen synapses (positive STDP)"
 
-        # Simulate post-before-pre (negative STDP) - modeled as weaker strengthening
+        # Simulate post-before-pre (negative STDP) - modeled as weaker
+        # strengthening
         pre_activity_weak = 0.2
         post_activity_strong = 0.8
 
@@ -194,7 +196,8 @@ class TestHebbianLearningBiologicalAccuracy:
         """
         learning_rate = 0.1
 
-        # Test NULL hebbian_potential defaults to 0.1 (baseline synaptic strength)
+        # Test NULL hebbian_potential defaults to 0.1 (baseline synaptic
+        # strength)
         null_hebbian = 0.1  # COALESCE default
         null_stm = 0.1  # COALESCE default
         null_coactivation = 1.0  # COALESCE default
@@ -266,7 +269,8 @@ class TestHebbianLearningBiologicalAccuracy:
             strong_result > weak_result
         ), f"Strong pattern ({strong_result}) should outcompete weak pattern ({weak_result})"
 
-        # Calculate competition ratio (biological systems show modest differences with this learning rate)
+        # Calculate competition ratio (biological systems show modest
+        # differences with this learning rate)
         competition_ratio = strong_result / weak_result
         assert (
             1.01 < competition_ratio < 2.0

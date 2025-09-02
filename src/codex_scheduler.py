@@ -5,6 +5,7 @@ Runs generate_insights.py on a schedule.
 """
 
 import logging
+import os
 import subprocess
 import sys
 import time
@@ -37,7 +38,8 @@ class CodexScheduler:
         logger = logging.getLogger()
         logger.handlers = []
 
-        # Only add file handler - stdout is redirected to log file by the service
+        # Only add file handler - stdout is redirected to log file by the
+        # service
         logging.basicConfig(
             level=logging.INFO,
             format="%(asctime)s - %(levelname)s - %(message)s",
@@ -124,7 +126,8 @@ class CodexScheduler:
             try:
                 self.logger.info(f"Next run in {interval_minutes} minutes...")
 
-                # Sleep in 1-second intervals so we can respond to shutdown quickly
+                # Sleep in 1-second intervals so we can respond to shutdown
+                # quickly
                 for _ in range(interval_seconds):
                     if not self.running:
                         break
@@ -160,4 +163,3 @@ class CodexScheduler:
 
 
 # Import os here to avoid issues with the env dict
-import os

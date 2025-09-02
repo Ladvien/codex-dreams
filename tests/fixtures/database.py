@@ -120,6 +120,7 @@ def biological_memory_schema(test_duckdb):
             atomic_actions TEXT,
             phantom_objects TEXT,
             spatial_extraction TEXT,
+            semantic_category TEXT,
             stm_strength FLOAT DEFAULT 0.0,
             hebbian_potential INTEGER DEFAULT 0,
             ready_for_consolidation BOOLEAN DEFAULT FALSE,
@@ -140,6 +141,19 @@ def biological_memory_schema(test_duckdb):
             retrieval_count INTEGER DEFAULT 0
         )
     """
+    )
+
+    # Create working memory table for edge case tests
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS working_memory_view (
+            memory_id INTEGER PRIMARY KEY,
+            content TEXT,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            activation_level FLOAT DEFAULT 0.5,
+            miller_capacity_position INTEGER
+        )
+        """
     )
 
     conn.execute(
@@ -213,8 +227,8 @@ def cleanup_test_schemas():
             # Find and drop all test schemas
             cur.execute(
                 """
-                SELECT schema_name 
-                FROM information_schema.schemata 
+                SELECT schema_name
+                FROM information_schema.schemata
                 WHERE schema_name LIKE 'test_schema_%'
             """
             )

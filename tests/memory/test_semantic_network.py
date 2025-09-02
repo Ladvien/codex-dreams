@@ -17,7 +17,7 @@ class TestSemanticSimilarity:
     """Test LLM-based semantic similarity scoring."""
 
     @pytest.mark.llm
-    def test_semantic_similarity_scoring(self, mock_ollama):
+    def test_semantic_similarity_scoring(self, real_ollama_service):
         """Test LLM similarity scoring between memory gists."""
         gist_pairs = [
             ("Team meeting about project planning", "Group discussion on project strategy"),
@@ -26,7 +26,9 @@ class TestSemanticSimilarity:
         ]
 
         for gist_a, gist_b in gist_pairs:
-            response = mock_ollama(f"Rate similarity between: A: {gist_a} B: {gist_b}")
+            response = real_ollama_service.generate(
+                f"Rate similarity between: A: {gist_a} B: {gist_b}"
+            )
 
             try:
                 similarity = float(response)
@@ -36,9 +38,10 @@ class TestSemanticSimilarity:
                 assert response is not None, "Should return similarity assessment"
 
     @pytest.mark.llm
-    def test_similarity_transitivity(self, mock_ollama):
+    def test_similarity_transitivity(self, real_ollama_service):
         """Test semantic similarity exhibits reasonable transitivity."""
-        # If A is similar to B, and B is similar to C, then A should be somewhat similar to C
+        # If A is similar to B, and B is similar to C, then A should be
+        # somewhat similar to C
         memories = [
             "Project planning meeting",
             "Strategic planning session",
@@ -48,7 +51,7 @@ class TestSemanticSimilarity:
         similarities = {}
         for i, mem_a in enumerate(memories):
             for j, mem_b in enumerate(memories[i + 1 :], i + 1):
-                response = mock_ollama(f"Rate similarity: {mem_a} vs {mem_b}")
+                response = real_ollama_service.generate(f"Rate similarity: {mem_a} vs {mem_b}")
                 try:
                     similarities[(i, j)] = float(response)
                 except ValueError:
@@ -59,7 +62,7 @@ class TestSemanticSimilarity:
             assert 0 <= similarity <= 1, "Similarity should be in valid range"
 
     @pytest.mark.llm
-    def test_category_based_similarity(self, mock_ollama):
+    def test_category_based_similarity(self, real_ollama_service):
         """Test similarity within same semantic categories."""
         same_category_pairs = [
             ("Morning standup meeting", "Evening team retrospective"),
@@ -68,7 +71,7 @@ class TestSemanticSimilarity:
         ]
 
         for gist_a, gist_b in same_category_pairs:
-            response = mock_ollama(f"Rate similarity: {gist_a} vs {gist_b}")
+            response = real_ollama_service.generate(f"Rate similarity: {gist_a} vs {gist_b}")
 
             # Same-category items should have reasonable similarity
             try:

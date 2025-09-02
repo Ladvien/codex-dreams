@@ -15,15 +15,15 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-# Add src to path for testing
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
-
-from orchestration.biological_rhythm_scheduler import (
+from src.orchestration.biological_rhythm_scheduler import (
     BiologicalMemoryProcessor,
     BiologicalRhythmScheduler,
     BiologicalRhythmType,
     CircadianPhase,
 )
+
+# Add src to path for testing
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 
 class TestMemoryConsolidationTiming:
@@ -45,7 +45,7 @@ class TestMemoryConsolidationTiming:
         # Test that exactly 20 minutes triggers consolidation
         test_time = base_time + timedelta(minutes=20)
 
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = test_time
 
             should_run = self.scheduler._should_run_short_term()
@@ -54,7 +54,7 @@ class TestMemoryConsolidationTiming:
         # Test that less than 20 minutes doesn't trigger
         test_time = base_time + timedelta(minutes=19, seconds=30)
 
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = test_time
 
             should_run = self.scheduler._should_run_short_term()
@@ -71,7 +71,7 @@ class TestMemoryConsolidationTiming:
         # Test that exactly 90 minutes triggers hippocampal replay
         test_time = base_time + timedelta(minutes=90)
 
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = test_time
 
             should_run = self.scheduler._should_run_long_term()
@@ -80,7 +80,7 @@ class TestMemoryConsolidationTiming:
         # Test ultradian rhythm accuracy (should be exactly 90 minutes)
         test_time = base_time + timedelta(minutes=89, seconds=59)
 
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = test_time
 
             should_run = self.scheduler._should_run_long_term()
@@ -94,7 +94,7 @@ class TestMemoryConsolidationTiming:
         # Test during deep sleep window
         deep_sleep_time = datetime(2025, 9, 2, 3, 0, 0)  # Tuesday 3 AM
 
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = deep_sleep_time
             self.scheduler._get_current_circadian_phase = Mock(
                 return_value=CircadianPhase.DEEP_SLEEP
@@ -106,7 +106,7 @@ class TestMemoryConsolidationTiming:
             assert should_run is True, "Systems consolidation should occur during deep sleep"
 
         # Test that it only runs once per day
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = deep_sleep_time
             self.scheduler._get_current_circadian_phase = Mock(
                 return_value=CircadianPhase.DEEP_SLEEP
@@ -270,7 +270,7 @@ class TestBiologicalAccuracyValidation:
         scheduler = BiologicalRhythmScheduler()
 
         # Test that deep sleep phase aligns with Squire's research
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             # 3 AM should be peak systems consolidation time
             mock_dt.now.return_value = datetime(2025, 9, 1, 3, 0, 0)
             phase = scheduler._get_current_circadian_phase()
@@ -311,7 +311,7 @@ class TestBiologicalAccuracyValidation:
         # Test that long-term consolidation can occur during wake hours (rest)
         wake_time = datetime(2025, 9, 1, 15, 0, 0)  # 3 PM
 
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = wake_time
             scheduler.last_long_term = wake_time - timedelta(minutes=90)
 
@@ -321,7 +321,7 @@ class TestBiologicalAccuracyValidation:
         # Test that additional replay occurs during sleep
         sleep_time = datetime(2025, 9, 1, 3, 0, 0)  # 3 AM
 
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             mock_dt.now.return_value = sleep_time
             scheduler._get_current_circadian_phase = Mock(return_value=CircadianPhase.DEEP_SLEEP)
             scheduler.last_deep_sleep = sleep_time.date() - timedelta(days=1)
@@ -348,7 +348,7 @@ class TestConsolidationPipelineIntegration:
         base_time = datetime(2025, 9, 1, 12, 0, 0)
 
         # Set timing to trigger progression through consolidation stages
-        with patch("orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
+        with patch("src.orchestration.biological_rhythm_scheduler.datetime") as mock_dt:
             # First: Short-term consolidation (20 minutes)
             mock_dt.now.return_value = base_time + timedelta(minutes=20)
             self.scheduler.last_short_term = base_time

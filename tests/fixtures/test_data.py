@@ -148,7 +148,7 @@ def short_term_memory_fixture(test_duckdb, sample_memory_data):
     for i, memory in enumerate(sample_memory_data):
         conn.execute(
             """
-            INSERT INTO stm_hierarchical_episodes VALUES 
+            INSERT INTO stm_hierarchical_episodes VALUES
             (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             (
@@ -176,6 +176,21 @@ def hebbian_learning_data(biological_memory_schema):
     """Generate test data for Hebbian learning algorithms."""
     conn = biological_memory_schema
 
+    # Create semantic network table if it doesn't exist
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ltm_semantic_network (
+            id INTEGER PRIMARY KEY,
+            concept_a VARCHAR,
+            concept_b VARCHAR,
+            association_strength FLOAT,
+            association_type VARCHAR,
+            consolidation_timestamp TIMESTAMP,
+            retrieval_count INTEGER DEFAULT 0
+        )
+    """
+    )
+
     # Insert test associations with realistic Hebbian parameters
     test_associations = [
         ("meeting", "collaboration", 0.85, "semantic"),
@@ -190,14 +205,14 @@ def hebbian_learning_data(biological_memory_schema):
         ("performance", "optimization", 0.83, "technical"),
     ]
 
-    for concept_a, concept_b, strength, assoc_type in test_associations:
+    for i, (concept_a, concept_b, strength, assoc_type) in enumerate(test_associations, 1):
         conn.execute(
             """
-            INSERT INTO ltm_semantic_network 
-            (concept_a, concept_b, association_strength, association_type, consolidation_timestamp)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO ltm_semantic_network
+            (id, concept_a, concept_b, association_strength, association_type, consolidation_timestamp)
+            VALUES (?, ?, ?, ?, ?, ?)
         """,
-            (concept_a, concept_b, strength, assoc_type, datetime.now(timezone.utc)),
+            (i, concept_a, concept_b, strength, assoc_type, datetime.now(timezone.utc)),
         )
 
     return conn
@@ -207,6 +222,21 @@ def hebbian_learning_data(biological_memory_schema):
 def memory_lifecycle_data(biological_memory_schema):
     """Generate data representing complete memory lifecycle from sensory to LTM."""
     conn = biological_memory_schema
+
+    # Ensure ltm_semantic_network table exists for consolidation testing
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ltm_semantic_network (
+            id INTEGER PRIMARY KEY,
+            concept_a TEXT,
+            concept_b TEXT,
+            association_strength FLOAT,
+            association_type TEXT,
+            consolidation_timestamp TIMESTAMP,
+            retrieval_count INTEGER DEFAULT 0
+        )
+    """
+    )
 
     # Stage 1: Raw memories (sensory input)
     raw_memories = [
@@ -239,10 +269,22 @@ def memory_lifecycle_data(biological_memory_schema):
         )
 
     # Stage 2: Working memory (Miller's 7±2)
+    # Create the table if it doesn't exist
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS working_memory_view (
+            id INTEGER PRIMARY KEY,
+            content TEXT,
+            activation_level FLOAT DEFAULT 0.5,
+            miller_capacity_position INTEGER
+        )
+    """
+    )
+
     for i in range(min(7, len(raw_memories))):
         conn.execute(
             """
-            INSERT INTO working_memory_view 
+            INSERT INTO working_memory_view
             (id, content, activation_level, miller_capacity_position)
             VALUES (?, ?, ?, ?)
         """,
@@ -250,6 +292,23 @@ def memory_lifecycle_data(biological_memory_schema):
         )
 
     # Stage 3: Short-term memory processing
+    # Create the table if it doesn't exist
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS stm_hierarchical_episodes (
+            id INTEGER PRIMARY KEY,
+            content TEXT,
+            level_0_goal TEXT,
+            level_1_tasks TEXT,
+            atomic_actions TEXT,
+            semantic_category TEXT,
+            stm_strength FLOAT DEFAULT 0.0,
+            hebbian_potential INTEGER DEFAULT 0,
+            ready_for_consolidation BOOLEAN DEFAULT FALSE
+        )
+    """
+    )
+
     stm_processed = [
         ("Daily team coordination", "Attend standup, provide updates", "Listen, speak, take notes"),
         ("Code quality assurance", "Review code changes", "Read, analyze, comment"),
@@ -263,11 +322,21 @@ def memory_lifecycle_data(biological_memory_schema):
             conn.execute(
                 """
                 INSERT INTO stm_hierarchical_episodes
-                (id, content, level_0_goal, level_1_tasks, atomic_actions, stm_strength, 
+                (id, content, level_0_goal, level_1_tasks, atomic_actions, semantic_category, stm_strength,
                  hebbian_potential, ready_for_consolidation)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-                (i + 1, raw_memories[i], goal, tasks, actions, 0.6 + (i * 0.15), i + 2, i >= 2),
+                (
+                    i + 1,
+                    raw_memories[i],
+                    goal,
+                    tasks,
+                    actions,
+                    f"work_activity_{i % 3}",
+                    0.6 + (i * 0.15),
+                    i + 2,
+                    i >= 2,
+                ),
             )
 
     return conn
@@ -430,6 +499,45 @@ class MemoryDataFactory:
             }
             for pair in concept_pairs[:count]
         ]
+
+    @staticmethod
+    def create_memory_batch(count: int = 20, **kwargs) -> List[Dict[str, Any]]:
+        """Create a batch of memory entries for performance and integration testing."""
+        memories = []
+        activities = [
+            "team meeting discussion",
+            "code review session",
+            "debugging critical issue",
+            "architecture planning",
+            "technology research",
+            "mentoring session",
+            "system documentation",
+            "performance analysis",
+            "stakeholder coordination",
+            "sprint planning",
+        ]
+
+        # Get categories from kwargs or use defaults
+        categories = kwargs.get("categories", ["work_activity", "technical_task", "communication"])
+
+        for i in range(count):
+            memories.append(
+                {
+                    "id": i + 1,
+                    "content": f"{activities[i % len(activities)]} - iteration {i // len(activities) + 1}",
+                    "timestamp": datetime.now(timezone.utc) - timedelta(minutes=i * 2),
+                    "semantic_category": categories[i % len(categories)],
+                    "activation_level": random.uniform(0.3, 1.0),
+                    "co_activation_count": random.randint(1, 20),
+                    "stm_strength": random.uniform(0.1, 0.9),
+                    "hebbian_potential": random.uniform(0.1, 0.8),
+                    "retrieval_strength": random.uniform(0.2, 0.95),
+                    "temporal_factor": random.uniform(-20, 20),  # STDP timing
+                    "activity_history": random.uniform(0.1, 1.0),
+                }
+            )
+
+        return memories
 
 
 @pytest.fixture(scope="function")

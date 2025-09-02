@@ -1,34 +1,51 @@
-# Example dbt profiles configuration
-# Copy this to ~/.dbt/profiles.yml and update with your credentials
+# dbt profiles.yml configuration for Biological Memory System
+# Copy this file to ~/.dbt/profiles.yml and update with your settings
+# 
+# This configuration enables DuckDB to connect to PostgreSQL databases
+# using the postgres_scanner extension for accessing remote memory data
 
-biological_memory:
+codex_biological_memory:
   target: dev
   outputs:
     dev:
       type: duckdb
-      path: "{{ env_var('DUCKDB_PATH') }}"
-      threads: 8
+      path: ./biological_memory.duckdb
       extensions:
-        - httpfs     # For Ollama HTTP calls
-        - postgres_scanner   # For PostgreSQL connection
-        - json       # For JSON processing
-      attach:
-        - path: "{{ env_var('POSTGRES_DB_URL') }}"
-          type: postgres
-          alias: source_memories
-      settings:
-        # Enable prompt() function with Ollama endpoint
-        prompt_model: 'ollama'
-        prompt_base_url: "{{ env_var('OLLAMA_URL') }}"
-        prompt_model_name: "{{ env_var('OLLAMA_MODEL') }}"
-    test:
-      type: duckdb
-      path: /tmp/test_biological_memory.duckdb
-      threads: 4
-      extensions:
+        - httpfs
         - postgres_scanner
         - json
-      attach:
-        - path: "{{ env_var('TEST_DATABASE_URL') }}"
-          type: postgres
-          alias: test_source_memories
+      settings:
+        memory_limit: 8GB
+        threads: 4
+        postgres_scanner:
+          enabled: true
+          connection_timeout: 30
+        enable_external_access: false
+    prod:
+      type: duckdb
+      path: /var/lib/biological_memory/production.duckdb
+      extensions:
+        - httpfs
+        - postgres_scanner
+        - json
+      settings:
+        memory_limit: 16GB
+        threads: 8
+        postgres_scanner:
+          enabled: true
+          connection_timeout: 60
+        enable_external_access: false
+    test:
+      type: duckdb
+      path: ":memory:"
+      extensions:
+        - httpfs
+        - postgres_scanner
+        - json
+      settings:
+        memory_limit: 2GB
+        threads: 2
+        postgres_scanner:
+          enabled: true
+          connection_timeout: 10
+        enable_external_access: false

@@ -223,7 +223,7 @@ class TestStrengthenAssociations:
     """Test strengthen_associations() macro for REM-like creative connections."""
 
     @pytest.mark.llm
-    def test_creative_association_discovery(self, mock_ollama):
+    def test_creative_association_discovery(self, real_ollama_service):
         """Test creative connection discovery between memories."""
         # Test memory pairs for creative linking
         memory_pairs = [
@@ -233,7 +233,9 @@ class TestStrengthenAssociations:
         ]
 
         for gist_a, gist_b in memory_pairs:
-            response = mock_ollama(f"Find creative connection between: {gist_a} and {gist_b}")
+            response = real_ollama_service.generate(
+                f"Find creative connection between: {gist_a} and {gist_b}"
+            )
 
             # Should find creative links even between disparate memories
             assert response is not None, "Should find creative connections"
@@ -372,7 +374,8 @@ class TestMacroIntegration:
 
     def test_hebbian_homeostasis_interaction(self):
         """Test interaction between Hebbian learning and homeostasis."""
-        # Test scenario: Hebbian learning increases strengths, homeostasis normalizes
+        # Test scenario: Hebbian learning increases strengths, homeostasis
+        # normalizes
 
         # Initial strengths
         initial_strengths = [0.4, 0.5, 0.6, 0.7]
@@ -449,11 +452,14 @@ class TestAdvancedHebbianImplementation:
         base_time = datetime.now(timezone.utc)
 
         test_cases = [
-            {"delay_seconds": 30, "should_count": True},  # 30 seconds - within window
-            {"delay_seconds": 180, "should_count": True},  # 3 minutes - within window
+            # 30 seconds - within window
+            {"delay_seconds": 30, "should_count": True},
+            # 3 minutes - within window
+            {"delay_seconds": 180, "should_count": True},
             {"delay_seconds": 299, "should_count": True},  # 4:59 - within window
             {"delay_seconds": 301, "should_count": False},  # 5:01 - outside window
-            {"delay_seconds": 600, "should_count": False},  # 10 minutes - outside window
+            # 10 minutes - outside window
+            {"delay_seconds": 600, "should_count": False},
         ]
 
         window_seconds = 5 * 60  # 5 minutes
@@ -494,7 +500,8 @@ class TestAdvancedHebbianImplementation:
             },
         ]
 
-        # Count expected co-activations within same category and 5-minute window
+        # Count expected co-activations within same category and 5-minute
+        # window
         expected_coactivations = []
 
         for i, mem_a in enumerate(memories):
@@ -505,7 +512,8 @@ class TestAdvancedHebbianImplementation:
                 ):
                     expected_coactivations.append((mem_a["id"], mem_b["id"]))
 
-        # Should find co-activations: (1,2), (1,3), (2,3) for meetings, (4,5) for coding
+        # Should find co-activations: (1,2), (1,3), (2,3) for meetings, (4,5)
+        # for coding
         assert len(expected_coactivations) == 4, "Should find 4 co-activations"
         assert (1, 2) in expected_coactivations, "Should find meeting co-activation"
         assert (4, 5) in expected_coactivations, "Should find coding co-activation"
@@ -520,10 +528,12 @@ class TestAdvancedHebbianImplementation:
 
         for scenario in test_scenarios:
             current = scenario["current_strength"]
-            coact = min(scenario["coactivations"], 10.0)  # Cap at 10 to prevent saturation
+            # Cap at 10 to prevent saturation
+            coact = min(scenario["coactivations"], 10.0)
             rate = scenario["learning_rate"]
 
-            # Calculate Hebbian delta: rate × coactivation × (1 - current_strength)
+            # Calculate Hebbian delta: rate × coactivation × (1 -
+            # current_strength)
             hebbian_delta = rate * (coact / 10.0) * (1.0 - current)
             new_strength = current * (1 + hebbian_delta)
 
@@ -532,7 +542,8 @@ class TestAdvancedHebbianImplementation:
             assert new_strength <= 1.0, "Strength should not exceed 1.0 (saturation prevention)"
             assert new_strength > current, "New strength should be higher"
 
-            # Higher co-activations should lead to larger deltas (when not saturated)
+            # Higher co-activations should lead to larger deltas (when not
+            # saturated)
             if current < 0.8:  # Not near saturation
                 assert (
                     hebbian_delta > 0.001
@@ -692,7 +703,8 @@ class TestAdvancedAssociationStrengthening:
         for i, mem_a in enumerate(memories):
             for mem_b in memories[i + 1 :]:
                 if (
-                    mem_a["category"] != mem_b["category"]  # Different categories
+                    # Different categories
+                    mem_a["category"] != mem_b["category"]
                     and mem_a["strength"] > 0.3
                     and mem_b["strength"] > 0.3
                 ):  # Strong enough
@@ -727,7 +739,14 @@ class TestAdvancedAssociationStrengthening:
             # Each type should represent meaningful cognitive synthesis
             assert any(
                 keyword in conn_type
-                for keyword in ["synthesis", "intelligence", "management", "strategy", "solving"]
+                for keyword in [
+                    "synthesis",
+                    "intelligence",
+                    "management",
+                    "strategy",
+                    "solving",
+                    "interface",
+                ]
             ), f"Connection type {conn_type} should indicate cognitive process"
 
     def test_novelty_and_plausibility_scoring(self):
@@ -760,7 +779,8 @@ class TestAdvancedAssociationStrengthening:
         test_pairs = [
             {"strength_a": 0.8, "strength_b": 0.7, "different_categories": True},
             {"strength_a": 0.6, "strength_b": 0.5, "different_categories": True},
-            {"strength_a": 0.9, "strength_b": 0.8, "different_categories": False},  # Same category
+            {"strength_a": 0.9, "strength_b": 0.8, "different_categories": False},
+            # Same category
         ]
 
         creativity_factor = 0.8
@@ -770,7 +790,8 @@ class TestAdvancedAssociationStrengthening:
             strength_b = pair["strength_b"]
             different_cats = pair["different_categories"]
 
-            # Calculate creative strength: (strength_a * 0.4 + strength_b * 0.4 + novelty_bonus) * factor
+            # Calculate creative strength: (strength_a * 0.4 + strength_b * 0.4
+            # + novelty_bonus) * factor
             base_strength = strength_a * 0.4 + strength_b * 0.4
             novelty_bonus = 0.2 if different_cats else 0.0
             creative_strength = (base_strength + novelty_bonus) * creativity_factor
@@ -838,4 +859,4 @@ class TestAdvancedAssociationStrengthening:
         assert 0 < sample_association["association_strength"] <= 1, "Strength should be valid range"
         assert 0 <= sample_association["novelty_score"] <= 1, "Novelty should be 0-1"
         assert 0 <= sample_association["plausibility_score"] <= 1, "Plausibility should be 0-1"
-        assert sample_association["created_during_rem"] == True, "Should mark as REM-created"
+        assert sample_association["created_during_rem"], "Should mark as REM-created"

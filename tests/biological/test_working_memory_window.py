@@ -368,7 +368,7 @@ class TestWorkingMemoryNeuralPlausibility:
                   AND activation_strength > 0.6
             )
             SELECT COUNT(*) as selected_count
-            FROM ranked_memories  
+            FROM ranked_memories
             WHERE rank <= {max_capacity}
         """
         ).fetchone()[0]

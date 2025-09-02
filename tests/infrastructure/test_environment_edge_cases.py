@@ -238,7 +238,13 @@ def test_postgres_connection_interrupted(mock_connect):
     mock_conn = Mock()
     mock_cursor = Mock()
     mock_cursor.execute.side_effect = psycopg2.InterfaceError("Connection lost")
-    mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+
+    # Set up cursor context manager properly
+    cursor_context_manager = MagicMock()
+    cursor_context_manager.__enter__.return_value = mock_cursor
+    cursor_context_manager.__exit__.return_value = None
+    mock_conn.cursor.return_value = cursor_context_manager
+
     mock_connect.return_value = mock_conn
 
     env_vars = {

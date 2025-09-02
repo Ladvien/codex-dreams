@@ -1,0 +1,18 @@
+biological_memory:
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', '/tmp/memory.duckdb') }}"
+      threads: 4
+      
+    test:
+      type: duckdb
+      path: "{{ env_var('TEST_DUCKDB_PATH', '/tmp/test_memory.duckdb') }}"
+      threads: 2
+      
+    prod:
+      type: duckdb
+      path: "{{ env_var('PROD_DUCKDB_PATH', './memory.duckdb') }}"
+      threads: 8
+      
+  target: dev

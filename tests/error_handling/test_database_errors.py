@@ -131,7 +131,8 @@ class TestDatabaseErrorHandling:
             # Test failed transaction (duplicate key)
             failing_operations = [
                 "INSERT INTO test_transactions (id, data) VALUES (3, 'test3')",
-                "INSERT INTO test_transactions (id, data) VALUES (1, 'duplicate')",  # This will fail
+                # This will fail
+                "INSERT INTO test_transactions (id, data) VALUES (1, 'duplicate')",
             ]
 
             success = self.error_handler.execute_with_transaction_safety(conn, failing_operations)
@@ -260,7 +261,8 @@ class TestDatabaseErrorHandling:
                 (1, "Valid data 1", "hash1"),
                 (2, "Valid data 2", "hash2"),
                 (3, None, None),  # Simulate corrupted data
-                (4, "Invalid JSON: {broken", "hash4"),  # Simulate JSON corruption
+                # Simulate JSON corruption
+                (4, "Invalid JSON: {broken", "hash4"),
             ]
 
             for row in test_data:
@@ -268,10 +270,10 @@ class TestDatabaseErrorHandling:
 
             # Test corruption detection query
             corruption_check_query = """
-                SELECT 
+                SELECT
                     id,
                     data,
-                    CASE 
+                    CASE
                         WHEN data IS NULL THEN 'CORRUPTED_NULL'
                         WHEN data LIKE '%{broken%' THEN 'CORRUPTED_JSON'
                         ELSE 'VALID'
@@ -285,8 +287,10 @@ class TestDatabaseErrorHandling:
             # Verify corruption detection
             assert results[0][2] == "VALID"  # First record is valid
             assert results[1][2] == "VALID"  # Second record is valid
-            assert results[2][2] == "CORRUPTED_NULL"  # Third record is corrupted
-            assert results[3][2] == "CORRUPTED_JSON"  # Fourth record has JSON corruption
+            # Third record is corrupted
+            assert results[2][2] == "CORRUPTED_NULL"
+            # Fourth record has JSON corruption
+            assert results[3][2] == "CORRUPTED_JSON"
 
             conn.close()
 
@@ -345,7 +349,8 @@ class TestDatabaseErrorHandling:
             constraint_violations = [
                 (0, "Valid text", 1.0),  # ID constraint violation (id <= 0)
                 (1, None, 1.0),  # NOT NULL violation
-                (2, "Valid text", -1.0),  # CHECK constraint violation (negative number)
+                # CHECK constraint violation (negative number)
+                (2, "Valid text", -1.0),
             ]
 
             for i, invalid_data in enumerate(constraint_violations):

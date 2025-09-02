@@ -288,7 +288,8 @@ class TestFileIOErrorHandling:
 
                     # Simulate memory pressure
                     if len(content_chunks) > 50:  # Limit chunks in memory
-                        content_chunks = content_chunks[-10:]  # Keep only recent chunks
+                        # Keep only recent chunks
+                        content_chunks = content_chunks[-10:]
 
             return sum(content_chunks)
 

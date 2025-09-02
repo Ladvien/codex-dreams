@@ -176,7 +176,8 @@ class ConfigurationConsistencyTest(unittest.TestCase):
                 var_line_match = re.search(f"^.*{var}.*$", content, re.MULTILINE)
                 if var_line_match:
                     line = var_line_match.group(0)
-                    # Should have some indication it's legacy (before or after the line)
+                    # Should have some indication it's legacy (before or after
+                    # the line)
                     context_start = max(0, content.find(line) - 200)
                     context_end = min(len(content), content.find(line) + len(line) + 200)
                     context = content[context_start:context_end].lower()
@@ -258,7 +259,8 @@ class ConfigurationConsistencyTest(unittest.TestCase):
             for category, patterns in variable_patterns.items():
                 for pattern in patterns:
                     if re.search(pattern, content):
-                        # Ensure it follows naming convention (UPPER_CASE with underscores)
+                        # Ensure it follows naming convention (UPPER_CASE with
+                        # underscores)
                         var_matches = re.findall(f"({pattern}[A-Z_]*)", content)
                         for var in var_matches:
                             self.assertRegex(
@@ -276,7 +278,8 @@ class ConfigurationConsistencyTest(unittest.TestCase):
         # Find all environment variables
         env_vars = re.findall(r"^([A-Z_]+)=", content, re.MULTILINE)
 
-        # Check that each variable has some documentation (comment above or inline)
+        # Check that each variable has some documentation (comment above or
+        # inline)
         poorly_documented_vars = []
 
         for var in env_vars:
@@ -287,7 +290,8 @@ class ConfigurationConsistencyTest(unittest.TestCase):
 
             var_start = var_line_match.start()
 
-            # Get the 200 characters before the variable line to check for comments
+            # Get the 200 characters before the variable line to check for
+            # comments
             context_start = max(0, var_start - 200)
             context = content[context_start:var_start]
 

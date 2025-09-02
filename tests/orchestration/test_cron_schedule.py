@@ -400,7 +400,8 @@ class TestScheduleIntegration:
         """Test avoidance of resource contention between jobs."""
         # Test jobs that might compete for resources
         concurrent_jobs = [
-            ("working_memory", "stm_updates"),  # Both access database frequently
+            # Both access database frequently
+            ("working_memory", "stm_updates"),
             ("consolidation", "deep_consolidation"),  # Both use memory pool
             ("rem_cycles", "homeostasis"),  # Both use LLM resources
         ]

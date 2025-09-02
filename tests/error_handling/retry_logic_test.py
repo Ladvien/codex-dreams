@@ -169,7 +169,8 @@ class TestRetryLogic:
         )
 
         assert result["final_attempt"] == 4
-        assert len(result["results"]) == 4  # Should have accumulated partial results
+        # Should have accumulated partial results
+        assert len(result["results"]) == 4
 
     def test_retry_with_recovery_callback(self):
         """Test retry logic with recovery callbacks between attempts"""
@@ -203,7 +204,8 @@ class TestRetryLogic:
         )
 
         assert result == "Success on attempt 3"
-        assert len(recovery_actions) == 2  # Recovery called twice before success
+        # Recovery called twice before success
+        assert len(recovery_actions) == 2
 
     def test_retry_with_context_preservation(self):
         """Test that retry logic preserves operation context"""

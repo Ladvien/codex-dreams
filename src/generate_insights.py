@@ -93,7 +93,40 @@ def extract_tags(content: str) -> List[str]:
         # Filter out empty or too long tags
         tags = [tag for tag in tags if tag and len(tag) < 20 and tag.replace("-", "").isalnum()]
         return tags[:5]  # Max 5 tags
-    return []
+
+    # Fallback: Basic keyword extraction when LLM service unavailable
+    if not content.strip():
+        return ["content"]
+
+    # Simple fallback - extract important words from content
+    import re
+
+    words = re.findall(r"\b\w{4,}\b", content.lower())
+    common_words = {
+        "that",
+        "this",
+        "with",
+        "have",
+        "will",
+        "been",
+        "from",
+        "they",
+        "know",
+        "want",
+        "were",
+        "said",
+        "each",
+        "which",
+        "their",
+        "time",
+        "would",
+    }
+    keywords = [w for w in words if w not in common_words][:3]
+
+    if not keywords:
+        keywords = ["general", "content", "topic"]
+
+    return keywords
 
 
 def generate_insight(content: str, related_memories: List[str] = None) -> Dict[str, Any]:
@@ -200,7 +233,8 @@ def process_memories() -> None:
     print("Connecting to DuckDB...")
     duck_conn = duckdb.connect(DUCKDB_PATH)
 
-    # Attach PostgreSQL codex_db database (this is the source database for dbt models)
+    # Attach PostgreSQL codex_db database (this is the source database for dbt
+    # models)
     duck_conn.execute(
         f"""
         ATTACH '{POSTGRES_URL}' AS codex_db (TYPE postgres)
@@ -212,7 +246,7 @@ def process_memories() -> None:
     print("Fetching memories to process from codex_db...")
     memories_df = duck_conn.execute(
         """
-        SELECT 
+        SELECT
             id as memory_id,
             content,
             tags,
@@ -278,7 +312,8 @@ def process_memories() -> None:
                         insight["content"],
                         insight["type"],
                         insight["confidence"],
-                        [memory_id],  # source_memory_ids as array (keep as UUID)
+                        [memory_id],
+                        # source_memory_ids as array (keep as UUID)
                         Json(
                             {
                                 "model": OLLAMA_MODEL,

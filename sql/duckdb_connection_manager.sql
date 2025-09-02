@@ -52,15 +52,15 @@ CREATE OR REPLACE MACRO get_config(key VARCHAR, default_value VARCHAR) AS
 -- Function to validate PostgreSQL connection
 CREATE OR REPLACE MACRO validate_postgres_connection() AS (
     WITH connection_test AS (
-        SELECT 
-            CASE 
+        SELECT
+            CASE
                 WHEN get_config('postgres_url', '') != '' THEN TRUE
                 ELSE FALSE
             END as is_configured
     )
-    SELECT 
+    SELECT
         is_configured,
-        CASE 
+        CASE
             WHEN is_configured THEN 'PostgreSQL URL configured'
             ELSE 'PostgreSQL URL not found in environment'
         END as status_message
@@ -70,15 +70,15 @@ CREATE OR REPLACE MACRO validate_postgres_connection() AS (
 -- Function to validate Ollama connection
 CREATE OR REPLACE MACRO validate_ollama_connection() AS (
     WITH connection_test AS (
-        SELECT 
-            CASE 
+        SELECT
+            CASE
                 WHEN get_config('ollama_url', '') != '' THEN TRUE
                 ELSE FALSE
             END as is_configured
     )
-    SELECT 
+    SELECT
         is_configured,
-        CASE 
+        CASE
             WHEN is_configured THEN 'Ollama URL configured'
             ELSE 'Ollama URL not found in environment'
         END as status_message
@@ -92,10 +92,10 @@ INSERT OR REPLACE INTO connection_status VALUES
 
 -- Create view to show current configuration (with sensitive data masked)
 CREATE OR REPLACE VIEW connection_config_view AS
-SELECT 
+SELECT
     config_key,
-    CASE 
-        WHEN config_key LIKE '%url%' AND config_value LIKE '%@%' THEN 
+    CASE
+        WHEN config_key LIKE '%url%' AND config_value LIKE '%@%' THEN
             regexp_replace(config_value, ':[^:@]+@', ':****@', 'g')
         ELSE config_value
     END as config_value,
@@ -106,11 +106,11 @@ FROM connection_config;
 -- Exponential backoff calculator for retries
 CREATE OR REPLACE VIEW backoff_calculator AS
 WITH RECURSIVE backoff_sequence AS (
-    SELECT 
+    SELECT
         0 as attempt,
         1000 as delay_ms
     UNION ALL
-    SELECT 
+    SELECT
         attempt + 1,
         LEAST(delay_ms * 2, 32000) -- Cap at 32 seconds
     FROM backoff_sequence

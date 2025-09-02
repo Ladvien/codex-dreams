@@ -14,10 +14,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-# Add biological_memory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "biological_memory"))
-
-from orchestrate_biological_memory import BiologicalMemoryOrchestrator
+from src.services.orchestrate_biological_memory import BiologicalMemoryOrchestrator
 
 
 class TestShellInjectionPrevention:
@@ -37,15 +34,10 @@ class TestShellInjectionPrevention:
                 "POSTGRES_DB_URL": "postgresql://test:pass@localhost:5432/test",
             },
         ):
-            with patch("orchestrate_biological_memory.BiologicalMemoryErrorHandler"):
-                with patch("orchestrate_biological_memory.create_sql_safety_manager"):
-                    with patch("orchestrate_biological_memory.initialize_llm_service"):
-                        with patch("orchestrate_biological_memory.initialize_health_monitor"):
-                            with patch("orchestrate_biological_memory.initialize_recovery_service"):
-                                orchestrator = BiologicalMemoryOrchestrator()
-                                # Mock logger to capture security events
-                                orchestrator.logger = Mock()
-                                return orchestrator
+            orchestrator = BiologicalMemoryOrchestrator()
+            # Mock logger to capture security events
+            orchestrator.logger = Mock()
+            return orchestrator
 
     def test_basic_shell_injection_attacks_blocked(self, orchestrator):
         """Test that basic shell injection attacks are blocked"""
@@ -106,7 +98,8 @@ class TestShellInjectionPrevention:
 
         for traversal_cmd in path_traversal_attempts:
             result = orchestrator._validate_dbt_command(traversal_cmd)
-            # Some may pass command validation but should fail argument validation
+            # Some may pass command validation but should fail argument
+            # validation
             assert result is False, f"Path traversal should be blocked: {traversal_cmd}"
 
     def test_legitimate_dbt_commands_allowed(self, orchestrator):
@@ -160,8 +153,11 @@ class TestShellInjectionPrevention:
         """Test that subprocess execution uses secure patterns"""
         test_command = "dbt run --quiet"
 
-        # Mock subprocess.run to verify parameters
-        with patch("subprocess.run") as mock_subprocess:
+        # Mock subprocess.run to verify parameters - patch at the module level
+        # where it's used
+        with patch(
+            "biological_memory.orchestrate_biological_memory.subprocess.run"
+        ) as mock_subprocess:
             mock_result = Mock()
             mock_result.returncode = 0
             mock_result.stdout = "Success"
@@ -306,7 +302,8 @@ class TestShellInjectionPrevention:
 
     def test_comprehensive_security_regression(self, orchestrator):
         """Comprehensive regression test for all known attack vectors"""
-        # Comprehensive list of attack patterns from OWASP and security research
+        # Comprehensive list of attack patterns from OWASP and security
+        # research
         attack_vectors = [
             # Basic command chaining
             "dbt run; whoami",
@@ -420,7 +417,8 @@ class TestShellInjectionPrevention:
                     mock_subprocess.assert_called()
                     call_kwargs = mock_subprocess.call_args[1]
 
-                    # Verify environment is not passed through (uses default clean env)
+                    # Verify environment is not passed through (uses default
+                    # clean env)
                     assert "env" not in call_kwargs or call_kwargs.get("env") is None
                     assert result is True
 

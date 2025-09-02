@@ -12,7 +12,7 @@ echo ""
 if [ -f ".env" ]; then
     export $(cat .env | xargs)
     echo "✅ Environment loaded"
-else 
+else
     echo "❌ .env file not found"
     exit 1
 fi

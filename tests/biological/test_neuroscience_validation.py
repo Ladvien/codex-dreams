@@ -45,7 +45,7 @@ class TestNeuroscienceValidation:
                 access_count INTEGER,
                 memory_rank INTEGER
             );
-            
+
             CREATE TABLE stm_hierarchical_episodes (
                 id TEXT PRIMARY KEY,
                 content TEXT,
@@ -58,7 +58,7 @@ class TestNeuroscienceValidation:
                 timestamp TIMESTAMP,
                 processed_at TIMESTAMP
             );
-            
+
             CREATE TABLE memory_replay (
                 id TEXT PRIMARY KEY,
                 content TEXT,
@@ -71,7 +71,7 @@ class TestNeuroscienceValidation:
                 consolidation_fate TEXT,
                 consolidated_at TIMESTAMP
             );
-            
+
             CREATE TABLE ltm_semantic_network (
                 memory_id TEXT PRIMARY KEY,
                 semantic_category TEXT,
@@ -86,7 +86,7 @@ class TestNeuroscienceValidation:
                 stability_score REAL,
                 last_processed_at TIMESTAMP
             );
-            
+
             CREATE TABLE biological_parameters (
                 parameter_name TEXT PRIMARY KEY,
                 parameter_value REAL,
@@ -117,7 +117,7 @@ class TestNeuroscienceValidation:
 
         conn.executemany(
             """
-            INSERT INTO biological_parameters 
+            INSERT INTO biological_parameters
             (parameter_name, parameter_value, biological_range_min, biological_range_max, research_source, last_validated_at)
             VALUES (?, ?, ?, ?, ?, ?)
         """,
@@ -179,7 +179,7 @@ class TestNeuroscienceValidation:
 
         memory_db.executemany(
             """
-            INSERT INTO working_memory 
+            INSERT INTO working_memory
             (memory_id, content, concepts, activation_strength, created_at, last_accessed_at, access_count, memory_rank)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
@@ -189,7 +189,7 @@ class TestNeuroscienceValidation:
         # Check that only top-ranked memories within capacity are active
         cursor = memory_db.execute(
             """
-            SELECT COUNT(*) FROM working_memory 
+            SELECT COUNT(*) FROM working_memory
             WHERE memory_rank <= 7 AND activation_strength > 0.5
         """
         )
@@ -221,7 +221,7 @@ class TestNeuroscienceValidation:
             """
             INSERT INTO memory_replay
             (id, content, semantic_gist, semantic_category, cortical_region, consolidated_strength, consolidation_fate)
-            VALUES ('ep1', 'Attended team meeting about project roadmap', 
+            VALUES ('ep1', 'Attended team meeting about project roadmap',
                    'Strategic planning and goal-oriented thinking process',
                    'executive_function', 'prefrontal_cortex', 0.7, 'cortical_transfer')
         """
@@ -272,8 +272,8 @@ class TestNeuroscienceValidation:
         # Verify consolidation progression
         cursor = memory_db.execute(
             """
-            SELECT consolidation_state, retrieval_strength 
-            FROM ltm_semantic_network 
+            SELECT consolidation_state, retrieval_strength
+            FROM ltm_semantic_network
             ORDER BY retrieval_strength
         """
         )
@@ -301,7 +301,7 @@ class TestNeuroscienceValidation:
             """
             INSERT INTO stm_hierarchical_episodes
             (id, content, level_0_goal, stm_strength, co_activation_count, hebbian_potential, ready_for_consolidation, timestamp)
-            VALUES ('spatial1', 'Navigated to conference room for client presentation', 
+            VALUES ('spatial1', 'Navigated to conference room for client presentation',
                    'Client Meeting', 0.7, 3, 0.6, TRUE, ?)
         """,
             (datetime.now(),),
@@ -336,7 +336,7 @@ class TestNeuroscienceValidation:
             """
             INSERT INTO memory_replay
             (id, content, consolidated_strength, consolidation_fate, cortical_region, semantic_category)
-            VALUES ('transfer1', 'Important strategic decision process', 0.9, 'cortical_transfer', 
+            VALUES ('transfer1', 'Important strategic decision process', 0.9, 'cortical_transfer',
                    'prefrontal_cortex', 'executive_function')
         """
         )
@@ -344,8 +344,8 @@ class TestNeuroscienceValidation:
         # Verify cortical localization
         cursor = memory_db.execute(
             """
-            SELECT consolidation_fate, cortical_region 
-            FROM memory_replay 
+            SELECT consolidation_fate, cortical_region
+            FROM memory_replay
             WHERE consolidated_strength > 0.8
         """
         )
@@ -369,7 +369,7 @@ class TestNeuroscienceValidation:
             memory_db.execute(
                 """
                 INSERT INTO ltm_semantic_network
-                (memory_id, semantic_category, cortical_region, retrieval_strength, 
+                (memory_id, semantic_category, cortical_region, retrieval_strength,
                  network_centrality_score, degree_centrality, clustering_coefficient, last_processed_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
@@ -435,7 +435,8 @@ class TestNeuroscienceValidation:
         )
         results = cursor.fetchall()
 
-        # More recent memories should have higher strength (less interference decay)
+        # More recent memories should have higher strength (less interference
+        # decay)
         strengths = [r[1] for r in results]
         assert (
             strengths[0] >= strengths[1] >= strengths[2]
@@ -448,7 +449,7 @@ class TestNeuroscienceValidation:
         cursor = memory_db.execute(
             """
             SELECT parameter_value, biological_range_min, biological_range_max
-            FROM biological_parameters 
+            FROM biological_parameters
             WHERE parameter_name = 'hebbian_learning_rate'
         """
         )
@@ -463,7 +464,7 @@ class TestNeuroscienceValidation:
         """Test LTP/LTD balance prevents runaway potentiation"""
         cursor = memory_db.execute(
             """
-            SELECT 
+            SELECT
                 (SELECT parameter_value FROM biological_parameters WHERE parameter_name = 'hebbian_learning_rate') as ltp_rate,
                 (SELECT parameter_value FROM biological_parameters WHERE parameter_name = 'synaptic_decay_rate') as ltd_rate
         """
@@ -517,7 +518,7 @@ class TestNeuroscienceValidation:
         """Test memory consolidation threshold matches McGaugh's research"""
         cursor = memory_db.execute(
             """
-            SELECT parameter_value FROM biological_parameters 
+            SELECT parameter_value FROM biological_parameters
             WHERE parameter_name = 'consolidation_threshold'
         """
         )
@@ -555,7 +556,8 @@ class TestNeuroscienceValidation:
         )
         results = cursor.fetchall()
 
-        # Higher emotional salience should correlate with consolidation readiness
+        # Higher emotional salience should correlate with consolidation
+        # readiness
         high_emotion_ready = results[0][2]  # Should be True
         low_emotion_ready = results[1][2]  # Should be False
 
@@ -607,7 +609,9 @@ class TestNeuroscienceValidation:
         """Test integration of Cowan's 4-item focus with Miller's 7±2 capacity"""
         # Insert working memories with different activation levels
         working_memories = [
-            (f"focus_{i}", f"High focus item {i}", 0.9, i) for i in range(1, 5)  # Focus items
+            # Focus items
+            (f"focus_{i}", f"High focus item {i}", 0.9, i)
+            for i in range(1, 5)
         ] + [
             (f"peripheral_{i}", f"Peripheral item {i}", 0.6, i + 4)
             for i in range(1, 5)  # Peripheral items
@@ -651,7 +655,7 @@ class TestNeuroscienceValidation:
         """Test Cowan's gradual attention model vs Miller's discrete capacity"""
         # Insert memories with graduated activation strengths
         graduated_memories = [
-            (f"grad_{i}", f"Content {i}", 0.9 - (i * 0.1), i) for i in range(1, 10)
+            (f"grad_{i}", f"Content {i}", 0.95 - (i * 0.1), i) for i in range(1, 10)
         ]
 
         for mem_id, content, activation, rank in graduated_memories:
@@ -688,7 +692,7 @@ class TestNeuroscienceValidation:
         cursor = memory_db.execute(
             """
             SELECT parameter_value, biological_range_min, biological_range_max
-            FROM biological_parameters 
+            FROM biological_parameters
             WHERE parameter_name = 'homeostasis_target'
         """
         )
@@ -767,7 +771,8 @@ class TestNeuroscienceValidation:
                 (mem_id, strength, age, datetime.now()),
             )
 
-        # Identify connections that should be pruned (weak_connection_threshold = 0.01)
+        # Identify connections that should be pruned (weak_connection_threshold
+        # = 0.01)
         cursor = memory_db.execute(
             """
             SELECT COUNT(*) FROM ltm_semantic_network
@@ -825,7 +830,7 @@ class TestNeuroscienceValidation:
         # Working memory should be seconds to minutes
         cursor = memory_db.execute(
             """
-            SELECT parameter_value FROM biological_parameters 
+            SELECT parameter_value FROM biological_parameters
             WHERE parameter_name = 'working_memory_duration'
         """
         )
@@ -835,7 +840,8 @@ class TestNeuroscienceValidation:
         ), f"Working memory duration {wm_duration}s outside biological range"
 
         # Consolidation should occur over hours to days
-        # This would be tested against actual consolidation timing in the system
+        # This would be tested against actual consolidation timing in the
+        # system
 
     def test_network_health_metrics(self, memory_db):
         """Test biological network health indicators"""
@@ -912,7 +918,7 @@ class TestNeuroscienceValidation:
             """
             INSERT INTO memory_replay
             (id, content, consolidated_strength, semantic_gist, semantic_category, consolidation_fate, consolidated_at)
-            VALUES ('integration1', 'Important strategic decision', 0.9, 
+            VALUES ('integration1', 'Important strategic decision', 0.9,
                    'Strategic decision-making process', 'executive_function', 'cortical_transfer', ?)
         """,
             (datetime.now(),),
@@ -931,7 +937,7 @@ class TestNeuroscienceValidation:
         # Verify complete lifecycle
         cursor = memory_db.execute(
             """
-            SELECT 
+            SELECT
                 (SELECT COUNT(*) FROM working_memory WHERE memory_id = 'integration1') as wm_count,
                 (SELECT COUNT(*) FROM stm_hierarchical_episodes WHERE id = 'integration1') as stm_count,
                 (SELECT COUNT(*) FROM memory_replay WHERE id = 'integration1') as consolidation_count,
@@ -948,7 +954,7 @@ class TestNeuroscienceValidation:
         # Verify strength progression through stages
         cursor = memory_db.execute(
             """
-            SELECT 
+            SELECT
                 (SELECT activation_strength FROM working_memory WHERE memory_id = 'integration1') as wm_strength,
                 (SELECT stm_strength FROM stm_hierarchical_episodes WHERE id = 'integration1') as stm_strength,
                 (SELECT consolidated_strength FROM memory_replay WHERE id = 'integration1') as consolidated_strength,

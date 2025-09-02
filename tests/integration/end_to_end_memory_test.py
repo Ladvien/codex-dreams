@@ -5,7 +5,7 @@ Tests complete biological memory processing with live PostgreSQL and Ollama serv
 
 This module provides comprehensive integration testing for:
 - Complete biological memory pipeline from PostgreSQL ingestion to consolidation
-- Live service integration (PostgreSQL at 192.168.1.104 + Ollama at 192.168.1.110:11434)
+- Live service integration (PostgreSQL at 192.168.1.104 + Ollama at localhost:11434)
 - Biological timing constraints and Miller's 7±2 capacity limits
 - Working Memory → Short-Term Memory → Long-Term Memory flow
 - Hebbian learning and consolidation with live LLM processing
@@ -45,16 +45,16 @@ class EndToEndConfig:
     """Configuration for end-to-end integration testing"""
 
     # PostgreSQL configuration
-    postgres_host: str = "192.168.1.104"
-    postgres_port: int = 5432
-    postgres_database: str = "codex_test_db"
-    postgres_user: str = os.getenv("POSTGRES_USER", "codex_user")
-    postgres_password: str = os.getenv("POSTGRES_PASSWORD", "")
+    postgres_host: str = os.getenv("POSTGRES_HOST", "localhost")
+    postgres_port: int = int(os.getenv("POSTGRES_PORT", "5432"))
+    postgres_database: str = os.getenv("TEST_DB_NAME", "codex_test_db")
+    postgres_user: str = os.getenv("TEST_DB_USER", "codex_test_user")
+    postgres_password: str = os.getenv("TEST_DB_PASS", "")
 
     # Ollama configuration
-    ollama_url: str = "http://192.168.1.110:11434"
-    ollama_model: str = "gpt-oss:20b"
-    embedding_model: str = "nomic-embed-text"
+    ollama_url: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
+    ollama_model: str = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
+    embedding_model: str = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
 
     # Biological constraints
     working_memory_capacity: int = 7
@@ -111,6 +111,9 @@ class BiologicalMemoryPipelineTester:
             )
             conn.autocommit = True
             yield conn
+        except (psycopg2.OperationalError, psycopg2.DatabaseError) as e:
+            logger.warning(f"PostgreSQL connection failed: {e}")
+            pytest.skip(f"PostgreSQL not available for end-to-end test: {e}")
         finally:
             if "conn" in locals():
                 conn.close()
@@ -129,7 +132,13 @@ class BiologicalMemoryPipelineTester:
             conn.execute("LOAD json")
 
             # Attach PostgreSQL
-            conn.execute(f"ATTACH '{postgres_url}' AS pg_source (TYPE postgres)")
+            try:
+                conn.execute(f"ATTACH '{postgres_url}' AS pg_source (TYPE postgres)")
+            except Exception as e:
+                if "Connection refused" in str(e) or "could not connect" in str(e).lower():
+                    pytest.skip(f"PostgreSQL not available for DuckDB: {e}")
+                else:
+                    raise
 
             # Create biological memory processing tables in DuckDB
             self.setup_biological_memory_tables(conn)
@@ -150,13 +159,13 @@ class BiologicalMemoryPipelineTester:
             WITH capacity_limited AS (
                 SELECT id, content, timestamp, metadata,
                        ROW_NUMBER() OVER (
-                           ORDER BY 
-                               CASE WHEN JSON_EXTRACT_STRING(metadata, '$.importance') IS NOT NULL 
+                           ORDER BY
+                               CASE WHEN JSON_EXTRACT_STRING(metadata, '$.importance') IS NOT NULL
                                     THEN CAST(JSON_EXTRACT_STRING(metadata, '$.importance') AS DOUBLE)
                                     ELSE 0.5 END DESC,
                                timestamp DESC
                        ) as memory_rank,
-                       CASE WHEN JSON_EXTRACT_STRING(metadata, '$.importance') IS NOT NULL 
+                       CASE WHEN JSON_EXTRACT_STRING(metadata, '$.importance') IS NOT NULL
                             THEN CAST(JSON_EXTRACT_STRING(metadata, '$.importance') AS DOUBLE)
                             ELSE 0.5 END as activation_level
                 FROM pg_source.raw_memories
@@ -403,7 +412,8 @@ class TestEndToEndBiologicalMemoryPipeline:
                 # Step 3: Short-Term Memory Processing with LLM integration
                 stm_memories_processed = 0
 
-                for wm_item in working_memory_result[:5]:  # Process top 5 for STM
+                # Process top 5 for STM
+                for wm_item in working_memory_result[:5]:
                     memory_id, content, activation_level, memory_rank = wm_item
 
                     # LLM-based hierarchy extraction
@@ -413,8 +423,8 @@ Content: {content}
 Return JSON with this structure:
 {{"goal": "high-level goal category", "tasks": ["task1", "task2"], "actions": ["action1", "action2"]}}
 
-Goal should be one of: Product Launch Strategy, Communication and Collaboration, 
-Financial Planning and Management, Project Management and Execution, 
+Goal should be one of: Product Launch Strategy, Communication and Collaboration,
+Financial Planning and Management, Project Management and Execution,
 Client Relations and Service, Operations and System Maintenance"""
 
                     llm_result = self.pipeline.call_ollama_with_fallback(
@@ -449,7 +459,7 @@ Client Relations and Service, Operations and System Maintenance"""
                     # Store in STM
                     duckdb_conn.execute(
                         """
-                        INSERT INTO stm_episodes 
+                        INSERT INTO stm_episodes
                         (id, content, level_0_goal, level_1_tasks, atomic_actions, stm_strength, hebbian_potential, ready_for_consolidation)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
@@ -559,7 +569,8 @@ Client Relations and Service, Operations and System Maintenance"""
                 ).fetchall()
                 wm_time = time.perf_counter() - wm_start
 
-                # Short-Term Memory processing (should be <500ms per item for non-LLM parts)
+                # Short-Term Memory processing (should be <500ms per item for
+                # non-LLM parts)
                 stm_start = time.perf_counter()
 
                 # Process one memory item (without LLM for timing test)
@@ -624,7 +635,7 @@ Client Relations and Service, Operations and System Maintenance"""
                 for concept_a, concept_b, strength in initial_associations:
                     duckdb_conn.execute(
                         """
-                        INSERT INTO ltm_semantic_network 
+                        INSERT INTO ltm_semantic_network
                         (concept_a, concept_b, association_strength, retrieval_count)
                         VALUES (?, ?, ?, 0)
                     """,
@@ -658,19 +669,20 @@ Client Relations and Service, Operations and System Maintenance"""
                     except (json.JSONDecodeError, KeyError):
                         entities = ["project", "team"]  # safe fallback
 
-                    # Hebbian strengthening: co-occurring concepts get stronger associations
+                    # Hebbian strengthening: co-occurring concepts get stronger
+                    # associations
                     for i, entity_a in enumerate(entities):
                         for entity_b in entities[i + 1 :]:
                             # Apply Hebbian learning rule
                             duckdb_conn.execute(
                                 """
-                                UPDATE ltm_semantic_network 
-                                SET 
+                                UPDATE ltm_semantic_network
+                                SET
                                     association_strength = LEAST(1.0, association_strength + ?),
                                     retrieval_count = retrieval_count + 1,
                                     last_retrieved = CURRENT_TIMESTAMP,
                                     hebbian_trace = LEAST(1.0, hebbian_trace + ?)
-                                WHERE (concept_a = ? AND concept_b = ?) 
+                                WHERE (concept_a = ? AND concept_b = ?)
                                    OR (concept_a = ? AND concept_b = ?)
                             """,
                                 (
@@ -750,7 +762,8 @@ Client Relations and Service, Operations and System Maintenance"""
                     except Exception as e:
                         logger.warning(f"STM processing failed for memory {memory_id}: {e}")
 
-                # Pipeline should continue processing even with service failures
+                # Pipeline should continue processing even with service
+                # failures
                 assert (
                     successful_stm_processing >= 2
                 ), "Should process most memories despite LLM failures"

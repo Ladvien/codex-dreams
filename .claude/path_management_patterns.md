@@ -1,8 +1,8 @@
 # Path Management Patterns - BMP-CRITICAL-004 Learnings
 
-**Date**: 2025-09-01  
-**Context**: Fixing hardcoded database paths across the biological memory system  
-**Agent**: Agent-CRITICAL-004  
+**Date**: 2025-09-01
+**Context**: Fixing hardcoded database paths across the biological memory system
+**Agent**: Agent-CRITICAL-004
 
 ## Key Insights & Best Practices
 
@@ -27,21 +27,21 @@ def _validate_environment_variables(self):
         'OLLAMA_URL': 'URL for Ollama LLM service',
         'POSTGRES_DB_URL': 'PostgreSQL connection string'
     }
-    
+
     missing_vars = []
     for var_name, description in required_vars.items():
         if not os.getenv(var_name):
             missing_vars.append(f"{var_name} ({description})")
-    
+
     if missing_vars:
-        raise ValueError(f"Missing required environment variables:\n" + 
+        raise ValueError(f"Missing required environment variables:\n" +
                         "\n".join(f"  - {var}" for var in missing_vars))
 ```
 
 ### 3. .env.example Best Practices
 **Key Patterns**:
 - Use `localhost` instead of specific IP addresses
-- Use relative paths (e.g., `./biological_memory/dbs/memory.duckdb`) 
+- Use relative paths (e.g., `./biological_memory/dbs/memory.duckdb`)
 - Include clear comments about customization
 - Document all new environment variables
 
@@ -94,7 +94,7 @@ postgres_params = {
 - **Absolute user paths** scattered throughout codebase
 - **No validation** of required environment variables
 
-### After Fix  
+### After Fix
 - **95% reduction** to only 5 files with hardcoded patterns
 - **Environment variables** for all critical paths
 - **Validation system** ensures required config is present
@@ -112,7 +112,7 @@ postgres_params = {
 ## Long-term Benefits
 
 - **Multi-environment Support**: Easy dev/test/prod configuration
-- **Container Deployment**: Works with Docker and orchestration tools  
+- **Container Deployment**: Works with Docker and orchestration tools
 - **Team Collaboration**: No hardcoded user-specific paths
 - **Security**: No hardcoded IP addresses in production code
 - **Maintainability**: Single source of truth for configuration
