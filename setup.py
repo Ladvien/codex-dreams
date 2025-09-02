@@ -4,7 +4,7 @@ Codex Dreams - Biologically-Inspired Memory Management System
 Production Setup Configuration
 """
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -21,11 +21,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/Ladvien/codex-dreams",
     packages=find_packages(include=["src*", "biological_memory*", "tests*"]),
-    py_modules=[
-        "src.codex_service",
-        "src.codex_scheduler", 
-        "src.generate_insights"
-    ],
+    py_modules=["src.codex_service", "src.codex_scheduler", "src.generate_insights"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
