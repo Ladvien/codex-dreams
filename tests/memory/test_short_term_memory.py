@@ -181,14 +181,18 @@ class TestShortTermMemory:
                 f"""
                 SELECT
                     CASE
-                        WHEN LOWER('{content}') LIKE '%office%' OR LOWER('{content}') LIKE '%conference room%' OR LOWER('{content}') LIKE '%meeting room%'
-                            THEN JSON('{{"location": "office", "egocentric": "workplace environment", "allocentric": "corporate facility", "objects": ["desk", "computer", "phone", "documents"]}}')
-                        WHEN LOWER('{content}') LIKE '%client site%' OR LOWER('{content}') LIKE '%their site%'
-                            THEN JSON('{{"location": "client_site", "egocentric": "external environment", "allocentric": "client facility", "objects": ["presentation equipment", "meeting materials", "laptop"]}}')
+                        -- Check for remote/home first to avoid office match in "home office"
                         WHEN LOWER('{content}') LIKE '%home%' OR LOWER('{content}') LIKE '%remote%'
                             THEN JSON('{{"location": "remote", "egocentric": "home workspace", "allocentric": "residential", "objects": ["home computer", "personal workspace", "communication tools"]}}')
+                        -- Then check for travel/airport
                         WHEN LOWER('{content}') LIKE '%travel%' OR LOWER('{content}') LIKE '%airport%' OR LOWER('{content}') LIKE '%hotel%'
                             THEN JSON('{{"location": "travel", "egocentric": "mobile environment", "allocentric": "transportation hub", "objects": ["luggage", "travel documents", "mobile devices"]}}')
+                        -- Then check for client site
+                        WHEN LOWER('{content}') LIKE '%client site%' OR LOWER('{content}') LIKE '%their site%'
+                            THEN JSON('{{"location": "client_site", "egocentric": "external environment", "allocentric": "client facility", "objects": ["presentation equipment", "meeting materials", "laptop"]}}')
+                        -- Finally check for office locations
+                        WHEN LOWER('{content}') LIKE '%conference room%' OR LOWER('{content}') LIKE '%meeting room%' OR (LOWER('{content}') LIKE '%office%' AND LOWER('{content}') NOT LIKE '%home%')
+                            THEN JSON('{{"location": "office", "egocentric": "workplace environment", "allocentric": "corporate facility", "objects": ["desk", "computer", "phone", "documents"]}}')
                         ELSE JSON('{{"location": "unspecified", "egocentric": "general space", "allocentric": "neutral", "objects": []}}')
                     END as spatial_extraction
             """

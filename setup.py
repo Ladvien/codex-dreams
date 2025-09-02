@@ -14,7 +14,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 
 setup(
     name="codex-dreams",
-    version="0.3.0",
+    version="0.4.0",
     author="Codex Dreams Development Team",
     description="A biologically-inspired memory management system with hierarchical episodic memory",
     long_description=long_description,

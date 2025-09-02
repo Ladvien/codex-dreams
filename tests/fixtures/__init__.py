@@ -24,7 +24,7 @@ from .database import (
 )
 from .mocking import (
     clean_test_database,
-    memory_lifecycle_data,
+    memory_lifecycle_data_mock,  # Renamed to avoid conflict
     real_duckdb_connection,
     real_ollama,
     real_ollama_service,
@@ -33,6 +33,7 @@ from .mocking import (
 from .test_data import (
     MemoryDataFactory,
     hebbian_learning_data,
+    memory_lifecycle_data,  # The actual fixture from test_data.py
     performance_benchmark,
     performance_test_data,
     sample_memory_data,

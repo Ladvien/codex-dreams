@@ -162,9 +162,10 @@ def real_duckdb_connection():
             os.unlink(temp_path)
 
 
-@pytest.fixture(scope="function")
-def memory_lifecycle_data(real_duckdb_connection):
-    """Create test data for memory lifecycle testing."""
+# Renamed to avoid conflict with test_data.py
+@pytest.fixture(scope="function")  
+def memory_lifecycle_data_mock(real_duckdb_connection):
+    """Create test data for memory lifecycle testing - mock version."""
     conn = real_duckdb_connection
 
     # Create test tables
@@ -241,9 +242,10 @@ def memory_lifecycle_data(real_duckdb_connection):
     return conn
 
 
+# Renamed to avoid conflict with database.py
 @pytest.fixture(scope="function")
-def biological_memory_schema(real_duckdb_connection):
-    """Create biological memory schema for testing."""
+def biological_memory_schema_mock(real_duckdb_connection):
+    """Create biological memory schema for testing - mock version."""
     conn = real_duckdb_connection
 
     # Create the biological memory tables needed for testing

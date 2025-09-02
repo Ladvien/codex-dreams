@@ -33,8 +33,8 @@ class BiologicalMemoryOrchestrator:
         import re
 
         self.safe_argument_patterns = {
-            "--select": re.compile(r"^[a-zA-Z0-9_\+\*\.]+$"),
-            "--exclude": re.compile(r"^[a-zA-Z0-9_\+\*\.]+$"),
+            "--select": re.compile(r"^[a-zA-Z0-9_\+\*\.\:\-]+$"),
+            "--exclude": re.compile(r"^[a-zA-Z0-9_\+\*\.\:\-]+$"),
             "--vars": re.compile(r"^\{[^;}|&<>$`]+\}$"),
             "--target": re.compile(r"^[a-zA-Z0-9_]+$"),
             "--profiles-dir": re.compile(r"^[a-zA-Z0-9_/\.\-]+$"),
@@ -221,12 +221,7 @@ class BiologicalMemoryOrchestrator:
             "run",
             "test",
             "compile",
-            "seed",
-            "snapshot",
             "debug",
-            "list",
-            "build",
-            "docs",
             "run-operation",
             "deps",
             "clean",
@@ -262,8 +257,19 @@ class BiologicalMemoryOrchestrator:
 
     def _sanitize_command(self, command: str) -> str:
         """Sanitize command for safe logging"""
+        # Check for dangerous characters
+        sanitized = command
+        has_dangerous_chars = any(char in command for char in self.dangerous_chars)
+        
+        if has_dangerous_chars:
+            # Remove dangerous characters and mark as filtered
+            for char in self.dangerous_chars:
+                sanitized = sanitized.replace(char, "")
+            sanitized = f"[FILTERED] {sanitized}"
+        
         # Remove any potentially sensitive information
-        return command.replace("password=", "password=***").replace("token=", "token=***")
+        sanitized = sanitized.replace("password=", "password=***").replace("token=", "token=***")
+        return sanitized
 
     def _sanitize_command_for_logging(self, command: str) -> str:
         """Sanitize command for safe logging - alias for compatibility"""

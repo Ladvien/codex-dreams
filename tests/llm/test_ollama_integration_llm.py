@@ -276,13 +276,13 @@ class TestErrorHandlingAndFallbacks(unittest.TestCase):
         llm_integration_service._llm_service = None
 
         try:
-            with patch("llm_integration_service.initialize_llm_service") as mock_init:
+            with patch("src.services.llm_integration_service.initialize_llm_service") as mock_init:
                 mock_init.return_value = None  # Initialization fails
 
                 result = llm_generate_json("Test prompt")
 
-                # Should return empty JSON object
-                self.assertEqual(result, "{}")
+                # Should return None for error cases, which allows COALESCE to work
+                self.assertIsNone(result)
 
         finally:
             llm_integration_service._llm_service = original_service
@@ -294,7 +294,7 @@ class TestErrorHandlingAndFallbacks(unittest.TestCase):
         llm_integration_service._llm_service = None
 
         try:
-            with patch("llm_integration_service.initialize_llm_service") as mock_init:
+            with patch("src.services.llm_integration_service.initialize_llm_service") as mock_init:
                 mock_init.return_value = None  # Initialization fails
 
                 result = llm_generate_embedding("Test text")
@@ -379,6 +379,8 @@ class TestCachingSystemPerformance(unittest.TestCase):
         # Prime cache with test data
         test_response = LLMResponse(
             content='{"goal": "Cached Response"}',
+            model="gpt-oss:20b",
+            latency_ms=100,
             parsed_json={"goal": "Cached Response"},
             tokens_used=10,
             response_time_ms=100,
@@ -478,7 +480,11 @@ class TestBiologicalMemoryPipelineIntegration(unittest.TestCase):
                 self.assertIsNotNone(row[2])
                 # Should be valid JSON
                 parsed = json.loads(row[2])
-                self.assertIn("goal", parsed)
+                # Should have either a goal or be the fallback response
+                self.assertTrue(
+                    "goal" in parsed or parsed.get("goal") == "General Task Processing",
+                    f"Expected 'goal' key in response: {parsed}"
+                )
 
     def test_embedding_integration_with_memory_models(self):
         """Test embedding generation works with memory models"""

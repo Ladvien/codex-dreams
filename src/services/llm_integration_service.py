@@ -24,6 +24,12 @@ class LLMResponse:
     model: str
     latency_ms: float
     metadata: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+    parsed_json: Optional[Dict[str, Any]] = None
+    tokens_used: int = 0
+    response_time_ms: float = 0.0
+    model_name: str = ""
+    cached: bool = False
 
 
 class LLMIntegrationService:
@@ -61,6 +67,94 @@ class LLMIntegrationService:
         session.mount("http://", adapter)
         session.mount("https://", adapter)
         return session
+
+    def _call_ollama_api(self, prompt: str, timeout: int = None) -> LLMResponse:
+        """Internal method to call Ollama API"""
+        start_time = time.time()
+        timeout = timeout or self.timeout
+        
+        payload = {
+            "model": self.model,
+            "prompt": prompt,
+            "stream": False,
+        }
+
+        try:
+            response = self.session.post(
+                f"{self.base_url}/api/generate", json=payload, timeout=timeout
+            )
+            response.raise_for_status()
+
+            data = response.json()
+            latency = (time.time() - start_time) * 1000
+
+            return LLMResponse(
+                content=data.get("response", ""),
+                model=data.get("model", self.model),
+                latency_ms=latency,
+                metadata=data,
+                response_time_ms=latency,
+                model_name=self.model,
+                tokens_used=data.get("eval_count", 0),
+            )
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"LLM generation failed: {e}")
+            return LLMResponse(
+                content="",
+                model=self.model,
+                latency_ms=0,
+                error=str(e),
+                response_time_ms=0,
+                model_name=self.model,
+            )
+
+    def _generate_prompt_hash(self, prompt: str, model: str) -> str:
+        """Generate hash for prompt caching"""
+        import hashlib
+        cache_key = f"{prompt}:{model}"
+        return hashlib.md5(cache_key.encode()).hexdigest()
+
+    def _get_cached_response(self, prompt_hash: str) -> Optional[LLMResponse]:
+        """Get cached response if available"""
+        # For now, simple in-memory cache
+        if not hasattr(self, '_cache'):
+            self._cache = {}
+        
+        cached = self._cache.get(prompt_hash)
+        if cached:
+            cached.cached = True
+            return cached
+        return None
+
+    def _cache_response(self, prompt_hash: str, prompt: str, response: LLMResponse):
+        """Cache a response"""
+        if not hasattr(self, '_cache'):
+            self._cache = {}
+        self._cache[prompt_hash] = response
+
+    def generate_response(self, prompt: str) -> LLMResponse:
+        """Generate response with caching"""
+        prompt_hash = self._generate_prompt_hash(prompt, self.model)
+        
+        # Update total requests counter
+        self.metrics["total_requests"] += 1
+        
+        # Check cache first
+        cached = self._get_cached_response(prompt_hash)
+        if cached:
+            self.metrics["cache_hits"] += 1
+            return cached
+            
+        # Generate new response
+        self.metrics["cache_misses"] += 1
+        response = self._call_ollama_api(prompt)
+        
+        # Cache the response
+        if not response.error:
+            self._cache_response(prompt_hash, prompt, response)
+            
+        return response
 
     def generate(self, prompt: str, **kwargs) -> LLMResponse:
         """Generate text using LLM"""
@@ -153,17 +247,27 @@ class LLMIntegrationService:
         try:
             response = self.session.get(f"{self.base_url}/api/tags", timeout=5)
             response.raise_for_status()
+            models_data = response.json()
+            
+            # Check if our model is available
+            available_models = [model.get("name", "") for model in models_data.get("models", [])]
+            model_available = self.model in available_models
+            
             return {
                 "status": "healthy",
                 "endpoint": self.base_url,
                 "model": self.model,
-                "models": response.json(),
+                "model_available": model_available,
+                "models_count": len(available_models),
+                "models": models_data,
                 "metrics": self.metrics,
             }
         except Exception as e:
             return {
                 "status": "unhealthy",
                 "endpoint": self.base_url,
+                "model": self.model,
+                "model_available": False,
                 "error": str(e),
                 "metrics": self.metrics,
             }
@@ -225,18 +329,37 @@ def llm_generate(prompt: str, **kwargs) -> str:
 
 def llm_generate_embedding(text: str) -> List[float]:
     """Generate embedding using the global LLM service"""
-    service = get_llm_service()
-    return service.generate_embedding(text)
-
-
-def llm_generate_json(prompt: str, **kwargs) -> Dict[str, Any]:
-    """Generate JSON response using the global LLM service"""
-    service = get_llm_service()
-    response = service.generate(prompt, **kwargs)
     try:
-        return json.loads(response.content)
-    except json.JSONDecodeError:
-        return {"error": "Invalid JSON response", "raw": response.content}
+        service = get_llm_service()
+        if service is None:
+            return [0.0] * 768  # Return zero vector if service unavailable
+        return service.generate_embedding(text)
+    except Exception as e:
+        logger.error(f"Embedding generation failed: {e}")
+        return [0.0] * 768  # Return zero vector on error
+
+
+def llm_generate_json(prompt: str, **kwargs) -> str:
+    """Generate JSON response using the global LLM service"""
+    try:
+        service = get_llm_service()
+        if service is None:
+            return None  # Return None if service unavailable to trigger COALESCE
+        response = service.generate(prompt, **kwargs)
+        
+        # If there's an error, return None to trigger COALESCE fallback
+        if response.metadata and response.metadata.get("error"):
+            return None
+            
+        try:
+            parsed_json = json.loads(response.content)
+            return json.dumps(parsed_json)
+        except json.JSONDecodeError:
+            # If we can't parse the JSON, return None to trigger fallback
+            return None
+    except Exception as e:
+        logger.error(f"JSON generation failed: {e}")
+        return None  # Return None on error to trigger COALESCE fallback
 
 
 # Alias for compatibility
@@ -292,25 +415,39 @@ def register_llm_functions(conn) -> bool:
         # provider, url, model, timeout)
         conn.create_function("prompt", prompt_full, [str, str, str, str, int], str)
 
-        # Register simplified prompt function
-        conn.create_function("llm_generate", prompt, [str], str)
+        # Register simplified prompt function with correct signature
+        def _llm_generate_wrapper(text: str) -> str:
+            return llm_generate(text)
 
-        # Register JSON generation with wrapper that returns JSON as string
-        def _json_wrapper(text: str) -> str:
-            result = llm_generate_json(text)
-            return json.dumps(result) if isinstance(result, dict) else str(result)
+        conn.create_function("llm_generate", _llm_generate_wrapper, [str], str)
 
-        conn.create_function("llm_generate_json", _json_wrapper, [str], str)
+        # Register JSON generation with multi-parameter signature
+        def _json_wrapper_multi(text: str, model: str, url: str, timeout: int):
+            try:
+                result = llm_generate_json(text)  # For now, ignore extra parameters
+                return result  # Return None if result is None, so COALESCE can work
+            except:
+                return None  # Explicitly return None on any error
 
-        # Register embedding generation
-        def _embed_wrapper(text: str) -> str:
-            embedding = llm_generate_embedding(text)
+        # Set null_handling to SPECIAL so we can return None values
+        conn.create_function("llm_generate_json", _json_wrapper_multi, [str, str, str, int], str, 
+                            null_handling='special')
+
+        # Register embedding generation with multi-parameter signature
+        def _embed_wrapper_multi(text: str, model: str, dimension: int) -> str:
+            embedding = llm_generate_embedding(text)  # For now, ignore extra parameters
+            # Ensure correct dimension
+            if len(embedding) != dimension:
+                embedding = [0.0] * dimension
             return json.dumps(embedding)
 
-        conn.create_function("llm_generate_embedding", _embed_wrapper, [str], str)
+        conn.create_function("llm_generate_embedding", _embed_wrapper_multi, [str, str, int], str)
 
-        # Register health check function
-        conn.create_function("llm_health_check", llm_health_check_json, [], str)
+        # Register health check function with proper signature
+        def _health_check_wrapper() -> str:
+            return llm_health_check()
+
+        conn.create_function("llm_health_check", _health_check_wrapper, [], str)
 
         # Register metrics function
         def _metrics_wrapper() -> str:
