@@ -1,0 +1,25 @@
+# Codex Dreams - Production Requirements
+# Core dependencies for biological memory system
+
+# Database
+duckdb>=1.0.0
+psycopg2-binary>=2.9.9
+
+# Data Processing
+dbt-core>=1.10.0
+dbt-duckdb>=1.10.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# LLM Integration
+httpx>=0.24.0
+ollama>=0.1.0
+
+# Utilities
+python-dotenv>=1.0.0
+click>=8.1.0
+pyyaml>=6.0
+croniter>=1.3.0
+
+# Monitoring
+psutil>=5.9.0
