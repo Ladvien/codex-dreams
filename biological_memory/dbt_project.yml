@@ -201,9 +201,6 @@ query-comment:
   comment: "{{ query_comment }}"
   append: true
 
-# Log settings
-logs:
-  use_colors: true
 
 # Quoting behavior
 quoting:
