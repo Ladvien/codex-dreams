@@ -19,7 +19,7 @@ import requests
 @pytest.fixture(scope="session")
 def real_ollama_service():
     """Real Ollama service connection for authentic testing."""
-    ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
+    ollama_url = os.getenv("OLLAMA_URL", "http://192.168.1.110:11434")
     ollama_model = os.getenv("OLLAMA_MODEL", "gpt-oss:20b")
     embedding_model = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
 
@@ -31,62 +31,93 @@ def real_ollama_service():
             self._verify_service()
 
         def _verify_service(self):
-            """Verify Ollama service is available and models are loaded."""
+            """Verify Ollama service is available and models are loaded - STRICT VERIFICATION."""
             try:
-                response = requests.get(f"{self.url}/api/tags", timeout=5)
+                response = requests.get(f"{self.url}/api/tags", timeout=2)
                 if response.status_code != 200:
-                    print(f"Warning: Ollama service not available at {self.url}, using fallback")
-                    return
-
-                models = [m["name"] for m in response.json().get("models", [])]
-                if self.model not in models:
-                    print(f"Warning: Model {self.model} not available, will use fallback")
-                if self.embedding_model not in models:
-                    print(
-                        f"Warning: Embedding model {self.embedding_model} not available, will use fallback"
+                    raise RuntimeError(
+                        f"Ollama service not available at {self.url} - status {response.status_code}"
                     )
 
+                models = [m["name"] for m in response.json().get("models", [])]
+
+                # Check if main model is available (exact match or with :latest tag)
+                model_available = self.model in models or f"{self.model}:latest" in models
+                if not model_available:
+                    raise RuntimeError(
+                        f"Model {self.model} not available. Available models: {models}"
+                    )
+
+                # Check if embedding model is available (exact match or with :latest tag)
+                embedding_available = (
+                    self.embedding_model in models or f"{self.embedding_model}:latest" in models
+                )
+                if not embedding_available:
+                    raise RuntimeError(
+                        f"Embedding model {self.embedding_model} not available. Available models: {models}"
+                    )
+
+                # Use the exact model name that exists (prefer without :latest tag)
+                if self.model not in models and f"{self.model}:latest" in models:
+                    self.model = f"{self.model}:latest"
+                if (
+                    self.embedding_model not in models
+                    and f"{self.embedding_model}:latest" in models
+                ):
+                    self.embedding_model = f"{self.embedding_model}:latest"
+
+                print(
+                    f"✓ Verified real Ollama service at {self.url} with models {self.model}, {self.embedding_model}"
+                )
+
             except Exception as e:
-                print(f"Warning: Cannot connect to Ollama: {e}, using fallback")
+                raise RuntimeError(
+                    f"Cannot connect to real Ollama service at {self.url}: {e}"
+                ) from e
 
         def generate(self, prompt: str, **kwargs) -> str:
-            """Generate text using real Ollama service with fallback."""
+            """Generate text using REAL Ollama service - NO FALLBACKS."""
             try:
                 response = requests.post(
                     f"{self.url}/api/generate",
                     json={"model": self.model, "prompt": prompt, "stream": False, **kwargs},
-                    timeout=60,  # Increased timeout for large model
+                    timeout=5,  # Short timeout for tests
                 )
                 response.raise_for_status()
-                return response.json().get("response", "")
-            except requests.exceptions.Timeout:
-                # Fallback for timeout - return deterministic response
-                import hashlib
+                result = response.json().get("response", "")
 
-                seed = hashlib.md5(prompt.encode()).hexdigest()[:8]
-                return f"Generated response for prompt (seed: {seed})"
+                # Ensure we got actual LLM response, not empty or error
+                if not result or "generated response for prompt" in result.lower():
+                    raise ValueError(f"Real Ollama service returned invalid response: {result}")
+
+                return result
             except Exception as e:
-                return f"Service unavailable: {str(e)}"
+                # NO FALLBACKS - fail the test if service is not working
+                raise RuntimeError(
+                    f"Real Ollama service failed - test requires actual LLM: {str(e)}"
+                ) from e
 
         def embed(self, text: str) -> list:
-            """Generate embeddings using real Ollama service."""
+            """Generate embeddings using REAL Ollama service - NO FALLBACKS."""
             try:
                 response = requests.post(
                     f"{self.url}/api/embeddings",
                     json={"model": self.embedding_model, "prompt": text},
-                    timeout=30,
+                    timeout=5,  # Short timeout for tests
                 )
                 response.raise_for_status()
-                return response.json().get("embedding", [])
-            except Exception:
-                # Return deterministic embedding for testing
-                import hashlib
+                embedding = response.json().get("embedding", [])
 
-                seed = int(hashlib.md5(text.encode()).hexdigest()[:8], 16)
-                import random
+                # Ensure we got actual embedding, not empty
+                if not embedding or len(embedding) == 0:
+                    raise ValueError(f"Real Ollama embedding service returned empty embedding")
 
-                random.seed(seed)
-                return [random.uniform(-1, 1) for _ in range(384)]
+                return embedding
+            except Exception as e:
+                # NO FALLBACKS - fail the test if service is not working
+                raise RuntimeError(
+                    f"Real Ollama embedding service failed - test requires actual embeddings: {str(e)}"
+                ) from e
 
     return RealOllamaService()
 
@@ -163,7 +194,7 @@ def real_duckdb_connection():
 
 
 # Renamed to avoid conflict with test_data.py
-@pytest.fixture(scope="function")  
+@pytest.fixture(scope="function")
 def memory_lifecycle_data_mock(real_duckdb_connection):
     """Create test data for memory lifecycle testing - mock version."""
     conn = real_duckdb_connection

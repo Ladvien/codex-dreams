@@ -4,9 +4,138 @@ Interactive configuration editor for Codex Dreams.
 Provides simple menu-driven config editing.
 """
 
-from typing import Any
+import socket
+import subprocess
+from pathlib import Path
+from typing import Any, Tuple
 
 from .codex_config import CodexConfig, interactive_schedule_selection
+
+
+def check_postgresql_connection(
+    host: str, port: int, user: str, database: str, password: str = None
+) -> Tuple[bool, str]:
+    """Check if PostgreSQL is accessible and database exists"""
+    try:
+        import psycopg2
+
+        # Build connection string
+        conn_params = {
+            "host": host,
+            "port": port,
+            "user": user,
+            "database": database,
+        }
+        if password:
+            conn_params["password"] = password
+
+        # Try to connect
+        conn = psycopg2.connect(**conn_params)
+        conn.close()
+        return True, "✅ PostgreSQL connection successful"
+
+    except ImportError:
+        return False, "❌ psycopg2 not installed (pip install psycopg2-binary)"
+    except psycopg2.OperationalError as e:
+        if "does not exist" in str(e):
+            return False, f"❌ Database '{database}' does not exist"
+        elif "authentication failed" in str(e):
+            return False, f"❌ Authentication failed for user '{user}'"
+        else:
+            return False, f"❌ PostgreSQL connection failed: {str(e)[:100]}..."
+    except Exception as e:
+        return False, f"❌ Connection error: {str(e)[:100]}..."
+
+
+def check_ollama_service(host: str, port: int, model: str = None) -> Tuple[bool, str]:
+    """Check if Ollama service is running and model is available"""
+    try:
+        import requests
+
+        # Check if Ollama is running
+        ollama_url = f"http://{host}:{port}"
+        response = requests.get(f"{ollama_url}/api/version", timeout=5)
+
+        if response.status_code != 200:
+            return False, f"❌ Ollama service not responding (status: {response.status_code})"
+
+        # Check if specific model is available
+        if model:
+            response = requests.post(f"{ollama_url}/api/show", json={"name": model}, timeout=10)
+            if response.status_code == 404:
+                return (
+                    False,
+                    f"⚠️  Ollama running, but model '{model}' not found. Run: ollama pull {model}",
+                )
+            elif response.status_code != 200:
+                return False, f"⚠️  Ollama running, but can't verify model '{model}'"
+
+        return True, f"✅ Ollama service running" + (f" with {model}" if model else "")
+
+    except ImportError:
+        return False, "❌ requests library not installed (pip install requests)"
+    except requests.exceptions.ConnectionError:
+        return False, f"❌ Cannot connect to Ollama at {host}:{port}"
+    except requests.exceptions.Timeout:
+        return False, f"❌ Ollama connection timeout at {host}:{port}"
+    except Exception as e:
+        return False, f"❌ Ollama check error: {str(e)[:100]}..."
+
+
+def check_service_dependencies(config: CodexConfig) -> None:
+    """Check all service dependencies and provide guidance"""
+    print(f"\n🔍 Checking Service Dependencies")
+    print("=" * 50)
+
+    # Check PostgreSQL
+    print("📊 Checking PostgreSQL...")
+    pg_ok, pg_msg = check_postgresql_connection(
+        config.db_host, config.db_port, config.db_user, config.db_name, config.db_password
+    )
+    print(f"   {pg_msg}")
+
+    if not pg_ok:
+        print("   💡 To fix PostgreSQL issues:")
+        print("   • Install PostgreSQL: brew install postgresql")
+        print("   • Start service: brew services start postgresql")
+        print(f"   • Create database: createdb {config.db_name}")
+        print(f"   • Create user: createuser {config.db_user}")
+
+    # Check Ollama
+    print("\n🤖 Checking Ollama...")
+    ollama_ok, ollama_msg = check_ollama_service(
+        config.ollama_host, config.ollama_port, config.ollama_model
+    )
+    print(f"   {ollama_msg}")
+
+    if not ollama_ok:
+        print("   💡 To fix Ollama issues:")
+        print("   • Install Ollama: curl -fsSL https://ollama.ai/install.sh | sh")
+        print("   • Start service: ollama serve")
+        print(f"   • Download model: ollama pull {config.ollama_model}")
+        print("   • Alternative model: ollama pull qwen2.5:0.5b")
+
+    # Check dbt
+    print("\n🏗️  Checking dbt...")
+    try:
+        result = subprocess.run(["dbt", "--version"], capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            print("   ✅ dbt installed and accessible")
+        else:
+            print("   ⚠️  dbt installed but may have issues")
+    except FileNotFoundError:
+        print("   ❌ dbt not found in PATH")
+        print("   💡 Install: pip install dbt-core dbt-duckdb")
+    except Exception as e:
+        print(f"   ⚠️  dbt check error: {str(e)[:50]}...")
+
+    # Overall status
+    print("\n" + "=" * 50)
+    if pg_ok and ollama_ok:
+        print("🎉 All services ready! You can start using codex-dreams.")
+    else:
+        print("⚠️  Some services need setup. Follow the suggestions above.")
+        print("💡 You can run 'codex config' to adjust settings anytime.")
 
 
 def interactive_config_editor(config: CodexConfig) -> bool:
@@ -246,8 +375,67 @@ def first_time_setup() -> CodexConfig:
         if new_model:
             config.ollama_model = new_model
 
+    # .env file setup
+    print(f"\n📄 Environment File Setup")
+    print(f"I'll create a .env file for dbt and other services.")
+
+    env_file_path = Path.cwd() / ".env"
+    env_example_path = Path.cwd() / ".env.example"
+
+    create_env = True
+    if env_file_path.exists():
+        overwrite = input(f".env file exists. Overwrite? [y/N]: ").strip().lower()
+        create_env = overwrite in ["y", "yes"]
+
+    if create_env:
+        if env_example_path.exists():
+            # Read the template
+            with open(env_example_path, "r") as f:
+                env_content = f.read()
+
+            # Replace placeholder values with actual configuration
+            postgres_url = f"postgresql://{config.db_user}:{config.db_password or 'YOUR_PASSWORD'}@{config.db_host}:{config.db_port}/{config.db_name}"
+
+            # Replace key variables
+            replacements = {
+                "GENERATE_SECURE_PASSWORD_HERE": config.db_password or "YOUR_PASSWORD_HERE",
+                "localhost": config.db_host,
+                "5432": str(config.db_port),
+                "codex_db": config.db_name,
+                "codex_user": config.db_user,
+                "gpt-oss:20b": config.ollama_model,
+            }
+
+            for old_val, new_val in replacements.items():
+                env_content = env_content.replace(old_val, new_val)
+
+            # Write the .env file
+            with open(env_file_path, "w") as f:
+                f.write(env_content)
+
+            print(f"✅ .env file created at {env_file_path}")
+
+            if not config.db_password:
+                print(f"⚠️  Remember to set your database password in .env file!")
+        else:
+            # Create basic .env file
+            basic_env = f"""# Codex Dreams Environment Configuration
+POSTGRES_DB_URL={postgres_url}
+DATABASE_URL={postgres_url}
+OLLAMA_URL=http://{config.ollama_host}:{config.ollama_port}
+OLLAMA_MODEL={config.ollama_model}
+EMBEDDING_MODEL=nomic-embed-text
+DUCKDB_PATH={config.duckdb_path}
+"""
+            with open(env_file_path, "w") as f:
+                f.write(basic_env)
+            print(f"✅ Basic .env file created at {env_file_path}")
+
     # Save configuration
     config.save()
+
+    # Check service dependencies
+    check_service_dependencies(config)
 
     print(f"\n✅ Setup complete!")
     print(f"📄 Configuration saved to: {config.config_path}")
@@ -255,6 +443,9 @@ def first_time_setup() -> CodexConfig:
     print(f"💾 Database: {config.postgres_url}")
     print(f"🤖 AI Model: {config.ollama_model}")
     print()
-    print("🚀 Ready to start! Run 'codex start' to begin generating insights.")
+    print("🚀 Next steps:")
+    print("   • Fix any service issues shown above")
+    print("   • Run 'codex start' to begin generating insights")
+    print("   • Use 'codex status' to monitor the service")
 
     return config

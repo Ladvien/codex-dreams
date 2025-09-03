@@ -75,7 +75,7 @@ class TestCronSyntaxValidation:
 
     def test_working_memory_cron_timing(self):
         """Test working memory cron timing (every 5 seconds, 6am-10pm)."""
-        wm_cron = "*/5 6-22 * * * *"
+        wm_cron = "*/5 * 6-22 * * *"
         parts = wm_cron.split()
 
         # Should have 6 parts (including seconds)
@@ -153,7 +153,7 @@ class TestScheduleCoverage:
         # Define biological phases
         biological_phases = {
             "wake": (6, 22),  # Active cognitive processing
-            "sleep_onset": (22, 24),  # Transition to sleep
+            "sleep_onset": (22, 0),  # Transition to sleep (22:00 to 00:00)
             "deep_sleep": (2, 4),  # Memory consolidation
             "rem_sleep": (23, 5),  # Creative associations
             "wake_prep": (5, 6),  # Preparation for wake

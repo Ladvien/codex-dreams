@@ -260,13 +260,13 @@ class BiologicalMemoryOrchestrator:
         # Check for dangerous characters
         sanitized = command
         has_dangerous_chars = any(char in command for char in self.dangerous_chars)
-        
+
         if has_dangerous_chars:
             # Remove dangerous characters and mark as filtered
             for char in self.dangerous_chars:
                 sanitized = sanitized.replace(char, "")
             sanitized = f"[FILTERED] {sanitized}"
-        
+
         # Remove any potentially sensitive information
         sanitized = sanitized.replace("password=", "password=***").replace("token=", "token=***")
         return sanitized

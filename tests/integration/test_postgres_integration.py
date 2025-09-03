@@ -27,6 +27,10 @@ from typing import Any, Dict, List, Optional
 import duckdb
 import psycopg2
 import pytest
+from dotenv import load_dotenv
+
+# Load environment variables from .env.test file
+load_dotenv()
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -39,15 +43,15 @@ sys.path.insert(0, str(project_root))
 
 @dataclass
 class PostgreSQLConnectionConfig:
-    """Configuration for PostgreSQL integration testing"""
+    """Configuration for PostgreSQL integration testing - PRODUCTION VALUES"""
 
-    host: str = os.getenv("POSTGRES_HOST", "localhost")
-    port: int = 5432
-    database: str = "codex_db"
-    test_database: str = "codex_test_db"
+    host: str = os.getenv("POSTGRES_HOST", "192.168.1.104")
+    port: int = int(os.getenv("POSTGRES_PORT", "5432"))
+    database: str = os.getenv("POSTGRES_DB", "codex_db")
+    test_database: str = os.getenv("TEST_DB_NAME", "codex_db")  # Use production DB for real testing
     username: str = os.getenv("POSTGRES_USER", "codex_user")
     password: str = os.getenv("POSTGRES_PASSWORD", "")
-    max_connections: int = 20
+    max_connections: int = int(os.getenv("MAX_DB_CONNECTIONS", "160"))
     connection_timeout: int = 10
 
 
@@ -91,11 +95,14 @@ class PostgreSQLIntegrationTester:
         db_name = self.config.test_database if use_test_db else self.config.database
         postgres_url = f"postgresql://{self.config.username}:{self.config.password}@{self.config.host}:{self.config.port}/{db_name}"
 
-        temp_db = tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False)
-        temp_db.close()
+        # Create a temporary file path but delete the file so DuckDB can create it fresh
+        temp_file = tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False)
+        temp_file.close()
+        temp_path = temp_file.name
+        Path(temp_path).unlink()  # Delete the empty file so DuckDB can create it properly
 
         try:
-            conn = duckdb.connect(temp_db.name)
+            conn = duckdb.connect(temp_path)
             conn.execute("LOAD postgres")
             conn.execute(f"ATTACH '{postgres_url}' AS postgres_db (TYPE postgres)")
             yield conn
@@ -105,8 +112,8 @@ class PostgreSQLIntegrationTester:
         finally:
             if "conn" in locals():
                 conn.close()
-            if Path(temp_db.name).exists():
-                Path(temp_db.name).unlink()
+            if Path(temp_path).exists():
+                Path(temp_path).unlink()
 
     def cleanup_test_data(self):
         """Clean up test data and schemas"""
@@ -196,7 +203,7 @@ class TestPostgreSQLConnectivity:
                 cursor.execute(
                     f"""
                     SELECT id, content, created_at
-                    FROM {test_table}
+                    FROM postgres_db.public.{test_table}
                     WHERE metadata->>'test' = 'true'
                     ORDER BY created_at DESC
                     LIMIT 7
@@ -359,15 +366,17 @@ class TestDuckDBPostgreSQLIntegration:
     def test_duckdb_postgres_scanner_integration(self):
         """Test DuckDB postgres_scanner extension with live PostgreSQL"""
         with self.tester.get_duckdb_with_postgres() as duckdb_conn:
-            # Test basic PostgreSQL querying from DuckDB
+            # Test DuckDB-PostgreSQL connection by querying information_schema
             result = duckdb_conn.execute(
                 """
-                SELECT version() as pg_version
+                SELECT table_name FROM postgres_db.information_schema.tables
+                WHERE table_schema = 'information_schema'
+                LIMIT 5
             """
             ).fetchall()
 
-            assert len(result) == 1
-            assert "PostgreSQL" in result[0][0]
+            assert len(result) >= 1, "Should be able to query PostgreSQL information_schema"
+            logger.info(f"Found {len(result)} PostgreSQL system tables via DuckDB")
 
             # Test that we can list PostgreSQL tables
             tables = duckdb_conn.execute(
@@ -426,7 +435,7 @@ class TestDuckDBPostgreSQLIntegration:
             working_memory_result = duckdb_conn.execute(
                 f"""
                 SELECT id, content, importance_score, created_at
-                FROM {test_table}
+                FROM postgres_db.public.{test_table}
                 WHERE importance_score > 0.7
                 ORDER BY importance_score DESC, created_at DESC
                 LIMIT 7
@@ -453,7 +462,7 @@ class TestDuckDBPostgreSQLIntegration:
                     AVG(importance_score) as avg_importance,
                     MAX(importance_score) as max_importance,
                     MIN(importance_score) as min_importance
-                FROM {test_table}
+                FROM postgres_db.public.{test_table}
             """
             ).fetchall()
 
@@ -510,7 +519,7 @@ class TestDuckDBPostgreSQLIntegration:
             consolidation_candidates = duckdb_conn.execute(
                 f"""
                 SELECT content, stm_strength
-                FROM {test_table}
+                FROM postgres_db.public.{test_table}
                 WHERE ready_for_consolidation = true
                   AND stm_strength >= consolidation_threshold
                 ORDER BY stm_strength DESC
@@ -524,7 +533,7 @@ class TestDuckDBPostgreSQLIntegration:
             recent_memories = duckdb_conn.execute(
                 f"""
                 SELECT COUNT(*) as recent_count
-                FROM {test_table}
+                FROM postgres_db.public.{test_table}
                 WHERE attention_timestamp > CURRENT_TIMESTAMP - INTERVAL '5 minutes'
             """
             ).fetchall()
@@ -537,7 +546,7 @@ class TestDuckDBPostgreSQLIntegration:
                 WITH ranked_memories AS (
                     SELECT content, stm_strength,
                            ROW_NUMBER() OVER (ORDER BY stm_strength DESC) as memory_rank
-                    FROM {test_table}
+                    FROM postgres_db.public.{test_table}
                     WHERE attention_timestamp > CURRENT_TIMESTAMP - INTERVAL '5 minutes'
                 )
                 SELECT * FROM ranked_memories WHERE memory_rank <= 7

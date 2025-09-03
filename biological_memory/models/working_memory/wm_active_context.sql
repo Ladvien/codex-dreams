@@ -57,7 +57,7 @@ enriched_memories AS (
         -- Phantom objects placeholder
         '[]'::JSON as phantom_objects,
         -- Hebbian strength calculation using biological learning rate
-        (COALESCE(activation_strength, 0.0) * 0.8 + COALESCE(importance_score, 0.0) * 0.2) * {{ var('hebbian_learning_rate') }} as hebbian_strength,
+        (COALESCE(activation_strength, 0.0) * 0.8 + COALESCE(importance_score, 0.0) * 0.2) * COALESCE({{ var('hebbian_learning_rate', '0.1') }}, 0.1) as hebbian_strength,
         -- Working memory strength NULL SAFE
         LEAST(1.0, COALESCE(importance_score, 0.0) + COALESCE(recency_boost, 0.0)) as working_memory_strength,
         -- Recency and frequency scoring NULL SAFE

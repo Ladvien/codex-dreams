@@ -627,7 +627,7 @@ def run_integration_test_suite_with_health_checks():
                     cwd=project_root,
                     capture_output=True,
                     text=True,
-                    timeout=300,  # 5 minute timeout per module
+                    timeout=5,  # 5 second timeout per module
                 )
 
                 if result.returncode == 0:

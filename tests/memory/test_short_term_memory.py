@@ -222,7 +222,7 @@ class TestShortTermMemory:
         result = memory_db.execute(
             """
             SELECT id,
-                   EXP(-EXTRACT(EPOCH FROM (NOW() - timestamp)) / 3600.0) as recency_factor
+                   EXP(-EXTRACT(EPOCH FROM (NOW() - timestamp::TIMESTAMP)) / 3600.0) as recency_factor
             FROM test_memories
             ORDER BY recency_factor DESC
         """
@@ -246,9 +246,9 @@ class TestShortTermMemory:
         """
         ).fetchall()
 
-        salience_values = {row[0]: row[1] for row in result}
+        salience_values = {row[0]: float(row[1]) for row in result}
         # Server fix (negative, high importance) should have high salience
-        assert salience_values["mem4"] == 0.9 * 0.4 + 0.2  # 0.56
+        assert abs(salience_values["mem4"] - (0.9 * 0.4 + 0.2)) < 0.001  # 0.56
 
         # Test co-activation counting (1-hour window)
         result = memory_db.execute(
@@ -256,19 +256,35 @@ class TestShortTermMemory:
             SELECT id,
                    COUNT(*) OVER (
                        PARTITION BY level_0_goal
-                       ORDER BY timestamp
+                       ORDER BY timestamp::TIMESTAMP
                        RANGE BETWEEN INTERVAL '1 hour' PRECEDING AND CURRENT ROW
                    ) as co_activation_count
             FROM test_memories
-            ORDER BY timestamp
+            ORDER BY timestamp::TIMESTAMP
         """
         ).fetchall()
 
-        # Client Relations memories should have co-activation counts > 1
-        client_memories = [
-            row for row in result if row[0].startswith("mem") and row[0] in ["mem1", "mem2", "mem3"]
-        ]
-        assert all(row[1] > 1 for row in client_memories)
+        # Client Relations memories should have co-activation patterns
+        client_memories = {row[0]: row[1] for row in result if row[0] in ["mem1", "mem2", "mem3"]}
+
+        # mem2 (first chronologically) should have count 1
+        assert (
+            client_memories["mem2"] == 1
+        ), f"First memory should have count 1, got {client_memories['mem2']}"
+
+        # mem1 and mem3 should have count > 1 (they see previous Client Relations memories)
+        assert (
+            client_memories["mem1"] > 1
+        ), f"mem1 should see previous memories, got {client_memories['mem1']}"
+        assert (
+            client_memories["mem3"] > 1
+        ), f"mem3 should see previous memories, got {client_memories['mem3']}"
+
+        # mem4 (different goal) should have count 1
+        problem_memories = {row[0]: row[1] for row in result if row[0] == "mem4"}
+        assert (
+            problem_memories["mem4"] == 1
+        ), f"Different goal should have count 1, got {problem_memories['mem4']}"
 
     def test_consolidation_readiness(self, memory_db):
         """Test consolidation readiness logic"""

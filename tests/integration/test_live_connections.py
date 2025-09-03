@@ -148,9 +148,7 @@ class LiveConnectionTester:
             }
 
             start_time = time.time()
-            response = requests.post(
-                f"{self.ollama_url}/api/generate", json=prompt_data, timeout=30
-            )
+            response = requests.post(f"{self.ollama_url}/api/generate", json=prompt_data, timeout=2)
             end_time = time.time()
 
             if response.status_code == 200:
@@ -196,7 +194,7 @@ class LiveConnectionTester:
             }
 
             response = requests.post(
-                f"{self.ollama_url}/api/embeddings", json=embedding_data, timeout=30
+                f"{self.ollama_url}/api/embeddings", json=embedding_data, timeout=2
             )
 
             if response.status_code == 200:

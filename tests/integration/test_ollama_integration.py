@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Comprehensive Ollama Integration Tests for STORY-009
-Tests direct connectivity to Ollama at localhost:11434
+Tests direct connectivity to Ollama at configured URL
 
 This module provides comprehensive integration testing for:
 - Direct Ollama LLM service connectivity to production server
@@ -28,6 +28,10 @@ from typing import Any, Dict, List, Optional, Union
 import duckdb
 import pytest
 import requests
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -43,12 +47,12 @@ sys.path.insert(0, str(project_root / "biological_memory"))
 class OllamaConnectionConfig:
     """Configuration for Ollama integration testing"""
 
-    base_url: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
-    primary_model: str = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
+    base_url: str = os.getenv("OLLAMA_URL", "http://192.168.1.110:11434")
+    primary_model: str = os.getenv("OLLAMA_MODEL", "gpt-oss:20b")
     embedding_model: str = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
-    test_model: str = "qwen2.5:0.5b"  # Lightweight model for testing
-    generation_timeout: int = 30
-    health_check_timeout: int = 10
+    test_model: str = "gpt-oss:20b"  # Use production model for real testing
+    generation_timeout: int = int(os.getenv("OLLAMA_GENERATION_TIMEOUT_SECONDS", "5"))
+    health_check_timeout: int = int(os.getenv("OLLAMA_EMBEDDING_TIMEOUT_SECONDS", "5"))
     max_retries: int = 3
 
 
@@ -75,12 +79,15 @@ class OllamaIntegrationTester:
     @contextmanager
     def get_test_cache_db(self):
         """Get a temporary DuckDB instance for caching tests"""
-        temp_db = tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False)
-        temp_db.close()
-        self.test_cache_db = temp_db.name
+        # Create a temporary file path but delete the file so DuckDB can create it fresh
+        temp_file = tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False)
+        temp_file.close()
+        temp_path = temp_file.name
+        Path(temp_path).unlink()  # Delete the empty file so DuckDB can create it properly
+        self.test_cache_db = temp_path
 
         try:
-            conn = duckdb.connect(temp_db.name)
+            conn = duckdb.connect(temp_path)
 
             # Create LLM cache table structure
             conn.execute(
@@ -233,8 +240,10 @@ class TestOllamaConnectivity:
         # At minimum, we should have some models available
         assert len(available_models) > 0, "Should have at least one model available"
 
-        # Test with any available model for basic functionality
-        test_model = available_models[0] if available_models else None
+        # Test with generation model (not embedding model) for basic functionality
+        generation_models = [m for m in available_models if "embed" not in m.lower()]
+        test_model = generation_models[0] if generation_models else self.tester.config.primary_model
+
         if test_model:
             logger.info(f"Using test model: {test_model}")
 
@@ -490,15 +499,17 @@ class TestOllamaCachingAndPerformance:
         if not available_models:
             pytest.skip("No models available for caching testing")
 
-        test_model = available_models[0]
+        # Use generation model, not embedding model
+        generation_models = [m for m in available_models if "embed" not in m.lower()]
+        test_model = generation_models[0] if generation_models else self.tester.config.primary_model
 
         with self.tester.get_test_cache_db() as cache_db:
             test_prompts = [
-                "Extract goal from: Team planning meeting",
-                "What is the main topic in: Code review session",
-                "Extract goal from: Team planning meeting",  # Duplicate for cache hit
-                "Analyze: Project status update",
-                "Extract goal from: Team planning meeting",  # Another duplicate
+                "What is 1+1?",
+                "What is 2+2?",
+                "What is 1+1?",  # Duplicate for cache hit
+                "What is 3+3?",
+                "What is 1+1?",  # Another duplicate
             ]
 
             cache_hits = 0
@@ -618,7 +629,7 @@ class TestOllamaCachingAndPerformance:
 
         # Wait for completion
         for thread in threads:
-            thread.join(timeout=30)  # 30 second timeout
+            thread.join(timeout=2)  # 2 second timeout
 
         total_time = time.perf_counter() - start_time
 
@@ -797,7 +808,7 @@ class TestOllamaHealthChecks:
 def run_ollama_integration_tests():
     """Run all Ollama integration tests"""
     logger.info(
-        f"Starting Ollama integration tests for {os.getenv('OLLAMA_URL', 'localhost:11434')}"
+        f"Starting Ollama integration tests for {os.getenv('OLLAMA_URL', 'http://192.168.1.110:11434')}"
     )
 
     try:

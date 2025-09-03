@@ -136,7 +136,11 @@ class BiologicalMemoryPerformanceTester:
     @contextmanager
     def get_performance_duckdb(self):
         """Get DuckDB with performance monitoring setup"""
-        self.temp_duckdb = tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False).name
+        # Generate unique temp file name but don't create the file
+        temp_fd, self.temp_duckdb = tempfile.mkstemp(suffix=".duckdb")
+        os.close(temp_fd)  # Close the file descriptor
+        os.unlink(self.temp_duckdb)  # Remove the empty file so DuckDB can create it fresh
+
         postgres_url = f"postgresql://{self.config.postgres_user}:{self.config.postgres_password}@{self.config.postgres_host}:{self.config.postgres_port}/{self.config.postgres_database}"
 
         try:
@@ -212,7 +216,7 @@ class BiologicalMemoryPerformanceTester:
                 cursor.execute(f"CREATE SCHEMA IF NOT EXISTS {self.test_schema}")
 
                 # Create optimized tables with proper indexing
-                perf_table = f"{self.test_schema}.memory_performance_test"
+                perf_table = f"pg_perf.{self.test_schema}.memory_performance_test"
                 self.test_tables_created.append(perf_table)
 
                 cursor.execute(
@@ -306,7 +310,7 @@ class TestDatabaseQueryPerformance:
             self.tester.setup_performance_test_data(500)
 
             with self.tester.get_performance_duckdb() as conn:
-                perf_table = f"{self.tester.test_schema}.memory_performance_test"
+                perf_table = f"pg_perf.{self.tester.test_schema}.memory_performance_test"
 
                 # Test Miller's 7±2 working memory selection
                 def working_memory_query():
@@ -355,7 +359,7 @@ class TestDatabaseQueryPerformance:
             self.tester.setup_performance_test_data(200)
 
             with self.tester.get_performance_duckdb() as conn:
-                perf_table = f"{self.tester.test_schema}.memory_performance_test"
+                perf_table = f"pg_perf.{self.tester.test_schema}.memory_performance_test"
 
                 # Create STM processing table
                 conn.execute(
@@ -431,7 +435,7 @@ class TestDatabaseQueryPerformance:
             self.tester.setup_performance_test_data(300)
 
             with self.tester.get_performance_duckdb() as conn:
-                perf_table = f"{self.tester.test_schema}.memory_performance_test"
+                perf_table = f"pg_perf.{self.tester.test_schema}.memory_performance_test"
 
                 # Create semantic network table
                 conn.execute(
@@ -644,7 +648,7 @@ class TestConcurrentPerformance:
         """Test database performance with concurrent connections"""
         with self.tester:
             self.tester.setup_performance_test_data(100)
-            perf_table = f"{self.tester.test_schema}.memory_performance_test"
+            perf_table = f"pg_perf.{self.tester.test_schema}.memory_performance_test"
 
             def concurrent_query(thread_id: int):
                 """Function to run in each thread"""
@@ -717,7 +721,7 @@ class TestConcurrentPerformance:
             self.tester.setup_performance_test_data(1000)
 
             with self.tester.get_performance_duckdb() as conn:
-                perf_table = f"{self.tester.test_schema}.memory_performance_test"
+                perf_table = f"pg_perf.{self.tester.test_schema}.memory_performance_test"
 
                 # Test capacity constraint enforcement under load
                 def capacity_stress_test():
@@ -779,7 +783,7 @@ class TestBiologicalRhythmPerformance:
             self.tester.setup_performance_test_data(200)
 
             with self.tester.get_performance_duckdb() as conn:
-                perf_table = f"{self.tester.test_schema}.memory_performance_test"
+                perf_table = f"pg_perf.{self.tester.test_schema}.memory_performance_test"
 
                 def attention_window_processing():
                     # Process memories within 5-minute attention window
@@ -832,12 +836,12 @@ class TestBiologicalRhythmPerformance:
                 for i in range(100):
                     age_days = i * 0.5  # 0 to 50 days
                     last_access = datetime.now(timezone.utc) - timedelta(days=age_days)
-                    test_data.append((f"concept_{i}", 0.8, last_access, age_days))
+                    test_data.append((i, f"concept_{i}", 0.8, last_access, age_days))
 
                 conn.executemany(
                     """
-                    INSERT INTO memory_strengths (concept, strength, last_access, age_days)
-                    VALUES (?, ?, ?, ?)
+                    INSERT INTO memory_strengths (id, concept, strength, last_access, age_days)
+                    VALUES (?, ?, ?, ?, ?)
                 """,
                     test_data,
                 )

@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Rules
-- Always save insights, learnings, observations, or other important notes to codex memory before starting any work item.
+- Always save insights, learnings, observations, or other important notes to codex memory at every juncture.
 
 ## Project Overview
 

@@ -22,18 +22,18 @@ from .database import (
     test_postgres_connection,
     transactional_duckdb,
 )
+from .mocking import memory_lifecycle_data_mock  # Renamed to avoid conflict
 from .mocking import (
     clean_test_database,
-    memory_lifecycle_data_mock,  # Renamed to avoid conflict
     real_duckdb_connection,
     real_ollama,
     real_ollama_service,
     real_postgres_connection,
 )
+from .test_data import memory_lifecycle_data  # The actual fixture from test_data.py
 from .test_data import (
     MemoryDataFactory,
     hebbian_learning_data,
-    memory_lifecycle_data,  # The actual fixture from test_data.py
     performance_benchmark,
     performance_test_data,
     sample_memory_data,

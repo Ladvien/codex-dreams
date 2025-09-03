@@ -55,9 +55,9 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "codex=codex_service:main",
-            "codex-scheduler=codex_scheduler:main",
-            "codex-insights=generate_insights:main",
+            "codex=src.codex_cli:main",
+            "codex-scheduler=src.codex_scheduler:main",
+            "codex-insights=src.generate_insights:main",
         ],
     },
     include_package_data=True,

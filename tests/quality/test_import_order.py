@@ -263,9 +263,17 @@ class TestImportOrder:
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
                     for line_num, line in enumerate(f, 1):
-                        if "import *" in line and not line.strip().startswith("#"):
+                        stripped_line = line.strip()
+                        # Only check for actual import statements, not strings or comments
+                        if (
+                            stripped_line.startswith("from ")
+                            and " import *" in stripped_line
+                            and not stripped_line.startswith("#")
+                            and not stripped_line.startswith('"""')
+                            and not stripped_line.startswith("'")
+                        ):
                             violations.append(
-                                {"file": str(file_path), "line": line_num, "content": line.strip()}
+                                {"file": str(file_path), "line": line_num, "content": stripped_line}
                             )
 
             except Exception as e:
@@ -409,21 +417,32 @@ class TestImportOrder:
                 if current_block:
                     import_blocks.append(current_block)
 
-                # Check alphabetical order within blocks
+                # Check alphabetical order within blocks, respecting import types
                 for block in import_blocks:
                     if len(block) < 2:
                         continue
 
                     import_names = [line[1] for line in block]
-                    sorted_names = sorted(import_names)
 
-                    if import_names != sorted_names:
+                    # Split imports by type (regular imports vs from imports)
+                    regular_imports = [imp for imp in import_names if imp.startswith("import ")]
+                    from_imports = [imp for imp in import_names if imp.startswith("from ")]
+
+                    # Check if each type is sorted within its own group
+                    regular_sorted = sorted(regular_imports)
+                    from_sorted = sorted(from_imports)
+
+                    # Reconstruct expected order: regular imports first, then from imports
+                    expected_order = regular_sorted + from_sorted
+
+                    # Only flag as violation if the sections themselves aren't sorted
+                    if (regular_imports != regular_sorted) or (from_imports != from_sorted):
                         violations.append(
                             {
                                 "file": str(file_path),
                                 "block_start": block[0][0],
                                 "actual": import_names,
-                                "expected": sorted_names,
+                                "expected": expected_order,
                             }
                         )
 

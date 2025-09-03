@@ -165,9 +165,18 @@ class TestShellInjectionPrevention:
             # Expected behavior when dbt is not available or command validation fails
             # Check that it's an expected error type (not a shell injection vulnerability)
             error_str = str(e).lower()
-            expected_errors = ['command', 'not found', 'invalid', 'timeout', 'unsafe', 'dbt', 'file']
-            assert any(keyword in error_str for keyword in expected_errors), \
-                   f"Expected command-related error, got: {e}"
+            expected_errors = [
+                "command",
+                "not found",
+                "invalid",
+                "timeout",
+                "unsafe",
+                "dbt",
+                "file",
+            ]
+            assert any(
+                keyword in error_str for keyword in expected_errors
+            ), f"Expected command-related error, got: {e}"
 
     def test_argument_validation_patterns(self, orchestrator):
         """Test that argument validation patterns work correctly"""
@@ -361,7 +370,7 @@ class TestShellInjectionPrevention:
         # Test timeout with a command that might hang (sleep is a real command)
         # Use a very short timeout to test the timeout functionality
         test_command = "dbt --version"  # Safe command that should complete quickly or timeout
-        
+
         try:
             # Test with a very short timeout to force a timeout scenario
             result = orchestrator.run_dbt_command(test_command, timeout=0.001)  # 1ms timeout
@@ -370,16 +379,17 @@ class TestShellInjectionPrevention:
         except Exception as e:
             # Expected behavior: timeout or command error
             error_str = str(e).lower()
-            expected_errors = ['timeout', 'expired', 'command', 'not found', 'invalid', 'dbt']
-            assert any(keyword in error_str for keyword in expected_errors), \
-                   f"Expected timeout or command error, got: {e}"
+            expected_errors = ["timeout", "expired", "command", "not found", "invalid", "dbt"]
+            assert any(
+                keyword in error_str for keyword in expected_errors
+            ), f"Expected timeout or command error, got: {e}"
 
     def test_environment_isolation(self, orchestrator):
         """Test that command execution doesn't inherit dangerous environment variables"""
         # Test that the orchestrator can run commands safely
         # We test this by running a safe command and ensuring it works regardless of environment
         test_command = "dbt --version"
-        
+
         # Set some environment variables and test that commands still work safely
         dangerous_env_vars = {
             "TEMP_TEST_VAR": "/evil/path",
@@ -393,11 +403,12 @@ class TestShellInjectionPrevention:
                 # (The method should not crash due to environment pollution)
                 assert True  # Test passes if no exception occurs
             except Exception as e:
-                # Expected behavior when dbt is not available 
+                # Expected behavior when dbt is not available
                 error_str = str(e).lower()
-                expected_errors = ['command', 'not found', 'invalid', 'timeout', 'dbt']
-                assert any(keyword in error_str for keyword in expected_errors), \
-                       f"Expected command-related error, got: {e}"
+                expected_errors = ["command", "not found", "invalid", "timeout", "dbt"]
+                assert any(
+                    keyword in error_str for keyword in expected_errors
+                ), f"Expected command-related error, got: {e}"
 
 
 if __name__ == "__main__":

@@ -256,7 +256,7 @@ class BiologicalMemoryPipelineTester:
             response = requests.post(
                 f"{self.config.ollama_url}/api/generate",
                 json={"model": model_to_use, "prompt": prompt, "stream": False},
-                timeout=30,
+                timeout=2,
             )
 
             if response.ok:

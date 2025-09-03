@@ -56,7 +56,7 @@ class TestDatabaseReliability:
             CREATE TABLE memory_data (
                 id INTEGER,
                 content TEXT,
-                metadata JSON,
+                metadata VARCHAR,  -- Use VARCHAR to allow testing invalid JSON
                 timestamp TIMESTAMP
             )
         """
