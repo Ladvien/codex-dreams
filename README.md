@@ -122,6 +122,34 @@ WHERE co_activation_count > {{ var('consolidation_threshold') }}
 
 ## 🛠️ Database Architecture
 
+### Three-Schema Design
+
+The system uses three distinct PostgreSQL schemas for clean separation of concerns:
+
+1. **`public`** - Raw source memories from codex
+2. **`biological_memory`** - dbt source configuration layer  
+3. **`dreams`** - All processed biological memory outputs
+
+### Dreams Schema (Processed Data)
+
+All processed memory data is written back to PostgreSQL in the `dreams` schema for persistence and query access:
+
+```sql
+-- Core Memory Tables
+dreams.working_memory        -- 5-minute attention windows
+dreams.short_term_episodes   -- Hierarchical episodic memories  
+dreams.long_term_memories    -- Consolidated permanent storage
+dreams.semantic_network      -- Knowledge graph associations
+dreams.memory_insights       -- Patterns and predictions
+dreams.processing_metrics    -- Pipeline health tracking
+
+-- Convenience Views
+dreams.current_context       -- Latest working memory snapshot
+dreams.recent_episodes       -- Last 24 hours of episodes
+dreams.knowledge_graph       -- Semantic network with meanings
+dreams.memory_timeline       -- Chronological view across stages
+```
+
 ### Source Configuration
 ```yaml
 # biological_memory/models/sources.yml

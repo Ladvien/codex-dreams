@@ -325,7 +325,7 @@ class MemoryWritebackService:
         """Write processed memories to PostgreSQL in batches"""
 
         insert_query = """
-        INSERT INTO codex_processed.processed_memories (
+        INSERT INTO dreams.long_term_memories (
             source_memory_id, level_0_goal, level_1_tasks, level_2_actions,
             phantom_objects, stm_strength, emotional_salience, recency_factor,
             consolidated_strength, consolidation_fate, hebbian_strength,
@@ -474,7 +474,7 @@ class MemoryWritebackService:
         """Write generated insights to PostgreSQL"""
 
         insert_query = """
-        INSERT INTO codex_processed.generated_insights (
+        INSERT INTO dreams.memory_insights (
             source_memory_ids, insight_text, insight_type, insight_category,
             insight_confidence, novelty_score, relevance_score,
             suggested_tags, generated_at
@@ -572,7 +572,7 @@ class MemoryWritebackService:
         """Write memory associations to PostgreSQL"""
 
         insert_query = """
-        INSERT INTO codex_processed.memory_associations (
+        INSERT INTO dreams.semantic_network (
             source_memory_id, target_memory_id, association_type, association_strength,
             semantic_similarity, co_occurrence_count, shared_concepts, connection_reason,
             association_quality, forward_strength, backward_strength, discovered_at
@@ -634,7 +634,7 @@ class MemoryWritebackService:
             metadata.update(additional_metadata)
 
         insert_query = """
-        INSERT INTO codex_processed.processing_metadata (
+        INSERT INTO dreams.processing_metrics (
             processing_session_id, batch_id, processing_stage, total_memories_processed,
             successful_processing_count, failed_processing_count, processing_start_time,
             processing_end_time, processing_duration_seconds, error_messages,
