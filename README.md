@@ -1,217 +1,168 @@
-# Codex Dreams 🧠
+# Codex Dreams
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Status](https://img.shields.io/badge/Status-Production-brightgreen.svg)]()
-[![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)]()
 
-**A production-ready biological memory system implementing human cognitive processes through hierarchical episodic memory, Hebbian consolidation, and semantic networks.**
+A computational model of human memory systems implementing biologically-accurate cognitive processes through modern data infrastructure.
 
-**Status**: ✅ **Production-Ready v1.0.0** — Research-grade neuroscience implementation (95% biological fidelity) with enterprise architecture, 1,555+ verified test files, 99.04% performance improvement, and military-grade security.
+> **⚠️ Development Notice**  
+> This project was developed through iterative AI-assisted "vibe coding" - building functionality through natural language descriptions rather than traditional software design. While the system is functional and thoroughly tested, expect unconventional patterns and treat as experimental. Extensive development environment testing recommended before any production use.
 
----
+## Overview
 
-## What It Does
+Codex Dreams models the human memory formation process through four interconnected stages that mirror biological cognition:
 
-Codex Dreams models human memory formation through a sophisticated 4-stage pipeline that mirrors biological cognition: working memory (Miller's 7±2 constraint) → short-term episodes → hippocampal consolidation → cortical semantic networks. The system processes memories using real-time LLM enrichment, implements research-grade Hebbian learning mathematics, and provides PostgreSQL persistence through a comprehensive "dreams" schema.
+**Working Memory** enforces Miller's 7±2 capacity constraint with 5-minute attention windows, processing incoming information with cognitive load limitations that match human psychology research.
 
-Built for researchers and engineers who need production-ready biological memory modeling, it combines cutting-edge neuroscience (validating against 9+ foundational papers) with modern data engineering using DuckDB analytics, dbt transformations, and Ollama LLM integration.
+**Short-Term Memory** organizes experiences into hierarchical episodes (goal→task→action) with spatial-temporal binding, implementing the episodic memory structures documented in cognitive neuroscience literature.
 
-## Key Implemented Features
+**Memory Consolidation** simulates hippocampal replay through Hebbian learning mathematics (`learning_rate * pre_strength * post_strength`), strengthening associations between co-activated memories according to biological timing patterns.
 
-### 🧬 **Research-Grade Biological Accuracy**
-- **Miller's 7±2 Working Memory**: Mathematically enforced capacity constraints with attention windows
-- **Hebbian Learning**: `learning_rate * pre_strength * post_strength` with STDP implementation
-- **Memory Consolidation**: Biologically-informed thresholds (0.5) with exponential forgetting curves
-- **Episodic Hierarchies**: Goal→Task→Action decomposition with spatial-temporal binding
+**Long-Term Memory** creates semantic networks through vector embeddings and relationship graphs, organizing knowledge into cortical-style hierarchies with biologically-informed retrieval mechanisms.
 
-### ⚡ **Performance Excellence** 
-- **99.04% Improvement**: Sub-millisecond response times across all operations (verified benchmarks)
-- **Semantic Search**: <1ms vector similarity with 768-dimensional embeddings
-- **Batch Processing**: 8,000+ memories/minute with parallel processing
-- **Connection Pooling**: 160 max connections with circuit breaker patterns
-
-### 🔗 **Production LLM Integration**
-- **477-line LLMIntegrationService**: Real Ollama API integration (no mocks)
-- **Response Caching**: MD5-based with exponential backoff retry logic
-- **DuckDB UDF Integration**: SQL-accessible LLM functions for cognitive processing
-- **Health Monitoring**: Circuit breakers with <5s response time guarantees
-
-### 🛡️ **Military-Grade Security**
-- **Zero Hardcoded Credentials**: Comprehensive environment variable management
-- **Shell Injection Prevention**: Dangerous character blocking with regex validation
-- **416 Lines of Security Tests**: All attack vectors covered with comprehensive validation
-- **Audit Trail**: Sanitized logging for security monitoring and compliance
-
-### 💾 **Dreams Schema Architecture**
-- **Complete PostgreSQL Write-back**: 589+783 lines of production write-back services
-- **6 Core Tables + 4 Views**: working_memory, short_term_episodes, long_term_memories, semantic_network
-- **Real-time Data Flow**: DuckDB analytics → PostgreSQL persistence with transaction management
-- **Query Optimization**: 15+ specialized indexes (B-tree, GIN, composite) for biological queries
-
-### 🧪 **Comprehensive Testing**
-- **1,555+ Test Files**: 3x industry standard with 95% success rate
-- **Real Service Integration**: Actual PostgreSQL, DuckDB, Ollama testing (zero mocks)
-- **Performance Benchmarks**: Automated regression testing with <100ms biological constraints
-- **Security Validation**: Complete attack vector coverage with penetration testing
+The system processes real memory data through this pipeline, providing both a research platform for testing memory theories and a practical tool for understanding how biological memory systems could be implemented computationally.
 
 ## Architecture
 
 ```mermaid
 graph TD
-    A[PostgreSQL: codex_db.memories] -->|postgres_scanner| B[DuckDB Analytics]
-    B -->|Stage 1| C[Working Memory<br/>Miller's 7±2, 5-min window]
-    C -->|Stage 2| D[Short-Term Episodes<br/>Hierarchical goal-task-action]
-    D -->|Stage 3| E[Consolidation<br/>Hebbian learning, 0.5 threshold]
-    E -->|Stage 4| F[Long-Term Semantic<br/>Vector networks, cortical storage]
+    A[PostgreSQL: Raw Memories] -->|postgres_scanner| B[DuckDB Analytics Engine]
+    B -->|Stage 1| C[Working Memory<br/>Miller's 7±2, 5-min windows]
+    C -->|Stage 2| D[Short-Term Episodes<br/>Goal-task-action hierarchies]
+    D -->|Stage 3| E[Consolidation<br/>Hebbian learning, threshold 0.5]
+    E -->|Stage 4| F[Long-Term Semantic<br/>Vector networks, retrieval paths]
     
-    G[Ollama LLM<br/>gpt-oss:20b] -->|Real-time enrichment| C
-    G -->|Entity extraction| D
-    G -->|Embeddings| E
+    G[Ollama LLM<br/>Entity extraction & embeddings] -->|Enrichment| C
+    G -->|Analysis| D
+    G -->|Semantic processing| E
     
-    H[Write-back Services<br/>589+783 lines] -->|Persist results| I[Dreams Schema<br/>6 tables + 4 views]
+    H[Write-back Services<br/>Real-time persistence] -->|Results| I[Dreams Schema<br/>Queryable memory structures]
     
-    F -->|Query results| H
-    E -->|Consolidated memories| H
-    D -->|Episodes| H
+    F -->|Consolidated knowledge| H
+    E -->|Strengthened associations| H
+    D -->|Episode structures| H
     C -->|Working snapshots| H
 ```
 
+## What Makes This Interesting
+
+**Biological Fidelity**: Implementation validates against foundational research including Miller (1956) on working memory capacity, Hebb (1949) on synaptic plasticity, and McGaugh (2000) on memory consolidation. The system enforces cognitive constraints that match human limitations and timing patterns.
+
+**Real-Time Processing**: Unlike static models, this processes actual memory streams with sub-millisecond response times. The system handles continuous memory ingestion while maintaining biological timing constraints for each processing stage.
+
+**Hybrid Architecture**: Combines DuckDB's analytical capabilities for complex memory transformations with PostgreSQL's reliability for persistent storage. The result is a system that can perform sophisticated cognitive modeling at scale while maintaining data integrity.
+
+**Production Implementation**: Rather than academic proof-of-concept, this is built for operational use with comprehensive error handling, performance optimization, and monitoring. It processes thousands of memories per minute while maintaining biological accuracy.
+
+## Key Components
+
+### Memory Processing Pipeline
+- **17+ dbt models** implementing each memory stage with biological parameters
+- **Incremental processing** for real-time memory flow with proper temporal windowing  
+- **Biological timing** enforcement matching human cognitive research findings
+- **Vector embedding** generation through local Ollama LLM integration
+
+### Data Architecture  
+- **Dreams Schema** with 6 core tables representing different memory stages and types
+- **Write-back services** ensuring processed memories persist for analysis and retrieval
+- **Optimization layers** including specialized indexes and materialized views for query performance
+- **Cross-database integration** connecting analytical processing with operational storage
+
+### Testing & Validation
+- **1,555+ test files** covering biological accuracy, performance benchmarks, and integration scenarios
+- **Neuroscience validation** tests ensuring mathematical models match published research
+- **Performance testing** with sub-100ms requirements matching biological timing constraints
+- **End-to-end validation** of complete memory formation cycles
+
 ## Quick Start
 
-### Prerequisites
-- Python 3.8+ with pip
-- PostgreSQL database (local or remote)
-- Ollama server with models: `gpt-oss:20b`, `nomic-embed-text`
-- 8GB+ RAM for consolidation processing
-
-### Installation
-
 ```bash
-# Clone and install
+# Installation
 git clone https://github.com/Ladvien/codex-dreams.git
 cd codex-dreams
 pip install -e .
 
-# Configure environment
+# Configuration (edit with your details)
 cp .env.example .env
-# Edit .env with your database and Ollama server details
 
-# Initialize database
+# Core services needed
+# - PostgreSQL database for source/target data  
+# - Ollama server with gpt-oss:20b and nomic-embed-text models
+# - 8GB+ RAM for memory consolidation processing
+
+# Initialize and run
 dbt run --profiles-dir ./biological_memory
-```
-
-### Essential Configuration
-
-```bash
-# .env file (minimum required)
-POSTGRES_DB_URL=postgresql://user:pass@host:5432/codex_db
-OLLAMA_URL=http://localhost:11434
-OLLAMA_MODEL=gpt-oss:20b
-EMBEDDING_MODEL=nomic-embed-text
-DUCKDB_PATH=./biological_memory/dbs/memory.duckdb
-```
-
-### Basic Usage
-
-```bash
-# Start processing daemon
-python -m src.daemon.service_manager start
-
-# Manual consolidation
-dbt run --select tag:consolidation
-
-# Query dreams schema
 python query_memories.py --dreams-stats
 ```
 
-## Implementation Status
+### Essential Configuration
+```bash
+# .env file
+POSTGRES_DB_URL=postgresql://user:pass@host:5432/codex_db
+OLLAMA_URL=http://localhost:11434
+DUCKDB_PATH=./biological_memory/dbs/memory.duckdb
+```
 
-### ✅ **Production-Ready Components**
-- **Dreams Schema Write-back**: Complete PostgreSQL persistence (verified: 589+783 lines)
-- **LLM Integration**: Production Ollama service (verified: 477 lines)
-- **Security Hardening**: Military-grade implementation (verified: zero credentials)
-- **Performance Optimization**: Sub-millisecond queries (verified: 99.04% improvement)
-- **Biological Mathematics**: Research-grade Hebbian learning (verified: 95% fidelity)
-- **Test Infrastructure**: Comprehensive coverage (verified: 1,555+ files)
+## Use Cases
 
-### 🔧 **Development Areas**
-- **End-to-End Pipeline**: dbt models → write-back integration testing
-- **Biological Rhythm Orchestration**: Automated cron-based consolidation cycles
-- **Memory Visualization**: Dashboard for semantic network exploration
+**Memory Research**: Test theories about human memory formation, consolidation, and retrieval using computational models that enforce biological constraints.
+
+**Cognitive Modeling**: Build systems that process information using human-like memory limitations and timing patterns rather than traditional database approaches.
+
+**Knowledge Management**: Implement memory systems that organize information hierarchically and associatively, mimicking how humans naturally structure knowledge.
+
+**AI System Design**: Create AI agents with memory systems that follow biological patterns, potentially leading to more human-like reasoning and learning behaviors.
 
 ## Development
 
 ### Project Structure
 ```
-src/
-├── services/           # Core services (LLM, write-back, health monitoring)
-├── daemon/             # Service management and scheduling
-├── monitoring/         # Biological parameter monitoring
-└── infrastructure/     # Environment and configuration management
-
-sql/
-├── create_dreams_schema.sql    # PostgreSQL dreams schema (390 lines)
-├── consolidate_schemas.sql     # Schema migration utilities
-└── postgresql_vector_optimization.sql  # Performance tuning
-
-tests/                  # 1,555+ test files organized by domain
-├── biological/         # Neuroscience accuracy validation
-├── performance/        # Benchmark and optimization tests
-├── security/          # Attack vector coverage
-└── integration/       # End-to-end system testing
+src/services/          # Core processing services (LLM, write-back, orchestration)
+sql/                   # Database schemas and optimization scripts  
+biological_memory/     # dbt models implementing memory stages
+tests/                 # Comprehensive test suite with biological validation
 ```
 
 ### Key Commands
-
 ```bash
-# Run all tests with real services
-pytest tests/ --tb=short
+# Run complete memory pipeline
+dbt run --profiles-dir ./biological_memory
+
+# Test biological accuracy 
+pytest tests/biological/ -v
 
 # Performance benchmarks
 pytest tests/performance/ --benchmark-only
 
-# Security validation
-pytest tests/security/ -v
-
-# dbt model development
-cd biological_memory
-dbt run --select tag:working_memory
-dbt test --select test_type:biological_accuracy
+# Memory system health check
+python -m src.monitoring.biological_parameter_monitor
 ```
 
-## Configuration Reference
-
 ### Biological Parameters
+The system exposes key parameters for experimentation:
 ```yaml
 # biological_memory/dbt_project.yml
 vars:
-  working_memory_capacity: 7      # Miller's 7±2 limit
-  consolidation_threshold: 0.5    # Hippocampal transfer threshold
-  hebbian_learning_rate: 0.1      # Synaptic strengthening rate
-  forgetting_rate: 0.05          # Exponential decay rate
-```
-
-### Performance Settings
-```bash
-# .env optimization
-MAX_DB_CONNECTIONS=160      # PostgreSQL connection pool
-DUCKDB_MEMORY_LIMIT=8GB    # Analytics processing limit
-OLLAMA_TIMEOUT=300         # LLM request timeout (seconds)
+  working_memory_capacity: 7        # Miller's 7±2 limit
+  consolidation_threshold: 0.5      # Strength needed for long-term storage
+  hebbian_learning_rate: 0.1        # Synaptic strengthening rate
+  forgetting_rate: 0.05            # Memory decay over time
 ```
 
 ## Documentation
 
-- **Architecture**: [ARCHITECTURE.md](docs/ARCHITECTURE.md) - System design and biological foundations
-- **Dreams Schema**: [DREAMS_SCHEMA.md](docs/DREAMS_SCHEMA.md) - Database schema documentation
-- **API Reference**: Code docstrings and type hints throughout `src/`
-- **Research Validation**: Tests validating against Miller (1956), Hebb (1949), McGaugh (2000), and others
+- **Architecture Details**: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **Database Schema**: [docs/DREAMS_SCHEMA.md](docs/DREAMS_SCHEMA.md) 
+- **Biological Models**: See dbt documentation with `dbt docs serve`
+- **API Reference**: Docstrings throughout source code with type hints
 
 ## Contributing
 
-We welcome contributions from neuroscience researchers and data engineers. The system provides a unique platform for testing biological memory theories at scale.
-
-**Development Setup**: `pip install -e .[dev]` • **Test Suite**: `pytest tests/` • **Code Quality**: Pre-commit hooks with black, flake8, mypy
+This project bridges neuroscience research with data engineering. Contributions welcome from:
+- **Cognitive scientists** interested in computational memory models
+- **Data engineers** working on novel database architectures  
+- **ML researchers** exploring biologically-inspired AI systems
+- **Systems developers** building human-like reasoning capabilities
 
 ## License
 
@@ -219,6 +170,4 @@ GNU General Public License v3.0 - see [LICENSE](LICENSE)
 
 ---
 
-*"The best way to understand memory is to build it."*
-
-**Codex Dreams** — Where neuroscience meets production engineering.
+*Memory is not a recording device but a reconstructive process. This system explores what that means computationally.*
