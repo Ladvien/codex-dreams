@@ -16,19 +16,19 @@
 *Agents should claim stories here before starting work*
 
 ### In Progress
-- **STORY-002: Fix dbt Project Configuration for Biological Processing** - postgres-sql-expert (claimed 2025-09-06)
 - **STORY-004: Implement Comprehensive Error Handling** - rust-engineering-expert (claimed 2025-09-06)
-- **STORY-009: Integration Testing with Live Resources** - rust-mcp-developer (claimed 2025-09-06)
 - **STORY-010: Implement Type Hints and Code Standards** - rust-engineering-expert (claimed 2025-09-06)
 - **STORY-011: Biological Rhythm Pipeline Orchestration** - cognitive-memory-researcher (claimed 2025-09-06)
 
 ### Completed
 - STORY-001: Biological Memory Schema Structure ✅
+- STORY-002: Fix dbt Project Configuration for Biological Processing ✅ (postgres-sql-expert)
 - STORY-003: Remove All Hardcoded Credentials ✅  
 - STORY-005: Working LLM Integration with Ollama ✅
 - STORY-006: Fix Working Memory Window to 5 Minutes ✅
 - STORY-007: Implement Hebbian Learning Mathematics ✅
 - STORY-008: Refactor Test Architecture ✅
+- STORY-009: Integration Testing with Live Resources ✅ (rust-mcp-developer)
 - STORY-012: Optimize Semantic Network Performance ✅
 
 ## Coordination Notes
