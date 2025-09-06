@@ -653,3 +653,149 @@ def with_error_handling(category: ErrorCategory = ErrorCategory.UNKNOWN):
         return wrapper
 
     return decorator
+
+
+def with_database_error_handling(timeout_seconds: float = 60.0):
+    """Decorator specifically for database operations"""
+    return with_error_handling(
+        category=ErrorCategory.DATABASE,
+        biological_context={'operation_type': 'database'},
+        timeout_seconds=timeout_seconds
+    )
+
+
+def with_llm_error_handling(timeout_seconds: float = 30.0):
+    """Decorator specifically for LLM operations"""
+    return with_error_handling(
+        category=ErrorCategory.LLM,
+        biological_context={'operation_type': 'llm_processing'},
+        timeout_seconds=timeout_seconds
+    )
+
+
+def with_embedding_error_handling(timeout_seconds: float = 45.0):
+    """Decorator specifically for embedding operations"""
+    return with_error_handling(
+        category=ErrorCategory.EMBEDDING,
+        biological_context={'operation_type': 'embedding_generation'},
+        timeout_seconds=timeout_seconds
+    )
+
+
+def with_biological_timing_constraints(memory_stage: str, max_duration: float = None):
+    """Decorator that enforces biological timing constraints"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            start_time = time.time()
+            
+            # Set biological constraints
+            if memory_stage == 'working_memory' and not max_duration:
+                max_duration_actual = 300.0  # 5 minutes
+            elif memory_stage == 'consolidation' and not max_duration:
+                max_duration_actual = 3600.0  # 1 hour
+            else:
+                max_duration_actual = max_duration or 600.0  # 10 minutes default
+            
+            try:
+                result = func(*args, **kwargs)
+                
+                # Check if we exceeded biological constraints
+                duration = time.time() - start_time
+                if duration > max_duration_actual:
+                    logger.warning(f"Function {func.__name__} exceeded biological constraint: "
+                                 f"{duration:.1f}s > {max_duration_actual}s for {memory_stage}")
+                
+                return result
+            except Exception as e:
+                duration = time.time() - start_time
+                context = {
+                    'memory_stage': memory_stage,
+                    'duration_seconds': duration,
+                    'max_allowed_duration': max_duration_actual
+                }
+                raise BiologicalMemoryError(
+                    f"Error in {memory_stage} processing after {duration:.1f}s: {e}",
+                    category=ErrorCategory.BIOLOGICAL_TIMING,
+                    details=context,
+                    cause=e
+                )
+        return wrapper
+    return decorator
+
+
+# Global error handler instance
+_global_error_handler = None
+
+
+def get_global_error_handler() -> BiologicalMemoryErrorHandler:
+    """Get or create the global error handler instance"""
+    global _global_error_handler
+    if _global_error_handler is None:
+        _global_error_handler = BiologicalMemoryErrorHandler()
+    return _global_error_handler
+
+
+@contextmanager
+def database_transaction(connection, error_handler: Optional[BiologicalMemoryErrorHandler] = None):
+    """Context manager for database transactions with comprehensive error handling"""
+    try:
+        yield connection
+        connection.commit()
+    except Exception as e:
+        try:
+            connection.rollback()
+        except Exception as rollback_error:
+            logger.error(f"Rollback failed: {rollback_error}")
+        
+        if error_handler:
+            error_handler.handle_error(e, {'operation': 'database_transaction'})
+        raise DatabaseError(f"Transaction failed: {e}", cause=e)
+
+
+def log_biological_error(error: Exception, memory_stage: str = None, 
+                        operation_type: str = None, details: Dict = None):
+    """Convenience function for logging errors with biological context"""
+    handler = get_global_error_handler()
+    context = {
+        'biological_context': {
+            'memory_stage': memory_stage,
+            'operation_type': operation_type
+        },
+        'details': details or {}
+    }
+    handler.handle_error(error, context)
+
+
+# Utility functions for common error scenarios
+
+def handle_database_connection_error(func: Callable, *args, **kwargs):
+    """Handle database connection errors with automatic retry"""
+    handler = get_global_error_handler()
+    return handler.safe_execute(func, {'operation_type': 'database_connection'}, *args, **kwargs)
+
+
+def handle_llm_service_error(func: Callable, *args, **kwargs):
+    """Handle LLM service errors with fallback strategies"""
+    handler = get_global_error_handler()
+    return handler.safe_execute(func, {'operation_type': 'llm_service'}, *args, **kwargs)
+
+
+def handle_file_operation_error(func: Callable, file_path: str, *args, **kwargs):
+    """Handle file operation errors with cleanup"""
+    handler = get_global_error_handler()
+    
+    def cleanup():
+        # Clean up any temporary files or locks
+        try:
+            temp_file = Path(file_path).with_suffix('.tmp')
+            if temp_file.exists():
+                temp_file.unlink()
+        except Exception as e:
+            logger.debug(f"Cleanup warning: {e}")
+    
+    return handler.safe_execute_with_cleanup(
+        func, cleanup, 
+        {'operation_type': 'file_io', 'file_path': file_path}, 
+        *args, **kwargs
+    )
