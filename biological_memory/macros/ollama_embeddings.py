@@ -75,7 +75,7 @@ class EmbeddingCache:
         try:
             # Validate input
             if not isinstance(embedding, list) or len(embedding) != EMBEDDING_DIMENSIONS:
-                dim_info = len(embedding) if isinstance(embedding, list) else 'not list'
+                dim_info = len(embedding) if isinstance(embedding, list) else "not list"
                 logger.warning(f"Invalid embedding dimensions: {dim_info}")
                 return
 
@@ -245,6 +245,42 @@ def generate_embedding(
     return None
 
 
+def generate_tag_embedding(
+    tags: Optional[List[str]], model: str = EMBEDDING_MODEL, max_retries: int = 3
+) -> Optional[List[float]]:
+    """
+    Generate embedding for tags using deterministic concatenation strategy
+
+    Args:
+        tags: List of tag strings to embed
+        model: Embedding model name
+        max_retries: Maximum number of retry attempts
+
+    Returns:
+        List of floats representing the tag embedding vector, or None if failed
+    """
+    if not tags or not isinstance(tags, list) or len(tags) == 0:
+        logger.debug("Empty or invalid tags provided for embedding")
+        return None
+
+    # Filter out empty/invalid tags
+    valid_tags = [str(tag).strip() for tag in tags if tag and str(tag).strip()]
+    if not valid_tags:
+        logger.debug("No valid tags after filtering")
+        return None
+
+    # Sort tags alphabetically for deterministic output
+    sorted_tags = sorted(valid_tags)
+
+    # Create concatenated tag string with separator
+    tag_string = " | ".join(sorted_tags)
+
+    logger.debug(f"Generating tag embedding for: {tag_string}")
+
+    # Use existing generate_embedding function
+    return generate_embedding(tag_string, model, max_retries)
+
+
 def combine_embeddings(
     content_emb: Optional[List[float]],
     summary_emb: Optional[List[float]],
@@ -332,6 +368,11 @@ def register_duckdb_functions(conn: duckdb.DuckDBPyConnection):
         # Register embedding generation function
         conn.create_function("ollama_embedding", generate_embedding, [str, str], "FLOAT[]")
 
+        # Register tag embedding generation function
+        conn.create_function(
+            "ollama_tag_embedding", generate_tag_embedding, ["VARCHAR[]", str], "FLOAT[]"
+        )
+
         # Register embedding combination function
         conn.create_function(
             "combine_embeddings_udf",
@@ -345,7 +386,7 @@ def register_duckdb_functions(conn: duckdb.DuckDBPyConnection):
             "cosine_similarity_udf", cosine_similarity, ["FLOAT[]", "FLOAT[]"], "FLOAT"
         )
 
-        print("✓ Ollama embedding UDFs registered with DuckDB")
+        print("✓ Ollama embedding UDFs registered with DuckDB (including tag embeddings)")
     except Exception as e:
         print(f"Warning: Could not register UDFs with DuckDB: {e}")
         # Fall back to SQL-based placeholders
@@ -365,15 +406,64 @@ def test_embedding_generation():
         print("✗ Failed to generate embedding")
 
 
+def test_tag_embedding_generation():
+    """Test tag embedding generation with sample tags"""
+    test_tags = ["python", "programming", "machine-learning", "data-science"]
+    print(f"Testing tag embedding generation for: {test_tags}")
+
+    # Test with regular order
+    embedding1 = generate_tag_embedding(test_tags)
+    if embedding1:
+        print(f"✓ Generated {len(embedding1)}-dimensional tag embedding")
+        print(f"  Magnitude: {np.linalg.norm(embedding1):.4f}")
+        print(f"  First 5 values: {embedding1[:5]}")
+    else:
+        print("✗ Failed to generate tag embedding")
+
+    # Test deterministic ordering (reversed input should give same result)
+    test_tags_reversed = test_tags[::-1]
+    embedding2 = generate_tag_embedding(test_tags_reversed)
+
+    if embedding1 and embedding2:
+        similarity = cosine_similarity(embedding1, embedding2)
+        print(f"  Deterministic test: {similarity:.6f} similarity (should be 1.0)")
+        if abs(similarity - 1.0) < 0.0001:
+            print("✓ Tag embeddings are deterministic")
+        else:
+            print("✗ Tag embeddings are not deterministic")
+
+    # Test edge cases
+    print("\nTesting edge cases:")
+
+    # Empty tags
+    empty_result = generate_tag_embedding([])
+    print(f"  Empty tags: {'✓ None returned' if empty_result is None else '✗ Unexpected result'}")
+
+    # Single tag
+    single_result = generate_tag_embedding(["python"])
+    print(f"  Single tag: {'✓ Generated' if single_result else '✗ Failed'}")
+
+    # Tags with spaces and special characters
+    special_result = generate_tag_embedding(["machine learning", "AI/ML", "data-science"])
+    print(f"  Special characters: {'✓ Generated' if special_result else '✗ Failed'}")
+
+
 if __name__ == "__main__":
     # Test embedding generation
     test_embedding_generation()
+
+    print("\n" + "=" * 50)
+
+    # Test tag embedding generation
+    test_tag_embedding_generation()
+
+    print("\n" + "=" * 50)
 
     # Example DuckDB integration
     conn = duckdb.connect()
     register_duckdb_functions(conn)
 
-    # Test in SQL
+    # Test content embedding in SQL
     result = conn.execute(
         """
         SELECT ollama_embedding('test text', 'nomic-embed-text') as embedding
@@ -381,6 +471,18 @@ if __name__ == "__main__":
     ).fetchone()
 
     if result and result[0]:
-        print(f"✓ DuckDB UDF test successful: {len(result[0])}-dim embedding")
+        print(f"✓ DuckDB content UDF test successful: {len(result[0])}-dim embedding")
     else:
-        print("✗ DuckDB UDF test failed")
+        print("✗ DuckDB content UDF test failed")
+
+    # Test tag embedding in SQL
+    tag_result = conn.execute(
+        """
+        SELECT ollama_tag_embedding(['python', 'programming', 'test'], 'nomic-embed-text') as tag_embedding
+    """
+    ).fetchone()
+
+    if tag_result and tag_result[0]:
+        print(f"✓ DuckDB tag UDF test successful: {len(tag_result[0])}-dim embedding")
+    else:
+        print("✗ DuckDB tag UDF test failed")

@@ -14,10 +14,15 @@ SELECT
     gen_random_uuid() as memory_id,
     'placeholder' as content,
     NULL::vector(768) as embedding_vector,
-    NULL::vector(256) as embedding_reduced,  
+    NULL::vector(256) as embedding_reduced,
     NULL::real as vector_magnitude,
     NULL::integer as semantic_cluster,
-    CURRENT_TIMESTAMP as last_embedding_update
+    CURRENT_TIMESTAMP as last_embedding_update,
+    -- Tag embedding columns
+    NULL::vector(768) as tag_embedding,
+    NULL::vector(256) as tag_embedding_reduced,
+    NULL::timestamp as tag_embedding_updated
 WHERE FALSE  -- Creates schema but no data
 
 -- TODO: Replace with actual data transfer mechanism
+-- The transfer script should handle both content and tag embeddings atomically

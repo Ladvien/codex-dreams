@@ -5,7 +5,7 @@
 
 A computational model of human memory systems implementing biologically-accurate cognitive processes through modern data infrastructure.
 
-> **⚠️ Development Notice**  
+> **⚠️ Development Notice**
 > This project was developed through iterative AI-assisted "vibe coding" - building functionality through natural language descriptions rather than traditional software design. While the system is functional and thoroughly tested, expect unconventional patterns and treat as experimental. Extensive development environment testing recommended before any production use.
 
 ## Overview
@@ -20,6 +20,8 @@ Codex Dreams models the human memory formation process through four interconnect
 
 **Long-Term Memory** creates semantic networks through 768-dimensional vector embeddings and Hebbian-strengthened associations, organizing knowledge into cortical-style hierarchies with biologically-informed retrieval mechanisms powered by nomic-embed-text embeddings.
 
+**Tag Embeddings** provide semantic similarity search capabilities for memory tags, enabling sophisticated two-stage retrieval (tag filtering → content similarity) with deterministic processing and production-ready caching.
+
 The system processes real memory data through this pipeline, providing both a research platform for testing memory theories and a practical tool for understanding how biological memory systems could be implemented computationally.
 
 ## Architecture
@@ -28,19 +30,19 @@ The system processes real memory data through this pipeline, providing both a re
 graph TD
     A[Codex MCP Server<br/>Rust memory storage] -->|Content ingestion| B[PostgreSQL: public.memories]
     A -->|Claude Desktop integration| B
-    
+
     B -->|postgres_scanner| C[DuckDB Analytics Engine]
     C -->|Stage 1| D[Working Memory<br/>Miller's 7±2, 5-min windows]
     D -->|Stage 2| E[Short-Term Episodes<br/>Goal-task-action hierarchies]
     E -->|Stage 3| F[Consolidation<br/>Hebbian learning, threshold 0.5]
     F -->|Stage 4| G[Long-Term Semantic<br/>Vector networks, retrieval paths]
-    
+
     H[Ollama LLM<br/>Entity extraction & embeddings] -->|Enrichment| D
     H -->|Analysis| E
     H -->|Semantic processing| F
-    
+
     I[Write-back Services<br/>Semantic enhancement] -->|pgvector embeddings| B
-    
+
     G -->|Semantic networks| I
     F -->|Strengthened associations| I
     E -->|Episode structures| I
@@ -53,7 +55,7 @@ graph TD
 
 **Codex (Storage Layer):**
 - High-performance Rust MCP server with 5ms store / 2ms retrieval times
-- PostgreSQL-backed storage with ACID compliance and SHA-256 deduplication  
+- PostgreSQL-backed storage with ACID compliance and SHA-256 deduplication
 - Claude Desktop integration via Model Context Protocol
 - Owns and manages the `public.memories` table schema
 - Handles content ingestion, chunking, and tag organization
@@ -84,7 +86,7 @@ CREATE TABLE memories (
 
 -- Codex-Dreams extensions (added non-destructively)
 ALTER TABLE memories ADD COLUMN embedding_vector vector(768);     -- Semantic embeddings
-ALTER TABLE memories ADD COLUMN embedding_reduced vector(256);    -- Fast search vectors  
+ALTER TABLE memories ADD COLUMN embedding_reduced vector(256);    -- Fast search vectors
 ALTER TABLE memories ADD COLUMN vector_magnitude real;            -- Vector L2 norm
 ALTER TABLE memories ADD COLUMN semantic_cluster integer;         -- Cognitive clustering
 ALTER TABLE memories ADD COLUMN last_embedding_update timestamp;  -- Embedding freshness
@@ -111,12 +113,12 @@ ALTER TABLE memories ADD COLUMN last_embedding_update timestamp;  -- Embedding f
 
 ### Memory Processing Pipeline
 - **17+ dbt models** implementing each memory stage with biological parameters
-- **Incremental processing** for real-time memory flow with proper temporal windowing  
+- **Incremental processing** for real-time memory flow with proper temporal windowing
 - **Biological timing** enforcement matching human cognitive research findings
 - **Semantic embeddings** via Ollama's nomic-embed-text model with comprehensive error handling
 - **Production-ready** code with 100% test coverage and enterprise-grade reliability
 
-### Data Architecture  
+### Data Architecture
 - **Dreams Schema** with 6 core tables representing different memory stages and types
 - **Write-back services** ensuring processed memories persist for analysis and retrieval
 - **Optimization layers** including specialized indexes and materialized views for query performance
@@ -142,7 +144,7 @@ cd codex
 cargo install --path .
 codex init --database-url postgresql://user:pass@host:5432/codex_db
 
-# 2. Install Codex-Dreams (the semantic layer)  
+# 2. Install Codex-Dreams (the semantic layer)
 git clone https://github.com/Ladvien/codex-dreams.git
 cd codex-dreams
 pip install -e .
@@ -152,7 +154,7 @@ cp .env.example .env
 
 # Core services needed
 # - PostgreSQL database (shared with Codex)
-# - Ollama server with gpt-oss:20b and nomic-embed-text models  
+# - Ollama server with gpt-oss:20b and nomic-embed-text models
 # - 8GB+ RAM for memory consolidation processing
 
 # 3. Populate some memories via Codex first
@@ -186,7 +188,7 @@ DUCKDB_PATH=./biological_memory/dbs/memory.duckdb
 ### Project Structure
 ```
 src/services/          # Core processing services (LLM, write-back, orchestration)
-sql/                   # Database schemas and optimization scripts  
+sql/                   # Database schemas and optimization scripts
 biological_memory/     # dbt models implementing memory stages
 tests/                 # Comprehensive test suite with biological validation
 ```
@@ -196,7 +198,7 @@ tests/                 # Comprehensive test suite with biological validation
 # Run complete memory pipeline
 dbt run --profiles-dir ./biological_memory
 
-# Test biological accuracy 
+# Test biological accuracy
 pytest tests/biological/ -v
 
 # Performance benchmarks
@@ -220,7 +222,7 @@ vars:
 ## Documentation
 
 - **Architecture Details**: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- **Database Schema**: [docs/DREAMS_SCHEMA.md](docs/DREAMS_SCHEMA.md) 
+- **Database Schema**: [docs/DREAMS_SCHEMA.md](docs/DREAMS_SCHEMA.md)
 - **Biological Models**: See dbt documentation with `dbt docs serve`
 - **API Reference**: Docstrings throughout source code with type hints
 
@@ -228,7 +230,7 @@ vars:
 
 This project bridges neuroscience research with data engineering. Contributions welcome from:
 - **Cognitive scientists** interested in computational memory models
-- **Data engineers** working on novel database architectures  
+- **Data engineers** working on novel database architectures
 - **ML researchers** exploring biologically-inspired AI systems
 - **Systems developers** building human-like reasoning capabilities
 
