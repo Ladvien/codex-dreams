@@ -113,19 +113,21 @@ class TestBiologicalRhythmTiming:
         # Based on Tononi & Cirelli (2006): Synaptic homeostasis during sleep
         scheduler = BiologicalRhythmScheduler()
         
+        # Create a real datetime for Sunday 3 AM
+        test_sunday = datetime(2025, 9, 7, 3, 0, 0)  # Sunday 3 AM
+        
         # Mock Sunday 3 AM
         with patch('orchestration.biological_rhythm_scheduler.datetime') as mock_datetime:
-            mock_now = Mock()
-            mock_now.weekday.return_value = 6  # Sunday
-            mock_now.hour = 3
-            mock_datetime.now.return_value = mock_now
+            mock_datetime.now.return_value = test_sunday
+            mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
             
             # Set last homeostasis to over a week ago
-            scheduler.last_homeostasis = datetime.now() - timedelta(days=8)
+            scheduler.last_homeostasis = test_sunday - timedelta(days=8)
             assert scheduler._should_run_homeostasis(), "Should run weekly on Sunday 3 AM"
             
-            # Should not run on other days
-            mock_now.weekday.return_value = 0  # Monday
+            # Test Monday (should not run)
+            test_monday = datetime(2025, 9, 8, 3, 0, 0)  # Monday 3 AM  
+            mock_datetime.now.return_value = test_monday
             assert not scheduler._should_run_homeostasis(), "Should not run on non-Sunday"
 
 
@@ -364,14 +366,15 @@ class TestNeuroscienceValidation:
         
         scheduler = BiologicalRhythmScheduler()
         
+        # Create a real datetime for Sunday 3 AM
+        test_sunday = datetime(2025, 9, 7, 3, 0, 0)  # Sunday 3 AM
+        
         # Homeostasis should be scheduled during minimal interference (Sunday 3 AM)
         with patch('orchestration.biological_rhythm_scheduler.datetime') as mock_datetime:
-            mock_now = Mock()
-            mock_now.weekday.return_value = 6  # Sunday
-            mock_now.hour = 3  # 3 AM
-            mock_datetime.now.return_value = mock_now
+            mock_datetime.now.return_value = test_sunday
+            mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
             
-            scheduler.last_homeostasis = datetime.now() - timedelta(days=8)
+            scheduler.last_homeostasis = test_sunday - timedelta(days=8)
             
             assert scheduler._should_run_homeostasis(), "Homeostasis should occur during low-interference periods"
     
@@ -384,7 +387,7 @@ class TestNeuroscienceValidation:
             assert 5 <= capacity <= 9, f"Capacity {capacity} should be within Miller's range"
         
         # Test that system respects these limits
-        scheduler = BirologicalRhythmScheduler()
+        scheduler = BiologicalRhythmScheduler()
         # The scheduler should use these parameters in its processing
         # This is validated through the working memory models it calls
         
