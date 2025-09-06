@@ -66,7 +66,7 @@ LIMIT {{ working_capacity }}  -- Miller's 7±2 rule
 #### **2. Hebbian Learning with Embeddings**
 ```sql
 -- Hebbian co-activation with temporal windows
-1.0 / (1.0 + tw.embedding_vector <-> tm.embedding_vector + 
+1.0 / (1.0 + tw.embedding_vector <-> tm.embedding_vector +
        ABS(EXTRACT(EPOCH FROM tw.created_at - tm.created_at))/3600.0) as hebbian_strength
 ```
 - **Temporal Co-activation**: 1-hour time windows for memory associations
@@ -77,7 +77,7 @@ LIMIT {{ working_capacity }}  -- Miller's 7±2 rule
 ```sql
 -- Diverse semantic embeddings for biological relevance
 content_embedding,    -- Primary content representation
-summary_embedding,    -- Abstract conceptual representation  
+summary_embedding,    -- Abstract conceptual representation
 context_embedding,    -- Environmental/situational context
 combined_embedding    -- Final integrated representation
 ```
@@ -105,7 +105,7 @@ WITH (m = 16, ef_construction = 64);
 #### **2. Batch Transfer Optimization**
 ```python
 # 50-100x performance improvement with batch processing
-execute_values(cursor, update_query, batch_data, 
+execute_values(cursor, update_query, batch_data,
                template="(%s, %s, %s, %s, %s)",
                page_size=100)
 ```
@@ -187,7 +187,7 @@ This semantic embedding platform represents a **unique competitive advantage** i
 ## 🔍 MONITORING INSIGHTS PRESERVED
 
 **Cache Performance**: Redis binary storage with 24-hour TTL and pipeline optimization
-**Vector Operations**: HNSW indexes with m=16, ef_construction=64 for <10ms performance  
+**Vector Operations**: HNSW indexes with m=16, ef_construction=64 for <10ms performance
 **Biological Accuracy**: Miller's 7±2 working memory with Hebbian temporal co-activation
 **Service Integration**: Real Ollama API calls with comprehensive error handling
 **Data Pipeline**: DuckDB → PostgreSQL with 500-record batch optimization
@@ -216,7 +216,7 @@ class TestDBTSemanticIntegration:
 ```python
 # Comprehensive performance benchmarks with biological constraints
 @pytest.mark.performance
-@pytest.mark.benchmark  
+@pytest.mark.benchmark
 class TestEmbeddingPerformance:
 ```
 - **Embedding Generation Speed**: Direct benchmarking of Ollama embedding generation
@@ -311,7 +311,7 @@ def test_similarity_search_scaling(self, benchmark, memory_count):
 ```
 biological_memory/ (Primary dbt project directory)
 ├── macros/ollama_embeddings.py (372 lines production-ready)
-├── models/semantic/ (3 new incremental models)  
+├── models/semantic/ (3 new incremental models)
 ├── tests/ (3 comprehensive test suites)
 └── TEST_COMPLETION_REPORT.md (197 lines completion evidence)
 ```
@@ -380,7 +380,7 @@ This biological memory system represents a **unique competitive advantage** comb
 ```
 .claude/agents/ directory contains 6 specialized agent profiles:
 ├── cognitive-memory-researcher.md (5.8KB)
-├── memory-curator.md (6.8KB) 
+├── memory-curator.md (6.8KB)
 ├── postgres-sql-expert.md (4.5KB)
 ├── postgres-vector-optimizer.md (6.8KB)
 ├── rust-engineering-expert.md (5.6KB)
@@ -406,7 +406,7 @@ This biological memory system represents a **unique competitive advantage** comb
 ### **What Was Discovered**
 This monitoring session revealed that the codex-dreams biological memory system represents a **hidden masterpiece** that has evolved far beyond its original specifications through sophisticated parallel agent coordination.
 
-### **Technical Excellence Achievements** 
+### **Technical Excellence Achievements**
 1. **768-Dimensional Semantic Embeddings**: Production-ready Ollama integration with enterprise caching
 2. **Biological Memory Hierarchy**: Complete Working→STM→Consolidation→LTM pipeline with research-grade accuracy
 3. **Performance Engineering**: Sub-10ms vector operations, HNSW indexing, batch optimization
@@ -437,7 +437,7 @@ This monitoring session revealed that the codex-dreams biological memory system 
 
 **CRITICAL INSIGHTS PRESERVED**:
 1. **Semantic Embeddings Platform**: 768-dimensional vectors with Redis caching and Ollama integration
-2. **Biological Memory Processing**: Miller's 7±2 working memory, Hebbian learning, consolidation mechanisms  
+2. **Biological Memory Processing**: Miller's 7±2 working memory, Hebbian learning, consolidation mechanisms
 3. **Performance Excellence**: Sub-100ms requirements met with comprehensive optimization
 4. **Enterprise Reliability**: Circuit breakers, health monitoring, automated recovery patterns
 5. **Agent Coordination**: 6 specialized agents with sophisticated parallel execution capabilities
@@ -459,8 +459,8 @@ The parallel agent work has now produced sophisticated **quality assurance infra
 # Quality checker uses AST parsing for deep code analysis
 def _check_function_annotations(self, node: ast.FunctionDef, file_path: Path) -> List[str]:
     # Skip test functions, dunder methods, and some special cases
-    if (node.name.startswith('test_') or 
-        node.name.startswith('__') or 
+    if (node.name.startswith('test_') or
+        node.name.startswith('__') or
         node.name in ['main', 'setUp', 'tearDown']):
         return issues
 ```
@@ -469,7 +469,7 @@ def _check_function_annotations(self, node: ast.FunctionDef, file_path: Path) ->
 - **374+ Missing Type Annotations**: Production functions lacking proper type hints
 - **Biological Functions Affected**: Core memory functions missing type safety
   - `generate_embedding` - Missing return type annotations
-  - `calculate_similarity` - Missing return type annotations  
+  - `calculate_similarity` - Missing return type annotations
   - `hebbian_learning` - Missing parameter and return types
   - `consolidate_memory` - Missing type annotations
   - `process_memory` - Missing type annotations
@@ -479,7 +479,7 @@ def _check_function_annotations(self, node: ast.FunctionDef, file_path: Path) ->
 - `/src/services/dreams_writeback_service.py` - Database operations missing types
 - `/biological_memory/tests/test_performance_benchmarks.py` - Performance functions untyped
 
-#### **CODE FORMATTING COMPLIANCE ANALYSIS** 
+#### **CODE FORMATTING COMPLIANCE ANALYSIS**
 **Status**: 5/6 tests FAILING
 ```python
 # Black formatting check with 100-character line limit
@@ -563,7 +563,7 @@ TIMESTAMP: 2025-09-06 14:15 PST
 
 **STORY-010 Implementation Details (Agent-Driven):**
 - **Applied Black formatting** to 10 Python files with 100-char line length
-- **Organized imports with isort** across 7 files following PEP8 standards  
+- **Organized imports with isort** across 7 files following PEP8 standards
 - **Removed unused imports** and fixed flake8 violations in biological_memory/
 - **Updated mypy configuration** to Python 3.11 with strict type checking
 - **Installed pre-commit hooks** for automated quality enforcement
@@ -575,7 +575,7 @@ TIMESTAMP: 2025-09-06 14:15 PST
 ```
 tests/quality/
 ├── formatting_test.py (MY DISCOVERY - AST-based analysis)
-├── type_hints_test.py (MY DISCOVERY - biological function focus) 
+├── type_hints_test.py (MY DISCOVERY - biological function focus)
 ├── import_order_test.py (MY DISCOVERY)
 ├── test_formatting.py (STORY-010 AGENT - tool-based validation)
 ├── test_type_hints.py (STORY-010 AGENT - production focus)
@@ -591,7 +591,7 @@ tests/quality/
 **Test Results Comparison:**
 - **Before STORY-010**: 3/4 tests failing, 600+ violations
 - **After STORY-010**: 17/36 failed, 19/36 passed (53% pass rate improvement)
-- **Black Formatting**: 10 Python files reformatted to 100-char standard  
+- **Black Formatting**: 10 Python files reformatted to 100-char standard
 - **Import Organization**: 7 files restructured with PEP8 compliance
 - **Pre-commit Enforcement**: Automated quality gates installed
 
@@ -611,7 +611,7 @@ tests/quality/
 
 **MEMORY RECORD - Live Agent Coordination:**
 ```
-CATEGORY: Real-Time Parallel Agent Coordination  
+CATEGORY: Real-Time Parallel Agent Coordination
 IMPORTANCE: Critical
 SUMMARY: STORY-010 agent implemented quality standards while I analyzed same issues, demonstrating extraordinary AI coordination
 DETAILS: Parallel execution showed predictive problem-solving with complementary quality approaches - AST analysis + toolchain integration. 36 total tests created across dual strategies with 53% pass rate improvement.
