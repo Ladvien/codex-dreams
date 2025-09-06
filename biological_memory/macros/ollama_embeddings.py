@@ -11,7 +11,6 @@ import pickle
 import time
 from pathlib import Path
 from typing import List, Optional, Tuple
-import warnings
 
 import duckdb
 import numpy as np
@@ -56,7 +55,9 @@ class EmbeddingCache:
                         if isinstance(embedding, list) and len(embedding) == EMBEDDING_DIMENSIONS:
                             return embedding
                         else:
-                            logger.warning(f"Invalid cached embedding format for {cache_key[:8]}...")
+                            logger.warning(
+                                f"Invalid cached embedding format for {cache_key[:8]}..."
+                            )
                             cache_file.unlink()  # Remove corrupted cache
                 except (pickle.PickleError, EOFError, ValueError) as e:
                     logger.warning(f"Cache corruption detected: {e}")
@@ -66,7 +67,7 @@ class EmbeddingCache:
                         pass
         except Exception as e:
             logger.error(f"Unexpected error accessing cache: {e}")
-        
+
         return None
 
     def set(self, text: str, model: str, embedding: List[float]):
@@ -74,11 +75,15 @@ class EmbeddingCache:
         try:
             # Validate input
             if not isinstance(embedding, list) or len(embedding) != EMBEDDING_DIMENSIONS:
-                logger.warning(f"Invalid embedding dimensions: {len(embedding) if isinstance(embedding, list) else 'not list'}")
+                dim_info = len(embedding) if isinstance(embedding, list) else 'not list'
+                logger.warning(f"Invalid embedding dimensions: {dim_info}")
                 return
-            
+
             # Validate embedding values
-            if not all(isinstance(x, (int, float)) and not np.isnan(x) and not np.isinf(x) for x in embedding):
+            if not all(
+                isinstance(x, (int, float)) and not np.isnan(x) and not np.isinf(x)
+                for x in embedding
+            ):
                 logger.warning("Invalid embedding values detected (NaN or Inf)")
                 return
 
@@ -89,7 +94,7 @@ class EmbeddingCache:
             self.cache_dir.mkdir(exist_ok=True)
 
             # Atomic write to prevent corruption
-            temp_file = cache_file.with_suffix('.tmp')
+            temp_file = cache_file.with_suffix(".tmp")
             try:
                 with open(temp_file, "wb") as f:
                     pickle.dump(embedding, f)
@@ -107,7 +112,9 @@ class EmbeddingCache:
 cache = EmbeddingCache()
 
 
-def generate_embedding(text: str, model: str = EMBEDDING_MODEL, max_retries: int = 3) -> Optional[List[float]]:
+def generate_embedding(
+    text: str, model: str = EMBEDDING_MODEL, max_retries: int = 3
+) -> Optional[List[float]]:
     """
     Generate embedding for text using Ollama API with comprehensive error handling
 
@@ -139,12 +146,12 @@ def generate_embedding(text: str, model: str = EMBEDDING_MODEL, max_retries: int
     for attempt in range(max_retries):
         try:
             logger.debug(f"Attempting to generate embedding (attempt {attempt + 1}/{max_retries})")
-            
+
             response = requests.post(
                 f"{OLLAMA_URL}/api/embeddings",
                 json={"model": model, "prompt": text},
                 timeout=30 + (attempt * 10),  # Increasing timeout on retries
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json"},
             )
 
             if response.status_code == 200:
@@ -154,25 +161,32 @@ def generate_embedding(text: str, model: str = EMBEDDING_MODEL, max_retries: int
 
                     # Validate response format
                     if not isinstance(embedding, list):
-                        logger.error(f"Invalid response format: embedding is not a list")
+                        logger.error("Invalid response format: embedding is not a list")
                         continue
 
                     if not embedding:
-                        logger.error(f"Empty embedding received from API")
+                        logger.error("Empty embedding received from API")
                         continue
 
                     # Validate dimensions and fix if necessary
                     if len(embedding) != EMBEDDING_DIMENSIONS:
-                        logger.warning(f"Expected {EMBEDDING_DIMENSIONS} dimensions, got {len(embedding)}")
+                        logger.warning(
+                            f"Expected {EMBEDDING_DIMENSIONS} dimensions, got {len(embedding)}"
+                        )
                         if len(embedding) < EMBEDDING_DIMENSIONS:
                             # Pad with small random values instead of zeros
-                            padding = np.random.normal(0, 0.01, EMBEDDING_DIMENSIONS - len(embedding)).tolist()
+                            padding = np.random.normal(
+                                0, 0.01, EMBEDDING_DIMENSIONS - len(embedding)
+                            ).tolist()
                             embedding.extend(padding)
                         else:
                             embedding = embedding[:EMBEDDING_DIMENSIONS]
 
                     # Validate embedding values
-                    if not all(isinstance(x, (int, float)) and not np.isnan(x) and not np.isinf(x) for x in embedding):
+                    if not all(
+                        isinstance(x, (int, float)) and not np.isnan(x) and not np.isinf(x)
+                        for x in embedding
+                    ):
                         logger.error("Invalid embedding values detected (NaN, Inf, or non-numeric)")
                         continue
 
@@ -181,7 +195,7 @@ def generate_embedding(text: str, model: str = EMBEDDING_MODEL, max_retries: int
                     if magnitude == 0:
                         logger.error("Zero-magnitude embedding received")
                         continue
-                    
+
                     if magnitude > 100:  # Suspiciously large magnitude
                         logger.warning(f"Large embedding magnitude detected: {magnitude:.2f}")
                         # Normalize to reasonable scale
@@ -206,7 +220,7 @@ def generate_embedding(text: str, model: str = EMBEDDING_MODEL, max_retries: int
             elif response.status_code == 503:
                 logger.warning(f"Ollama service unavailable (attempt {attempt + 1})")
                 if attempt < max_retries - 1:
-                    time.sleep(2 ** attempt)  # Exponential backoff
+                    time.sleep(2**attempt)  # Exponential backoff
                 continue
             else:
                 logger.error(f"Ollama API error {response.status_code}: {response.text[:200]}")

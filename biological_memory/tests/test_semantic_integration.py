@@ -36,18 +36,23 @@ class TestDBTSemanticIntegration:
         conn = duckdb.connect(db_path)
 
         # Create test memories table
-        conn.execute("""
+        conn.execute(
+            """
             CREATE TABLE memories (
                 id UUID DEFAULT gen_random_uuid(),
                 content TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 metadata JSON DEFAULT '{}'
             )
-        """)
+        """
+        )
 
         # Insert test data
         test_memories = [
-            ("Machine learning models require training data", "{'importance': '0.8', 'tags': '[\"ai\", \"ml\"]'}"),
+            (
+                "Machine learning models require training data",
+                "{'importance': '0.8', 'tags': '[\"ai\", \"ml\"]'}",
+            ),
             (
                 "Deep learning uses neural networks",
                 "{'importance': '0.7', 'emotional_valence': '0.6', 'context': 'technical discussion'}",
@@ -103,7 +108,15 @@ class TestDBTSemanticIntegration:
         assert result.returncode == 0, f"dbt compile failed: {result.stderr}"
 
         # Verify compiled SQL makes sense
-        compiled_sql = (dbt_project_dir / "target" / "compiled" / "biological_memory" / "models" / "working_memory" / "raw_memories.sql").read_text()
+        compiled_sql = (
+            dbt_project_dir
+            / "target"
+            / "compiled"
+            / "biological_memory"
+            / "models"
+            / "working_memory"
+            / "raw_memories.sql"
+        ).read_text()
 
         assert "SELECT" in compiled_sql
         assert "memories" in compiled_sql
@@ -130,8 +143,13 @@ class TestDBTSemanticIntegration:
         else:
             # Fallback to compiled version if it exists
             compiled_file = (
-                dbt_project_dir / "target" / "compiled" / "biological_memory" 
-                / "models" / "semantic" / "memory_embeddings.sql"
+                dbt_project_dir
+                / "target"
+                / "compiled"
+                / "biological_memory"
+                / "models"
+                / "semantic"
+                / "memory_embeddings.sql"
             )
             compiled_sql = compiled_file.read_text() if compiled_file.exists() else ""
 
@@ -190,7 +208,9 @@ class TestDBTSemanticIntegration:
         # For now, just verify incremental configuration is correct
 
         # Check memory_embeddings incremental config
-        embeddings_sql = (dbt_project_dir / "models" / "semantic" / "memory_embeddings.sql").read_text()
+        embeddings_sql = (
+            dbt_project_dir / "models" / "semantic" / "memory_embeddings.sql"
+        ).read_text()
 
         assert "materialized='incremental'" in embeddings_sql
         assert "unique_key='memory_id'" in embeddings_sql
@@ -259,10 +279,14 @@ class TestDBTSemanticIntegration:
 
                 # Should use dbt variables for biological parameters
                 if "capacity" in content.lower():
-                    assert "var(" in content, f"Model {model_path.name} should use var() for capacity"
+                    assert (
+                        "var(" in content
+                    ), f"Model {model_path.name} should use var() for capacity"
 
                 if "hebbian" in content.lower():
-                    assert "var(" in content, f"Model {model_path.name} should use var() for hebbian params"
+                    assert (
+                        "var(" in content
+                    ), f"Model {model_path.name} should use var() for hebbian params"
 
 
 @pytest.mark.dbt

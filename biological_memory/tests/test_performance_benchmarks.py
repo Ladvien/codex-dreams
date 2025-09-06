@@ -9,7 +9,6 @@ from typing import List
 
 import numpy as np
 import pytest
-
 from macros.ollama_embeddings import (
     EmbeddingCache,
     combine_embeddings,
@@ -140,7 +139,7 @@ class TestBiologicalMemoryPerformance:
                 activation = np.random.random()
                 importance = np.random.random()
                 learning_rate = 0.1
-                
+
                 strength = (activation * 0.8 + importance * 0.2) * learning_rate
                 results.append(strength)
             return results
@@ -158,7 +157,7 @@ class TestBiologicalMemoryPerformance:
                 initial_strength = np.random.random()
                 age_hours = np.random.random() * 168  # Up to 1 week
                 forgetting_rate = 0.05
-                
+
                 final_strength = initial_strength * np.exp(-forgetting_rate * age_hours)
                 results.append(final_strength)
             return results
@@ -208,18 +207,18 @@ class TestSemanticNetworkPerformance:
                 # Generate two similar embeddings
                 emb1 = np.random.randn(768)
                 emb1 = emb1 / np.linalg.norm(emb1)
-                
+
                 # Similar embedding with noise
                 emb2 = emb1 + np.random.randn(768) * 0.1
                 emb2 = emb2 / np.linalg.norm(emb2)
-                
+
                 similarity = cosine_similarity(emb1.tolist(), emb2.tolist())
                 importance = np.random.random()
                 emotional_salience = 1.2
-                
+
                 association_strength = similarity * importance * emotional_salience
                 results.append(association_strength)
-            
+
             return results
 
         results = benchmark(calculate_associations)
@@ -251,7 +250,7 @@ class TestScalabilityBenchmarks:
             for emb in embeddings:
                 sim = cosine_similarity(query_list, emb)
                 similarities.append((sim, emb))
-            
+
             # Sort by similarity and return top 10
             similarities.sort(reverse=True)
             return similarities[:10]
@@ -274,8 +273,9 @@ class TestScalabilityBenchmarks:
 
     def test_memory_consumption(self):
         """Test memory consumption of embedding operations"""
-        import psutil
         import os
+
+        import psutil
 
         process = psutil.Process(os.getpid())
         initial_memory = process.memory_info().rss
@@ -290,7 +290,9 @@ class TestScalabilityBenchmarks:
         memory_increase = final_memory - initial_memory
 
         # Memory increase should be reasonable (less than 100MB for 1000 embeddings)
-        assert memory_increase < 100 * 1024 * 1024, f"Memory usage too high: {memory_increase / 1024 / 1024:.2f}MB"
+        assert (
+            memory_increase < 100 * 1024 * 1024
+        ), f"Memory usage too high: {memory_increase / 1024 / 1024:.2f}MB"
 
         # Verify embeddings are properly formatted
         assert len(embeddings) == 1000
@@ -320,9 +322,7 @@ class TestRealTimeBenchmarks:
             # Calculate priorities and select top 7
             for mem in memories:
                 mem["priority"] = (
-                    mem["importance"] * 0.4 +
-                    mem["recency"] * 0.3 +
-                    mem["semantic_coherence"] * 0.3
+                    mem["importance"] * 0.4 + mem["recency"] * 0.3 + mem["semantic_coherence"] * 0.3
                 )
 
             memories.sort(key=lambda x: x["priority"], reverse=True)
@@ -361,10 +361,12 @@ class TestRealTimeBenchmarks:
 
 if __name__ == "__main__":
     # Run performance benchmarks
-    pytest.main([
-        __file__,
-        "--benchmark-only",
-        "--benchmark-sort=mean",
-        "--benchmark-columns=min,max,mean,stddev,rounds",
-        "-v"
-    ])
+    pytest.main(
+        [
+            __file__,
+            "--benchmark-only",
+            "--benchmark-sort=mean",
+            "--benchmark-columns=min,max,mean,stddev,rounds",
+            "-v",
+        ]
+    )

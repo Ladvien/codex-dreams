@@ -14,5 +14,16 @@ biological_memory:
       type: duckdb
       path: "{{ env_var('PROD_DUCKDB_PATH', './memory.duckdb') }}"
       threads: 8
+
+    # PostgreSQL target for write-back operations
+    postgres:
+      type: postgres
+      host: "{{ env_var('POSTGRES_HOST', '192.168.1.104') }}"
+      port: "{{ env_var('POSTGRES_PORT', '5432') | as_number }}"
+      user: "{{ env_var('POSTGRES_USER', 'codex_user') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD', 'MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a') }}"
+      database: "{{ env_var('POSTGRES_DATABASE', 'codex_db') }}"
+      schema: public
+      threads: 4
       
   target: dev

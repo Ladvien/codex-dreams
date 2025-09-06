@@ -48,4 +48,4 @@ repos:
         pass_filenames: false
         always_run: false
         files: ^tests/.*\.py$
-        stages: [push]
+        stages: [pre-push]

@@ -254,12 +254,12 @@ class TestJobExecution:
         """Test dbt job command structure."""
         # Expected job commands
         job_commands = {
-            "working_memory": "cd /biological_memory && dbt run --select tag:continuous",
-            "stm_updates": "cd /biological_memory && dbt run --select short_term",
-            "consolidation": "cd /biological_memory && dbt run --select consolidation",
-            "deep_consolidation": "cd /biological_memory && dbt run --select long_term --full-refresh",
-            "rem_cycles": "cd /biological_memory && dbt run-operation strengthen_associations",
-            "homeostasis": "cd /biological_memory && dbt run-operation synaptic_homeostasis",
+            "working_memory": "cd biological_memory && dbt run --select tag:continuous",
+            "stm_updates": "cd biological_memory && dbt run --select short_term",
+            "consolidation": "cd biological_memory && dbt run --select consolidation",
+            "deep_consolidation": "cd biological_memory && dbt run --select long_term --full-refresh",
+            "rem_cycles": "cd biological_memory && dbt run-operation strengthen_associations",
+            "homeostasis": "cd biological_memory && dbt run-operation synaptic_homeostasis",
         }
 
         for job, command in job_commands.items():

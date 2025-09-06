@@ -30,21 +30,12 @@ SELECT
     COALESCE(metadata->>'tags', '[]')::JSON as tags
     
 FROM (
-    -- Source from PostgreSQL using DuckDB's postgres_scanner
+    -- Source from PostgreSQL using DuckDB's postgres_scanner with full connection string
     SELECT * FROM postgres_scan(
-        '{{ var("postgres_url") }}',
+        'postgresql://codex_user:MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a@192.168.1.104:5432/codex_db',
         'public',
         'memories'
     )
-    
-    UNION ALL
-    
-    -- Also include any local DuckDB memories table if exists
-    SELECT * FROM memories
-    WHERE EXISTS (
-        SELECT 1 FROM information_schema.tables 
-        WHERE table_name = 'memories'
-    )
-) as combined_memories
+) as source_memories
 WHERE content IS NOT NULL
   AND TRIM(content) != ''

@@ -14,7 +14,13 @@
       "Bash(psql:*)",
       "WebSearch",
       "Bash(RUSTFLAGS=-Awarnings cargo test --no-run)",
-      "Bash(python3 -m pytest --tb=no -q)"
+      "Bash(python3 -m pytest --tb=no -q)",
+      "Read(/Users/ladvien/**)",
+      "Read(/Users/ladvien/biological_memory/models/working_memory/**)",
+      "Read(/Users/ladvien/biological_memory/models/short_term_memory/**)",
+      "mcp__codex-memory__get_statistics",
+      "WebFetch(domain:crates.io)",
+      "WebFetch(domain:github.com)"
     ],
     "additionalDirectories": [
       "/Users/ladvien/Library",

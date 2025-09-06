@@ -19,32 +19,50 @@
     ]
 ) }}
 
+-- OPTIMIZED: Replace O(n²) CROSS JOIN with efficient LATERAL JOIN + vector index
 WITH memory_pairs AS (
     SELECT 
         m1.memory_id as memory_id_1,
-        m2.memory_id as memory_id_2,
+        similar.memory_id as memory_id_2,
         m1.final_embedding as embedding_1,
-        m2.final_embedding as embedding_2,
+        similar.final_embedding as embedding_2,
         m1.content as content_1,
-        m2.content as content_2,
+        similar.content as content_2,
         m1.semantic_cluster as cluster_1,
-        m2.semantic_cluster as cluster_2,
+        similar.semantic_cluster as cluster_2,
         m1.importance_score as importance_1,
-        m2.importance_score as importance_2,
+        similar.importance_score as importance_2,
         m1.emotional_valence as valence_1,
-        m2.emotional_valence as valence_2,
+        similar.emotional_valence as valence_2,
         m1.consolidation_priority as priority_1,
-        m2.consolidation_priority as priority_2,
-        GREATEST(m1.created_at, m2.created_at) as latest_timestamp
+        similar.consolidation_priority as priority_2,
+        GREATEST(m1.created_at, similar.created_at) as latest_timestamp,
+        -- Pre-calculate similarity using pgvector operators for performance
+        (1 - (m1.final_embedding <-> similar.final_embedding)) as semantic_similarity_fast
     FROM {{ ref('memory_embeddings') }} m1
-    INNER JOIN {{ ref('memory_embeddings') }} m2 
-        ON m1.memory_id < m2.memory_id  -- Avoid duplicates and self-connections
-    WHERE m1.final_embedding IS NOT NULL 
-      AND m2.final_embedding IS NOT NULL
+    CROSS JOIN LATERAL (
+        -- Use HNSW index for fast k-nearest neighbor search
+        SELECT 
+            memory_id,
+            final_embedding,
+            content,
+            semantic_cluster,
+            importance_score,
+            emotional_valence,
+            consolidation_priority,
+            created_at
+        FROM {{ ref('memory_embeddings') }} m2
+        WHERE m2.final_embedding IS NOT NULL 
+          AND m2.memory_id != m1.memory_id
+          -- Use vector distance for initial filtering (leverages HNSW index)
+          AND (1 - (m1.final_embedding <-> m2.final_embedding)) >= {{ var('consolidation_threshold', 0.5) }}
+        ORDER BY m1.final_embedding <-> m2.final_embedding  -- HNSW index optimized
+        LIMIT {{ var('max_connections_per_memory', 50) }}  -- Limit connections for performance
+    ) similar
+    WHERE m1.final_embedding IS NOT NULL
     {% if is_incremental() %}
-        -- Only process new or updated memory pairs
-        AND (m1.updated_at > (SELECT MAX(last_activated) FROM {{ this }})
-          OR m2.updated_at > (SELECT MAX(last_activated) FROM {{ this }}))
+        -- Only process new or updated memories
+        AND m1.updated_at > (SELECT COALESCE(MAX(last_activated), '1970-01-01'::TIMESTAMP) FROM {{ this }})
     {% endif %}
 ),
 
@@ -52,8 +70,8 @@ similarity_calculations AS (
     SELECT 
         *,
         
-        -- Calculate semantic similarity
-        {{ cosine_similarity('embedding_1', 'embedding_2') }} as semantic_similarity,
+        -- Use pre-calculated similarity from pgvector for performance
+        semantic_similarity_fast as semantic_similarity,
         
         -- Calculate temporal proximity (memories close in time)
         EXP(-ABS(EXTRACT(EPOCH FROM (
@@ -81,7 +99,7 @@ hebbian_associations AS (
         MD5(LEAST(memory_id_1, memory_id_2) || '|' || GREATEST(memory_id_1, memory_id_2)) as connection_id,
         
         -- Hebbian strength calculation with multiple factors
-        {{ hebbian_learning_with_embeddings('embedding_1', 'embedding_2') }} as hebbian_strength,
+        {{ hebbian_learning_with_embeddings('embedding_1', 'embedding_2', 'valence_1', 'valence_2') }} as hebbian_strength,
         
         -- Calculate association strength using biological principles
         GREATEST(

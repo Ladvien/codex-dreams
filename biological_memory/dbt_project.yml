@@ -128,7 +128,7 @@ vars:
   high_quality_threshold: 0.7
   stability_threshold: 0.6
   overload_threshold: 0.9
-  consolidation_interval_hours: 1
+  consolidation_interval_hours: 0.5  # 30 minutes to allow multiple consolidations during STM
 
   # Hebbian learning parameters
   hebbian_learning_rate: 0.1
@@ -149,15 +149,15 @@ vars:
   homeostatic_target: 0.5
 
   # Ollama configuration
-  ollama_url: "{{ env_var('OLLAMA_URL') }}"
-  ollama_host: "{{ env_var('OLLAMA_HOST', 'localhost') }}"
+  ollama_url: "{{ env_var('OLLAMA_URL', 'http://192.168.1.110:11434') }}"
+  ollama_host: "{{ env_var('OLLAMA_HOST', '192.168.1.110') }}"
   ollama_model: "{{ env_var('OLLAMA_MODEL', 'llama2') }}"
   ollama_temperature: 0.7
   ollama_timeout: 30
   embedding_model: "{{ env_var('EMBEDDING_MODEL', 'nomic-embed-text') }}"
 
   # Database configuration
-  postgres_url: "{{ env_var('POSTGRES_DB_URL', 'postgresql://localhost:5432/codex_db') }}"
+  postgres_url: "{{ env_var('POSTGRES_DB_URL', 'postgresql://192.168.1.104:5432/codex_db') }}"
   duckdb_path: "{{ env_var('DUCKDB_PATH', './biological_memory.duckdb') }}"
 
   # Performance settings
@@ -191,6 +191,7 @@ snapshots:
 on-run-start:
   - "{{ log('Starting biological memory pipeline', info=True) }}"
   - "SELECT 'Biological memory pipeline started at ' || CURRENT_TIMESTAMP"
+  - "{{ log('Registering Ollama embedding UDFs', info=True) }}"
 
 on-run-end:
   - "{{ log('Biological memory pipeline complete', info=True) }}"

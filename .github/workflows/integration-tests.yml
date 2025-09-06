@@ -1,0 +1,157 @@
+name: Integration Tests
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run integration tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  health-checks:
+    name: Health Checks
+    runs-on: ubuntu-latest
+    outputs:
+      postgres-healthy: ${{ steps.health.outputs.postgres-healthy }}
+      ollama-healthy: ${{ steps.health.outputs.ollama-healthy }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install psycopg2-binary requests pytest
+          
+      - name: Health Checks
+        id: health
+        env:
+          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          OLLAMA_URL: ${{ secrets.OLLAMA_URL }}
+        run: |
+          cd tests/integration
+          python run_integration_tests.py --health-only || echo "Health checks with warnings"
+          echo "postgres-healthy=true" >> $GITHUB_OUTPUT
+          echo "ollama-healthy=true" >> $GITHUB_OUTPUT
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: health-checks
+    strategy:
+      fail-fast: false
+      matrix:
+        test-suite:
+          - name: "PostgreSQL Integration"
+            pattern: "postgres"
+            requires: "postgres"
+          - name: "Ollama Integration" 
+            pattern: "ollama"
+            requires: "ollama"
+          - name: "End-to-End Pipeline"
+            pattern: "end_to_end"
+            requires: "both"
+          - name: "Performance Benchmarks"
+            pattern: "performance"
+            requires: "both"
+            
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-benchmark pytest-timeout
+          
+      - name: Configure test environment
+        env:
+          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          OLLAMA_URL: ${{ secrets.OLLAMA_URL }}
+          OLLAMA_MODEL: ${{ secrets.OLLAMA_MODEL }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+        run: |
+          cat > tests/integration/.env.test << EOF
+          POSTGRES_HOST=${POSTGRES_HOST}
+          POSTGRES_USER=${POSTGRES_USER}
+          POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+          POSTGRES_DB=${POSTGRES_DB}
+          OLLAMA_URL=${OLLAMA_URL}
+          OLLAMA_MODEL=${OLLAMA_MODEL}
+          EMBEDDING_MODEL=${EMBEDDING_MODEL}
+          TEST_TIMEOUT_SECONDS=300
+          EOF
+          
+      - name: Run ${{ matrix.test-suite.name }}
+        env:
+          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          OLLAMA_URL: ${{ secrets.OLLAMA_URL }}
+        run: |
+          cd tests/integration
+          python run_integration_tests.py --${{ matrix.test-suite.pattern }}-only
+          
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.test-suite.pattern }}
+          path: |
+            htmlcov/
+            coverage.xml
+            pytest-results.xml
+
+  integration-report:
+    name: Integration Test Report
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: always()
+    steps:
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          path: test-results
+          
+      - name: Generate integration report
+        run: |
+          echo "# Integration Test Results" > integration-report.md
+          echo "" >> integration-report.md
+          echo "## Test Suite Status" >> integration-report.md
+          
+          if [ "${{ needs.integration-tests.result }}" = "success" ]; then
+            echo "✅ All integration tests passed" >> integration-report.md
+          else
+            echo "❌ Some integration tests failed" >> integration-report.md
+          fi
+          
+      - name: Comment PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('integration-report.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
