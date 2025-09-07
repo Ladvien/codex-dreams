@@ -16,6 +16,7 @@ from pathlib import Path
 from threading import Lock
 from typing import Any, Callable, Dict, Generator, Optional, Union
 
+import duckdb
 import psycopg2
 
 logger = logging.getLogger(__name__)

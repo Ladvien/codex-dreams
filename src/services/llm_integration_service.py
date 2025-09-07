@@ -9,6 +9,7 @@ import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+import duckdb
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
