@@ -20,7 +20,9 @@
       "Read(/Users/ladvien/biological_memory/models/short_term_memory/**)",
       "mcp__codex-memory__get_statistics",
       "WebFetch(domain:crates.io)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(crontab:*)",
+      "Bash(python3:*)"
     ],
     "additionalDirectories": [
       "/Users/ladvien/Library",

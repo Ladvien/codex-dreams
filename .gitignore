@@ -247,3 +247,4 @@ json
 # Test output files
 *.test.out
 test_results.json
+embedding_cache/

@@ -5,8 +5,6 @@ Creates and configures a DuckDB database for testing with necessary extensions
 """
 
 import os
-import sys
-from pathlib import Path
 
 import duckdb
 

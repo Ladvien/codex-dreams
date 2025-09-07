@@ -18,7 +18,6 @@ Research Foundation:
 - Tononi & Cirelli (2006): Synaptic homeostasis
 """
 
-import os
 import sys
 from pathlib import Path
 
