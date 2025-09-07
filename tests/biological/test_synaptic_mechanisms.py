@@ -17,18 +17,13 @@ Research Citations:
 - Hebb (1949) - Hebbian learning principles
 """
 
-import os
-import tempfile
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 import pandas as pd
 import pytest
 
 # Import test fixtures and utilities
-from tests.fixtures.database import test_duckdb
-from tests.fixtures.mocking import real_ollama
 from tests.fixtures.test_data import MemoryDataFactory
 
 
@@ -80,7 +75,11 @@ class TestAdvancedSynapticMechanisms:
                 "expected_type": "stdp_potentiation",
                 "expected_strength": 0.7,
             },  # Strong LTP
-            {"delay_ms": -55, "expected_type": "stdp_depression", "expected_strength": -0.5},  # LTD
+            {
+                "delay_ms": -55,
+                "expected_type": "stdp_depression",
+                "expected_strength": -0.5,
+            },  # LTD
             {
                 "delay_ms": 120,
                 "expected_type": "no_stdp_effect",
@@ -110,7 +109,7 @@ class TestAdvancedSynapticMechanisms:
             )
 
         # Insert test data
-        df = pd.DataFrame(memories)
+        pd.DataFrame(memories)
         test_duckdb.execute("DROP TABLE IF EXISTS stm_hierarchical_episodes")
         test_duckdb.execute(
             """
@@ -220,8 +219,8 @@ class TestAdvancedSynapticMechanisms:
         ]
 
         # Setup test tables
-        memory_df = pd.DataFrame(memory_data)
-        coactivation_df = pd.DataFrame(coactivation_data)
+        pd.DataFrame(memory_data)
+        pd.DataFrame(coactivation_data)
 
         test_duckdb.execute("DROP TABLE IF EXISTS memory_replay")
         test_duckdb.execute("DROP TABLE IF EXISTS spike_timing_analysis")
@@ -290,12 +289,24 @@ class TestAdvancedSynapticMechanisms:
         """
         # Create memories with different activity levels
         memory_data = [
-            {"id": "high_activity", "consolidated_strength": 0.9, "activity_level": "high"},
-            {"id": "low_activity", "consolidated_strength": 0.2, "activity_level": "low"},
-            {"id": "normal_activity", "consolidated_strength": 0.5, "activity_level": "normal"},
+            {
+                "id": "high_activity",
+                "consolidated_strength": 0.9,
+                "activity_level": "high",
+            },
+            {
+                "id": "low_activity",
+                "consolidated_strength": 0.2,
+                "activity_level": "low",
+            },
+            {
+                "id": "normal_activity",
+                "consolidated_strength": 0.5,
+                "activity_level": "normal",
+            },
         ]
 
-        memory_df = pd.DataFrame(memory_data)
+        pd.DataFrame(memory_data)
         test_duckdb.execute("DROP TABLE IF EXISTS memory_replay")
         test_duckdb.execute("CREATE TABLE memory_replay AS SELECT * FROM memory_df")
 
@@ -365,7 +376,7 @@ class TestAdvancedSynapticMechanisms:
             {"memory_id": "mem4", "coactivation_count": 5, "stdp_strength_factor": 0.2},
         ]
 
-        coactivation_df = pd.DataFrame(coactivation_data)
+        pd.DataFrame(coactivation_data)
         test_duckdb.execute("DROP TABLE IF EXISTS test_coactivation")
         test_duckdb.execute("CREATE TABLE test_coactivation AS SELECT * FROM coactivation_df")
 
@@ -437,7 +448,7 @@ class TestAdvancedSynapticMechanisms:
             {"memory_id": "mem5", "ltp_ltd_delta": -0.2},  # Normal depression
         ]
 
-        synaptic_df = pd.DataFrame(synaptic_data)
+        pd.DataFrame(synaptic_data)
         test_duckdb.execute("DROP TABLE IF EXISTS synaptic_changes")
         test_duckdb.execute("CREATE TABLE synaptic_changes AS SELECT * FROM synaptic_df")
 
@@ -517,7 +528,7 @@ class TestAdvancedSynapticMechanisms:
         # Sort by coactivation to establish known ranking
         competition_data.sort(key=lambda x: x["coactivation_count"], reverse=True)
 
-        competition_df = pd.DataFrame(competition_data)
+        pd.DataFrame(competition_data)
         test_duckdb.execute("DROP TABLE IF EXISTS competition_test")
         test_duckdb.execute("CREATE TABLE competition_test AS SELECT * FROM competition_df")
 
@@ -605,7 +616,7 @@ class TestAdvancedSynapticMechanisms:
         )
 
         # Setup test environment
-        memory_df = pd.DataFrame(memories)
+        pd.DataFrame(memories)
         test_duckdb.execute("DROP TABLE IF EXISTS stm_hierarchical_episodes")
         test_duckdb.execute("DROP TABLE IF EXISTS memory_replay")
 
@@ -770,7 +781,7 @@ class TestAdvancedSynapticMechanisms:
             time_span_minutes=60,
         )
 
-        memory_df = pd.DataFrame(large_memories)
+        pd.DataFrame(large_memories)
         test_duckdb.execute("DROP TABLE IF EXISTS performance_test_memories")
         test_duckdb.execute("CREATE TABLE performance_test_memories AS SELECT * FROM memory_df")
 
@@ -842,7 +853,10 @@ class TestSynapticParameterValidation:
         research_compliance = {
             "bcm_theory": {
                 "citation": "Bienenstock et al. (1982)",
-                "requirements": ["adaptive_threshold", "activity_dependent_modification"],
+                "requirements": [
+                    "adaptive_threshold",
+                    "activity_dependent_modification",
+                ],
                 "verified": True,
             },
             "synaptic_tagging": {

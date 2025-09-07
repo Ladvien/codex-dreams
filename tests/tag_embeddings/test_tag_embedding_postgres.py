@@ -6,7 +6,6 @@ Tests migration, health checks, and data transfer processes.
 
 import os
 import sys
-from contextlib import contextmanager
 from unittest.mock import Mock, patch
 
 import psycopg2

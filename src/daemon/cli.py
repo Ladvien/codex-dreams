@@ -11,9 +11,7 @@ from pathlib import Path
 from typing import Optional
 
 from .config import (
-    DaemonConfig,
     create_default_config,
-    find_project_root,
     get_default_config_path,
     load_config,
 )
@@ -277,7 +275,10 @@ Examples:
     )
 
     parser.add_argument(
-        "--config", type=Path, default=get_default_config_path(), help="Configuration file path"
+        "--config",
+        type=Path,
+        default=get_default_config_path(),
+        help="Configuration file path",
     )
     parser.add_argument(
         "--log-level",

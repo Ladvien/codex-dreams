@@ -20,7 +20,7 @@ import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from src.services.incremental_processor import IncrementalProcessor
 from src.services.memory_writeback_service import MemoryWritebackService
@@ -34,7 +34,10 @@ def setup_logging(log_level: str = "INFO") -> logging.Logger:
     logging.basicConfig(
         level=getattr(logging, log_level.upper()),
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[logging.StreamHandler(), logging.FileHandler("/tmp/dbt_writeback.log", mode="a")],
+        handlers=[
+            logging.StreamHandler(),
+            logging.FileHandler("/tmp/dbt_writeback.log", mode="a"),
+        ],
     )
     return logging.getLogger("dbt_writeback")
 
@@ -89,8 +92,6 @@ def determine_processing_stages(dbt_models_executed: list = None) -> list:
     if not dbt_models_executed:
         # If no model list provided, run full cycle
         return ["processed_memories", "generated_insights", "memory_associations"]
-
-    stages = []
 
     # Map dbt models to write-back stages
     model_stage_mapping = {
@@ -350,7 +351,10 @@ def main() -> None:
         help="Processing stages to run",
     )
     parser.add_argument(
-        "--incremental", action="store_true", default=True, help="Use incremental processing"
+        "--incremental",
+        action="store_true",
+        default=True,
+        help="Use incremental processing",
     )
     parser.add_argument("--batch-size", type=int, default=1000, help="Batch size for processing")
     parser.add_argument("--dbt-results", help="Path to dbt run results JSON file")
@@ -362,7 +366,8 @@ def main() -> None:
         help="Logging level",
     )
     parser.add_argument(
-        "--create-hook-script", help="Create dbt post-hook shell script at specified path"
+        "--create-hook-script",
+        help="Create dbt post-hook shell script at specified path",
     )
 
     args = parser.parse_args()

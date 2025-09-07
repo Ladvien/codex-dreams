@@ -13,6 +13,14 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from .error_handling import (
+    LLMError,
+    NetworkError,
+    TimeoutError,
+    get_global_error_handler,
+    with_biological_timing_constraints,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -60,6 +68,8 @@ class LLMIntegrationService:
             "cache_misses": 0,
             "avg_response_time": 0.0,
         }
+        # Initialize error handler for this instance
+        self.error_handler = get_global_error_handler()
         logger.info(f"LLM service initialized: {base_url} with model {self.model}")
 
     def _create_session(self) -> requests.Session:
@@ -71,8 +81,9 @@ class LLMIntegrationService:
         session.mount("https://", adapter)
         return session
 
+    @with_biological_timing_constraints("llm_processing", max_duration=30.0)
     def _call_ollama_api(self, prompt: str, timeout: int = None) -> LLMResponse:
-        """Internal method to call Ollama API"""
+        """Internal method to call Ollama API with comprehensive error handling"""
         start_time = time.time()
         timeout = timeout or self.timeout
 
@@ -83,14 +94,18 @@ class LLMIntegrationService:
         }
 
         try:
-            response = self.session.post(
-                f"{self.base_url}/api/generate", json=payload, timeout=timeout
+            # Use the error handler's retry mechanism for network requests
+            response = self.error_handler.retry_with_backoff(
+                lambda: self.session.post(
+                    f"{self.base_url}/api/generate", json=payload, timeout=timeout
+                )
             )
             response.raise_for_status()
 
             data = response.json()
             latency = (time.time() - start_time) * 1000
 
+            self.metrics["successful_requests"] += 1
             return LLMResponse(
                 content=data.get("response", ""),
                 model=data.get("model", self.model),
@@ -101,13 +116,88 @@ class LLMIntegrationService:
                 tokens_used=data.get("eval_count", 0),
             )
 
+        except requests.exceptions.Timeout as e:
+            error_context = {
+                "operation_type": "llm_generation",
+                "model": self.model,
+                "timeout": timeout,
+                "prompt_length": len(prompt),
+            }
+            timeout_error = TimeoutError(
+                f"Request timed out after {timeout}s",
+                biological_context="llm_processing",
+                details=error_context,
+                cause=e,
+            )
+            self.error_handler.handle_error(timeout_error, error_context)
+            self.metrics["failed_requests"] += 1
+            return LLMResponse(
+                content="",
+                model=self.model,
+                latency_ms=0,
+                error=f"Request timed out after {timeout}s",
+                response_time_ms=0,
+                model_name=self.model,
+            )
+        except requests.exceptions.ConnectionError as e:
+            error_context = {
+                "operation_type": "llm_generation",
+                "model": self.model,
+                "endpoint": self.base_url,
+            }
+            network_error = NetworkError(
+                f"Failed to connect to LLM service at {self.base_url}",
+                details=error_context,
+                cause=e,
+            )
+            self.error_handler.handle_error(network_error, error_context)
+            self.metrics["failed_requests"] += 1
+            return LLMResponse(
+                content="",
+                model=self.model,
+                latency_ms=0,
+                error="Connection failed",
+                response_time_ms=0,
+                model_name=self.model,
+            )
         except requests.exceptions.RequestException as e:
-            logger.error(f"LLM generation failed: {e}")
+            error_context = {
+                "operation_type": "llm_generation",
+                "model": self.model,
+                "status_code": (
+                    getattr(e.response, "status_code", None) if hasattr(e, "response") else None
+                ),
+            }
+            llm_error = LLMError(f"LLM generation failed: {str(e)}", details=error_context, cause=e)
+            self.error_handler.handle_error(llm_error, error_context)
+            self.metrics["failed_requests"] += 1
             return LLMResponse(
                 content="",
                 model=self.model,
                 latency_ms=0,
                 error=str(e),
+                response_time_ms=0,
+                model_name=self.model,
+            )
+        except Exception as e:
+            error_context = {
+                "operation_type": "llm_generation",
+                "model": self.model,
+                "unexpected_error": True,
+            }
+            unexpected_error = LLMError(
+                f"Unexpected error during LLM generation: {str(e)}",
+                details=error_context,
+                cause=e,
+                severity="HIGH",
+            )
+            self.error_handler.handle_error(unexpected_error, error_context)
+            self.metrics["failed_requests"] += 1
+            return LLMResponse(
+                content="",
+                model=self.model,
+                latency_ms=0,
+                error=f"Unexpected error: {str(e)}",
                 response_time_ms=0,
                 model_name=self.model,
             )
@@ -131,7 +221,7 @@ class LLMIntegrationService:
             return cached
         return None
 
-    def _cache_response(self, prompt_hash: str, prompt: str, response: LLMResponse):
+    def _cache_response(self, prompt_hash: str, prompt: str, response: LLMResponse) -> None:
         """Cache a response"""
         if not hasattr(self, "_cache"):
             self._cache = {}
@@ -228,28 +318,89 @@ class LLMIntegrationService:
         except (ValueError, AttributeError):
             return 0.5  # Default importance
 
+    @with_biological_timing_constraints("embedding_generation", max_duration=45.0)
     def generate_embedding(self, text: str) -> List[float]:
-        """Generate embedding vector for text"""
+        """Generate embedding vector for text with comprehensive error handling"""
         try:
-            response = self.session.post(
-                f"{self.base_url}/api/embeddings",
-                json={"model": "nomic-embed-text", "prompt": text},
-                timeout=self.timeout,
+            response = self.error_handler.retry_with_backoff(
+                lambda: self.session.post(
+                    f"{self.base_url}/api/embeddings",
+                    json={"model": "nomic-embed-text", "prompt": text},
+                    timeout=self.timeout,
+                )
             )
             response.raise_for_status()
             data = response.json()
-            return data.get("embedding", [0.0] * 384)  # Default 384-dim vector
-        except Exception as e:
-            logger.error(f"Embedding generation failed: {e}")
-            # Return mock embedding for testing
-            import random
+            embedding = data.get("embedding", [])
 
-            return [random.random() for _ in range(384)]
+            # Validate embedding dimensions
+            if not embedding:
+                raise LLMError("Empty embedding returned from service")
+
+            # Ensure consistent dimensions (384 for nomic-embed-text)
+            expected_dim = 384
+            if len(embedding) != expected_dim:
+                logger.warning(
+                    f"Embedding dimension mismatch: got {len(embedding)}, expected {expected_dim}"
+                )
+                # Pad or truncate to expected dimension
+                if len(embedding) < expected_dim:
+                    embedding.extend([0.0] * (expected_dim - len(embedding)))
+                else:
+                    embedding = embedding[:expected_dim]
+
+            return embedding
+
+        except requests.exceptions.Timeout as e:
+            error_context = {
+                "operation_type": "embedding_generation",
+                "text_length": len(text),
+                "timeout": self.timeout,
+            }
+            timeout_error = TimeoutError(
+                f"Embedding generation timed out after {self.timeout}s",
+                biological_context="embedding_generation",
+                details=error_context,
+                cause=e,
+            )
+            self.error_handler.handle_error(timeout_error, error_context)
+            # Return zero vector as fallback
+            return [0.0] * 384
+
+        except requests.exceptions.ConnectionError as e:
+            error_context = {
+                "operation_type": "embedding_generation",
+                "endpoint": self.base_url,
+                "model": "nomic-embed-text",
+            }
+            network_error = NetworkError(
+                f"Failed to connect to embedding service at {self.base_url}",
+                details=error_context,
+                cause=e,
+            )
+            self.error_handler.handle_error(network_error, error_context)
+            # Return zero vector as fallback
+            return [0.0] * 384
+
+        except Exception as e:
+            error_context = {
+                "operation_type": "embedding_generation",
+                "text_length": len(text),
+                "model": "nomic-embed-text",
+            }
+            embedding_error = LLMError(
+                f"Embedding generation failed: {str(e)}", details=error_context, cause=e
+            )
+            self.error_handler.handle_error(embedding_error, error_context)
+            # Return zero vector as fallback
+            return [0.0] * 384
 
     def health_check(self) -> Dict[str, Any]:
-        """Check LLM service health"""
+        """Check LLM service health with comprehensive error handling"""
         try:
-            response = self.session.get(f"{self.base_url}/api/tags", timeout=5)
+            response = self.error_handler.retry_with_backoff(
+                lambda: self.session.get(f"{self.base_url}/api/tags", timeout=5)
+            )
             response.raise_for_status()
             models_data = response.json()
 
@@ -265,8 +416,60 @@ class LLMIntegrationService:
                 "models_count": len(available_models),
                 "models": models_data,
                 "metrics": self.metrics,
+                "error_stats": self.error_handler.get_error_stats(),
+            }
+        except requests.exceptions.Timeout as e:
+            error_context = {
+                "operation_type": "health_check",
+                "endpoint": self.base_url,
+                "timeout": 5,
+            }
+            timeout_error = TimeoutError(
+                f"Health check timed out after 5s",
+                biological_context="health_monitoring",
+                details=error_context,
+                cause=e,
+            )
+            self.error_handler.handle_error(timeout_error, error_context)
+            return {
+                "status": "unhealthy",
+                "endpoint": self.base_url,
+                "model": self.model,
+                "model_available": False,
+                "error": "Health check timeout",
+                "metrics": self.metrics,
+                "error_type": "timeout",
+            }
+        except requests.exceptions.ConnectionError as e:
+            error_context = {
+                "operation_type": "health_check",
+                "endpoint": self.base_url,
+            }
+            network_error = NetworkError(
+                f"Failed to connect to LLM service during health check",
+                details=error_context,
+                cause=e,
+            )
+            self.error_handler.handle_error(network_error, error_context)
+            return {
+                "status": "unhealthy",
+                "endpoint": self.base_url,
+                "model": self.model,
+                "model_available": False,
+                "error": "Connection failed",
+                "metrics": self.metrics,
+                "error_type": "connection",
             }
         except Exception as e:
+            error_context = {
+                "operation_type": "health_check",
+                "endpoint": self.base_url,
+                "unexpected_error": True,
+            }
+            health_error = LLMError(
+                f"Health check failed: {str(e)}", details=error_context, cause=e
+            )
+            self.error_handler.handle_error(health_error, error_context)
             return {
                 "status": "unhealthy",
                 "endpoint": self.base_url,
@@ -274,6 +477,7 @@ class LLMIntegrationService:
                 "model_available": False,
                 "error": str(e),
                 "metrics": self.metrics,
+                "error_type": "unexpected",
             }
 
     def get_metrics(self) -> Dict[str, Any]:
@@ -302,7 +506,10 @@ _llm_service = None
 
 
 def initialize_llm_service(
-    base_url: str = None, model: str = None, model_name: str = None, cache_db_path: str = None
+    base_url: str = None,
+    model: str = None,
+    model_name: str = None,
+    cache_db_path: str = None,
 ) -> LLMIntegrationService:
     """Initialize the global LLM service"""
     global _llm_service
@@ -412,7 +619,7 @@ def prompt_full(text: str, provider: str, url: str, model: str, timeout: int) ->
     return llm_generate(text)
 
 
-def register_llm_functions(conn) -> bool:
+def register_llm_functions(conn: duckdb.DuckDBPyConnection) -> bool:
     """Register LLM functions with DuckDB connection"""
     try:
         # Register prompt function with full parameters for DuckDB (text,
@@ -426,7 +633,7 @@ def register_llm_functions(conn) -> bool:
         conn.create_function("llm_generate", _llm_generate_wrapper, [str], str)
 
         # Register JSON generation with multi-parameter signature
-        def _json_wrapper_multi(text: str, model: str, url: str, timeout: int):
+        def _json_wrapper_multi(text: str, model: str, url: str, timeout: int) -> Optional[str]:
             try:
                 # Use a very short timeout if provided, to avoid hanging
                 if timeout and timeout < 10:

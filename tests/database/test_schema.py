@@ -24,8 +24,6 @@ import os
 import sys
 import uuid
 from datetime import datetime, timedelta
-from decimal import Decimal
-from unittest.mock import Mock, patch
 
 import pytest
 
@@ -617,7 +615,10 @@ class TestBiologicalMemorySchema:
 
         test_id = str(uuid.uuid4())
         test_spatial = {"location": "office", "coordinates": [37.7749, -122.4194]}
-        test_phantom = {"objects": ["computer", "desk"], "affordances": ["typing", "writing"]}
+        test_phantom = {
+            "objects": ["computer", "desk"],
+            "affordances": ["typing", "writing"],
+        }
 
         # Insert test data with JSON columns
         cursor.execute(
@@ -709,7 +710,8 @@ class TestBiologicalMemorySchema:
         # Cleanup
         for episode_id in test_episodes:
             cursor.execute(
-                "DELETE FROM biological_memory.episodic_buffer WHERE id = ?", [episode_id]
+                "DELETE FROM biological_memory.episodic_buffer WHERE id = ?",
+                [episode_id],
             )
 
         duckdb_connection.commit()
@@ -759,7 +761,8 @@ class TestBiologicalMemorySchema:
         # Cleanup
         for episode_id in test_episodes:
             cursor.execute(
-                "DELETE FROM biological_memory.episodic_buffer WHERE id = ?", [episode_id]
+                "DELETE FROM biological_memory.episodic_buffer WHERE id = ?",
+                [episode_id],
             )
 
         duckdb_connection.commit()
@@ -791,7 +794,14 @@ class TestBiologicalMemorySchema:
                  consolidation_priority, ready_for_consolidation)
                 VALUES (?, ?, ?, ?, ?, ?)
             """,
-                [episode_id, f"test_{name}", strength, coactivation, priority, expected_ready],
+                [
+                    episode_id,
+                    f"test_{name}",
+                    strength,
+                    coactivation,
+                    priority,
+                    expected_ready,
+                ],
             )
 
             test_ids.append((episode_id, name, expected_ready))
@@ -821,7 +831,8 @@ class TestBiologicalMemorySchema:
         # Cleanup
         for episode_id, _, _ in test_ids:
             cursor.execute(
-                "DELETE FROM biological_memory.episodic_buffer WHERE id = ?", [episode_id]
+                "DELETE FROM biological_memory.episodic_buffer WHERE id = ?",
+                [episode_id],
             )
 
         duckdb_connection.commit()
@@ -838,7 +849,7 @@ class TestSchemaIntegration:
 
     def test_schema_file_syntax(self):
         """Test that the schema SQL file has valid syntax"""
-        schema_file = "/Users/ladvien/codex-dreams/sql/create_biological_memory_schema.sql"
+        schema_file = "/Users/ladvien/codex-dreams/sql/archive/create_biological_memory_schema.sql"
         assert os.path.exists(schema_file), "Schema file should exist"
 
         with open(schema_file, "r") as f:
@@ -865,7 +876,7 @@ class TestSchemaIntegration:
     def test_architecture_compliance(self):
         """Test compliance with ARCHITECTURE.md specifications"""
         # This test verifies that our implementation matches the architecture
-        schema_file = "/Users/ladvien/codex-dreams/sql/create_biological_memory_schema.sql"
+        schema_file = "/Users/ladvien/codex-dreams/sql/archive/create_biological_memory_schema.sql"
 
         with open(schema_file, "r") as f:
             content = f.read()

@@ -15,13 +15,12 @@ import threading
 import time
 from collections import defaultdict, deque
 from dataclasses import asdict, dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import duckdb
-import psycopg2
 
 
 class ParameterStatus(Enum):
@@ -397,7 +396,9 @@ class BiologicalParameterMonitor:
 
         return status_result
 
-    def validate_all_parameters(self) -> Dict[str, Tuple[ParameterStatus, Optional[str]]]:
+    def validate_all_parameters(
+        self,
+    ) -> Dict[str, Tuple[ParameterStatus, Optional[str]]]:
         """Validate all parameters and return status summary"""
         results = {}
 
@@ -526,7 +527,10 @@ class BiologicalParameterMonitor:
                 f"Excessive threshold separation: gaps {med_con_gap:.2f}, {high_med_gap:.2f}",
             )
 
-        return True, f"Threshold separation optimal: gaps {med_con_gap:.2f}, {high_med_gap:.2f}"
+        return (
+            True,
+            f"Threshold separation optimal: gaps {med_con_gap:.2f}, {high_med_gap:.2f}",
+        )
 
     def generate_parameter_drift_alerts(self) -> None:
         """Generate alerts for parameter drift detection"""
@@ -644,9 +648,18 @@ class BiologicalParameterMonitor:
             "total_parameters": len(self.parameters),
             "status_distribution": dict(status_counts),
             "biological_constraints": {
-                "millers_law_compliance": {"status": millers_law_ok, "message": millers_msg},
-                "hebbian_learning_balance": {"status": hebbian_balance_ok, "message": hebbian_msg},
-                "threshold_separation": {"status": threshold_sep_ok, "message": threshold_msg},
+                "millers_law_compliance": {
+                    "status": millers_law_ok,
+                    "message": millers_msg,
+                },
+                "hebbian_learning_balance": {
+                    "status": hebbian_balance_ok,
+                    "message": hebbian_msg,
+                },
+                "threshold_separation": {
+                    "status": threshold_sep_ok,
+                    "message": threshold_msg,
+                },
             },
             "active_alerts": len(self.active_alerts),
             "parameters": {

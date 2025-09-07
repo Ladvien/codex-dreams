@@ -6,11 +6,9 @@ as specified in acceptance criteria.
 """
 
 import os
-import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-import pytest
 import yaml
 
 
@@ -88,7 +86,7 @@ class TestDBTProjectConfiguration:
     def test_dbt_project_exists(self):
         """Test dbt_project.yml exists and is valid."""
         project_root = Path(__file__).parent.parent.parent
-        dbt_project = project_root / "dbt_project.yml"
+        dbt_project = project_root / "biological_memory" / "dbt_project.yml"
 
         assert dbt_project.exists(), "dbt_project.yml should exist"
 
@@ -103,7 +101,7 @@ class TestDBTProjectConfiguration:
     def test_dbt_model_configuration(self):
         """Test dbt model materialization configuration."""
         project_root = Path(__file__).parent.parent.parent
-        dbt_project = project_root / "dbt_project.yml"
+        dbt_project = project_root / "biological_memory" / "dbt_project.yml"
 
         with open(dbt_project) as f:
             project_config = yaml.safe_load(f)
@@ -135,7 +133,7 @@ class TestDBTProjectConfiguration:
     def test_biological_variables(self):
         """Test biological parameters configured as dbt variables."""
         project_root = Path(__file__).parent.parent.parent
-        dbt_project = project_root / "dbt_project.yml"
+        dbt_project = project_root / "biological_memory" / "dbt_project.yml"
 
         with open(dbt_project) as f:
             project_config = yaml.safe_load(f)
@@ -159,7 +157,7 @@ class TestDBTProjectConfiguration:
     def test_directory_paths(self):
         """Test dbt directory path configuration."""
         project_root = Path(__file__).parent.parent.parent
-        dbt_project = project_root / "dbt_project.yml"
+        dbt_project = project_root / "biological_memory" / "dbt_project.yml"
 
         with open(dbt_project) as f:
             project_config = yaml.safe_load(f)
@@ -218,8 +216,11 @@ class TestDBTConnection:
         profiles_dir = os.getenv("DBT_PROFILES_DIR")
 
         if profiles_dir:
-            # If set, should be a valid directory path
-            assert os.path.isabs(profiles_dir), "DBT_PROFILES_DIR should be absolute path"
+            # Expand tilde paths to absolute paths for validation
+            expanded_path = os.path.expanduser(profiles_dir)
+            assert os.path.isabs(
+                expanded_path
+            ), f"DBT_PROFILES_DIR should resolve to absolute path, got: {profiles_dir} -> {expanded_path}"
         else:
             # Should default to ~/.dbt
             default_profiles = Path.home() / ".dbt"
@@ -234,7 +235,7 @@ class TestCustomMacros:
     def test_macro_directory_exists(self):
         """Test macros directory exists."""
         project_root = Path(__file__).parent.parent.parent
-        macros_dir = project_root / "macros"
+        macros_dir = project_root / "biological_memory" / "macros"
 
         assert macros_dir.exists(), "Macros directory should exist"
         assert macros_dir.is_dir(), "Macros should be a directory"
@@ -261,7 +262,7 @@ class TestCustomMacros:
     def test_macro_parameter_concepts(self):
         """Test macro parameter concepts."""
         project_root = Path(__file__).parent.parent.parent
-        dbt_project = project_root / "dbt_project.yml"
+        dbt_project = project_root / "biological_memory" / "dbt_project.yml"
 
         with open(dbt_project) as f:
             project_config = yaml.safe_load(f)
@@ -332,7 +333,7 @@ class TestDBTPerformance:
     def test_target_directory_config(self):
         """Test target directory configuration."""
         project_root = Path(__file__).parent.parent.parent
-        dbt_project = project_root / "dbt_project.yml"
+        dbt_project = project_root / "biological_memory" / "dbt_project.yml"
 
         with open(dbt_project) as f:
             project_config = yaml.safe_load(f)

@@ -4,10 +4,9 @@ Interactive configuration editor for Codex Dreams.
 Provides simple menu-driven config editing.
 """
 
-import socket
 import subprocess
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Tuple
 
 from .codex_config import CodexConfig, interactive_schedule_selection
 
@@ -57,7 +56,10 @@ def check_ollama_service(host: str, port: int, model: str = None) -> Tuple[bool,
         response = requests.get(f"{ollama_url}/api/version", timeout=5)
 
         if response.status_code != 200:
-            return False, f"❌ Ollama service not responding (status: {response.status_code})"
+            return (
+                False,
+                f"❌ Ollama service not responding (status: {response.status_code})",
+            )
 
         # Check if specific model is available
         if model:
@@ -90,7 +92,11 @@ def check_service_dependencies(config: CodexConfig) -> None:
     # Check PostgreSQL
     print("📊 Checking PostgreSQL...")
     pg_ok, pg_msg = check_postgresql_connection(
-        config.db_host, config.db_port, config.db_user, config.db_name, config.db_password
+        config.db_host,
+        config.db_port,
+        config.db_user,
+        config.db_name,
+        config.db_password,
     )
     print(f"   {pg_msg}")
 

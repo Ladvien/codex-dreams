@@ -4,13 +4,8 @@ Security Test Suite: Shell Injection Prevention
 Tests for BMP-SECURITY-002 - Comprehensive shell injection attack vector testing
 """
 
-import logging
 import os
-import subprocess
-import sys
-import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -242,7 +237,15 @@ class TestShellInjectionPrevention:
     def test_command_allowlist_enforcement(self, orchestrator):
         """Test that only allowed dbt subcommands are permitted"""
         # Test allowed commands
-        allowed_subcommands = ["run", "run-operation", "test", "compile", "debug", "deps", "clean"]
+        allowed_subcommands = [
+            "run",
+            "run-operation",
+            "test",
+            "compile",
+            "debug",
+            "deps",
+            "clean",
+        ]
         for subcmd in allowed_subcommands:
             result = orchestrator._validate_dbt_command(f"dbt {subcmd}")
             assert result is True, f"Allowed subcommand should pass: {subcmd}"
@@ -379,7 +382,14 @@ class TestShellInjectionPrevention:
         except Exception as e:
             # Expected behavior: timeout or command error
             error_str = str(e).lower()
-            expected_errors = ["timeout", "expired", "command", "not found", "invalid", "dbt"]
+            expected_errors = [
+                "timeout",
+                "expired",
+                "command",
+                "not found",
+                "invalid",
+                "dbt",
+            ]
             assert any(
                 keyword in error_str for keyword in expected_errors
             ), f"Expected timeout or command error, got: {e}"

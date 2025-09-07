@@ -2,17 +2,18 @@
 Tests for generate_insights.py module
 """
 
-import json
 import os
 
 # Import the functions to test
 import sys
 import uuid
-from datetime import datetime
 
-import pytest
-
-from src.generate_insights import call_ollama, extract_tags, generate_insight, process_memories
+from src.generate_insights import (
+    call_ollama,
+    extract_tags,
+    generate_insight,
+    process_memories,
+)
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -153,11 +154,9 @@ class TestFullPipeline:
         try:
             process_memories()
             # If no exception, the integration works
-            integration_success = True
         except Exception as e:
             # Log the error but don't fail - real services might not have data
             print(f"Integration test with real services: {e}")
-            integration_success = False
 
         # At minimum, the function should not crash
         assert True, "Pipeline integration test completed"

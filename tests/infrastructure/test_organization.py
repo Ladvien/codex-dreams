@@ -7,9 +7,7 @@ This test validates that our test directories serve complementary purposes
 rather than being duplicates, ensuring proper separation of concerns.
 """
 
-import os
 from pathlib import Path
-from typing import Dict, List, Set
 
 import pytest
 
@@ -120,7 +118,7 @@ class TestOrganization:
 
         # Counts should be reasonable (updated for current test suite size)
         assert (
-            20 <= len(main_py_files) <= 80
+            20 <= len(main_py_files) <= 100
         ), f"Main tests count seems unreasonable: {len(main_py_files)}"
 
         # Bio tests directory no longer exists (tests consolidated into main)

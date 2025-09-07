@@ -17,10 +17,8 @@ Created: 2025-08-28
 import json
 import time
 from datetime import datetime, timedelta
-from typing import Any, Dict, List
 
 import duckdb
-import pandas as pd
 import pytest
 
 

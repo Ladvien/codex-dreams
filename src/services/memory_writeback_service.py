@@ -25,16 +25,18 @@ import sys
 import time
 import uuid
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from types import TracebackType
-from typing import Any, Dict, Generator, List, Optional, Tuple
+from typing import Any, Dict, Generator, List, Optional
 
 import duckdb
 import psycopg2
 import psycopg2.extras
 import psycopg2.pool
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED
+from psycopg2.extensions import (
+    ISOLATION_LEVEL_READ_COMMITTED,
+)
 
 
 @dataclass
@@ -87,7 +89,8 @@ class MemoryWritebackService:
         """
         # Configuration from environment with fallbacks
         self.postgres_url = postgres_url or os.getenv(
-            "POSTGRES_DB_URL", "postgresql://codex_user:password@localhost:5432/codex_db"
+            "POSTGRES_DB_URL",
+            "postgresql://codex_user:password@localhost:5432/codex_db",
         )
         self.duckdb_path = duckdb_path or os.getenv("DUCKDB_PATH", "./biological_memory.duckdb")
         self.batch_size = batch_size
@@ -188,7 +191,9 @@ class MemoryWritebackService:
         batch_id = f"{stage}_{int(time.time())}_{str(uuid.uuid4())[:8]}"
 
         metrics = ProcessingMetrics(
-            session_id=self.current_session_id, batch_id=batch_id, processing_stage=stage
+            session_id=self.current_session_id,
+            batch_id=batch_id,
+            processing_stage=stage,
         )
 
         self.processing_metrics[batch_id] = metrics
@@ -623,7 +628,7 @@ class MemoryWritebackService:
             "processing_end_time": metrics.end_time,
             "processing_duration_seconds": metrics.duration_seconds,
             "error_messages": metrics.error_messages,
-            "processing_status": "completed" if metrics.failed_writes == 0 else "partial",
+            "processing_status": ("completed" if metrics.failed_writes == 0 else "partial"),
             "completion_percentage": (
                 metrics.successful_writes / max(metrics.memories_processed, 1)
             )
@@ -759,7 +764,9 @@ def main() -> None:
 
     try:
         with MemoryWritebackService(
-            postgres_url=args.postgres_url, duckdb_path=args.duckdb_path, batch_size=args.batch_size
+            postgres_url=args.postgres_url,
+            duckdb_path=args.duckdb_path,
+            batch_size=args.batch_size,
         ) as service:
 
             if args.stage == "full":

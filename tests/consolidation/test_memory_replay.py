@@ -16,8 +16,7 @@ import json
 import os
 import sys
 import time
-from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
+from datetime import datetime
 
 import duckdb
 import pytest
@@ -263,7 +262,11 @@ class TestMemoryReplayConsolidation:
 
         test_goals = [
             ("Product Launch Strategy", "executive_function", "prefrontal_cortex"),
-            ("Communication and Collaboration", "social_cognition", "temporal_superior_cortex"),
+            (
+                "Communication and Collaboration",
+                "social_cognition",
+                "temporal_superior_cortex",
+            ),
             (
                 "Financial Planning and Management",
                 "executive_function",
@@ -416,7 +419,11 @@ class TestMemoryReplayConsolidation:
             # Strong memory boost should be 1.2 (20% increase)
             ("SELECT 0.8 * 1.2", 0.96, "Strong memory strengthening"),
             # Cortical transfer threshold should be 0.5
-            ("SELECT CASE WHEN 0.6 > 0.5 THEN 1 ELSE 0 END", 1, "Cortical transfer threshold"),
+            (
+                "SELECT CASE WHEN 0.6 > 0.5 THEN 1 ELSE 0 END",
+                1,
+                "Cortical transfer threshold",
+            ),
         ]
 
         for query, expected, description in tests:

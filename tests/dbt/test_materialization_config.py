@@ -7,11 +7,9 @@ Agent: Agent-DBT-009
 Story: STORY-DBT-009 - Materialization Configuration Conflicts Resolution
 """
 
-import os
 import re
 from pathlib import Path
 
-import pytest
 import yaml
 
 

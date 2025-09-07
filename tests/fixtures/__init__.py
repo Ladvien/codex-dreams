@@ -11,20 +11,13 @@ All fixtures support proper test isolation and parallel execution.
 
 # Import all fixtures for easy access
 from .database import (
-    TEST_CONSOLIDATION_THRESHOLD,
-    TEST_FORGETTING_RATE,
-    TEST_HEBBIAN_RATE,
-    TEST_MEMORY_CAPACITY,
-    TEST_STM_DURATION,
     biological_memory_schema,
     isolated_test_db,
     test_duckdb,
     test_postgres_connection,
-    transactional_duckdb,
 )
 from .mocking import memory_lifecycle_data_mock  # Renamed to avoid conflict
 from .mocking import (
-    clean_test_database,
     real_duckdb_connection,
     real_ollama,
     real_ollama_service,
@@ -32,7 +25,6 @@ from .mocking import (
 )
 from .test_data import memory_lifecycle_data  # The actual fixture from test_data.py
 from .test_data import (
-    MemoryDataFactory,
     hebbian_learning_data,
     performance_benchmark,
     performance_test_data,

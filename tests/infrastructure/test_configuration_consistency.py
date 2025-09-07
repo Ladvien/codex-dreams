@@ -12,11 +12,9 @@ This test suite validates consistency across all configuration files in the proj
 Tests ensure single source of truth for configuration management.
 """
 
-import os
 import re
 import unittest
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
 
 
 class ConfigurationConsistencyTest(unittest.TestCase):
@@ -69,7 +67,9 @@ class ConfigurationConsistencyTest(unittest.TestCase):
                 missing_vars.append(var)
 
         self.assertEqual(
-            [], missing_vars, f"Missing required variables in .env.example: {missing_vars}"
+            [],
+            missing_vars,
+            f"Missing required variables in .env.example: {missing_vars}",
         )
 
     def test_model_name_consistency(self):
@@ -138,7 +138,9 @@ class ConfigurationConsistencyTest(unittest.TestCase):
             for pattern in deprecated_patterns:
                 matches = re.findall(pattern, content)
                 self.assertEqual(
-                    [], matches, f"Deprecated timeout pattern '{pattern}' found in {file_path.name}"
+                    [],
+                    matches,
+                    f"Deprecated timeout pattern '{pattern}' found in {file_path.name}",
                 )
 
             # Check for standardized timeout variables
@@ -152,7 +154,9 @@ class ConfigurationConsistencyTest(unittest.TestCase):
                     )
                     timeout_value = int(var_match.group(1))
                     self.assertGreater(
-                        timeout_value, 0, f"Timeout value for {timeout_var} should be positive"
+                        timeout_value,
+                        0,
+                        f"Timeout value for {timeout_var} should be positive",
                     )
 
     def test_database_url_hierarchy(self):
@@ -309,7 +313,9 @@ class ConfigurationConsistencyTest(unittest.TestCase):
         poorly_documented_vars = [v for v in poorly_documented_vars if v not in allowed_minimal]
 
         self.assertEqual(
-            [], poorly_documented_vars, f"Variables lacking documentation: {poorly_documented_vars}"
+            [],
+            poorly_documented_vars,
+            f"Variables lacking documentation: {poorly_documented_vars}",
         )
 
     def test_production_vs_test_environment_separation(self):

@@ -5,7 +5,6 @@ Reset Insights - Drop all insights and allow them to rebuild
 
 import os
 import sys
-from datetime import datetime
 from typing import NoReturn  # For type checking
 
 import psycopg2

@@ -6,12 +6,11 @@ This test suite validates dbt package management, dependency compatibility,
 and DuckDB adapter functionality for the biological memory pipeline.
 """
 
-import json
 import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 import yaml
 
@@ -74,7 +73,9 @@ class PackageManagementTest:
 
         except Exception as e:
             self.log_test(
-                "packages_yml_exists_and_valid", False, f"Error reading packages.yml: {str(e)}"
+                "packages_yml_exists_and_valid",
+                False,
+                f"Error reading packages.yml: {str(e)}",
             )
             return False
 
@@ -106,7 +107,8 @@ class PackageManagementTest:
 
                 # Find corresponding package in lock file
                 lock_pkg = next(
-                    (p for p in lock_packages_list if p.get("package") == pkg_name), None
+                    (p for p in lock_packages_list if p.get("package") == pkg_name),
+                    None,
                 )
                 if not lock_pkg:
                     self.log_test(
@@ -137,7 +139,9 @@ class PackageManagementTest:
 
         except Exception as e:
             self.log_test(
-                "package_lock_consistency", False, f"Error comparing package files: {str(e)}"
+                "package_lock_consistency",
+                False,
+                f"Error comparing package files: {str(e)}",
             )
             return False
 
@@ -147,7 +151,11 @@ class PackageManagementTest:
             # Get dbt version
             result = subprocess.run(["dbt", "--version"], capture_output=True, text=True)
             if result.returncode != 0:
-                self.log_test("dbt_utils_version_compatibility", False, "Could not get dbt version")
+                self.log_test(
+                    "dbt_utils_version_compatibility",
+                    False,
+                    "Could not get dbt version",
+                )
                 return False
 
             # Parse dbt version from output
@@ -159,7 +167,9 @@ class PackageManagementTest:
 
             if not dbt_version:
                 self.log_test(
-                    "dbt_utils_version_compatibility", False, "Could not parse dbt version"
+                    "dbt_utils_version_compatibility",
+                    False,
+                    "Could not parse dbt version",
                 )
                 return False
 
@@ -231,7 +241,9 @@ class PackageManagementTest:
 
                 if not deps_success:
                     self.log_test(
-                        "duckdb_adapter_compatibility", False, f"dbt deps failed: {result.stderr}"
+                        "duckdb_adapter_compatibility",
+                        False,
+                        f"dbt deps failed: {result.stderr}",
                     )
                     return False
 
@@ -290,7 +302,11 @@ class PackageManagementTest:
 
                 # Test macro compilation (dbt parse)
                 result = subprocess.run(
-                    ["dbt", "parse"], capture_output=True, text=True, timeout=60, env=test_env
+                    ["dbt", "parse"],
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                    env=test_env,
                 )
                 parse_success = result.returncode == 0
 
@@ -316,7 +332,10 @@ class PackageManagementTest:
                     "macro_compilation",
                     parse_success,
                     message,
-                    {"parse_output": result.stdout[:500], "parse_errors": result.stderr[:500]},
+                    {
+                        "parse_output": result.stdout[:500],
+                        "parse_errors": result.stderr[:500],
+                    },
                 )
                 return parse_success
 
@@ -338,8 +357,18 @@ class PackageManagementTest:
 
             biological_patterns = {
                 "time_series": ["temporal", "time", "decay", "consolidation"],
-                "statistical": ["correlation", "regression", "distribution", "probability"],
-                "memory_specific": ["hebbian", "synaptic", "consolidation", "forgetting"],
+                "statistical": [
+                    "correlation",
+                    "regression",
+                    "distribution",
+                    "probability",
+                ],
+                "memory_specific": [
+                    "hebbian",
+                    "synaptic",
+                    "consolidation",
+                    "forgetting",
+                ],
                 "cognitive": ["working_memory", "short_term", "long_term", "semantic"],
             }
 
@@ -396,7 +425,9 @@ class PackageManagementTest:
         try:
             if not self.package_lock_yml.exists():
                 self.log_test(
-                    "package_security_and_provenance", False, "package-lock.yml not found"
+                    "package_security_and_provenance",
+                    False,
+                    "package-lock.yml not found",
                 )
                 return False
 

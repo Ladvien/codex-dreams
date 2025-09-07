@@ -16,9 +16,8 @@ Features:
 import logging
 import os
 import re
-import warnings
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List
 from urllib.parse import urlparse
 
 
@@ -185,7 +184,12 @@ class ConfigurationValidator:
     def _validate_path_variables(self) -> None:
         """Validate file path variables"""
 
-        path_vars = ["DUCKDB_PATH", "LLM_CACHE_PATH", "DBT_PROFILES_DIR", "DBT_PROJECT_DIR"]
+        path_vars = [
+            "DUCKDB_PATH",
+            "LLM_CACHE_PATH",
+            "DBT_PROFILES_DIR",
+            "DBT_PROJECT_DIR",
+        ]
 
         for var in path_vars:
             path_str = os.getenv(var)
@@ -308,7 +312,7 @@ class ConfigurationValidator:
 
         return True
 
-    def get_configuration_summary(self) -> Dict[str, any]:
+    def get_configuration_summary(self) -> Dict[str, Any]:
         """Get a summary of current configuration"""
 
         summary = {
@@ -368,7 +372,7 @@ class ConfigurationValidator:
 
         return env_valid and consistency_valid and models_valid
 
-    def get_validation_report(self) -> Dict[str, any]:
+    def get_validation_report(self) -> Dict[str, Any]:
         """Get detailed validation report"""
 
         return {

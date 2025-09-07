@@ -10,7 +10,6 @@ Tests to verify that working memory configuration errors have been resolved:
 4. Working memory models can execute successfully
 """
 
-import os
 import re
 import sys
 from pathlib import Path

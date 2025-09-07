@@ -22,7 +22,7 @@ import statistics
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import List
 
 import duckdb
 import numpy as np
@@ -195,7 +195,7 @@ class TestSemanticNetworkPerformance:
 
         # Run multiple similarity searches
         for iteration in range(10):
-            query_vector = self.generate_test_embeddings(1, 256)[0]
+            self.generate_test_embeddings(1, 256)[0]
 
             start_time = time.perf_counter()
 
@@ -231,7 +231,12 @@ class TestSemanticNetworkPerformance:
                  performance_ratio, vector_count, dimensions)
                 VALUES (?, 'vector_similarity_search', ?, 100.0, ?, ?, 256)
             """,
-                [iteration + 1, execution_time_ms, execution_time_ms / 100.0, len(result)],
+                [
+                    iteration + 1,
+                    execution_time_ms,
+                    execution_time_ms / 100.0,
+                    len(result),
+                ],
             )
 
         # Performance assertions
@@ -256,7 +261,7 @@ class TestSemanticNetworkPerformance:
     def test_semantic_network_query_performance(self, performance_db):
         """Test semantic network aggregate queries - should be <50ms average"""
         conn = performance_db
-        memory_count = self.setup_test_data(conn, 2000)
+        self.setup_test_data(conn, 2000)
 
         execution_times = []
 
@@ -330,7 +335,12 @@ class TestSemanticNetworkPerformance:
                     (metric_id, operation_name, execution_time_ms, target_time_ms, performance_ratio)
                     VALUES (?, ?, ?, 50.0, ?)
                 """,
-                    [len(execution_times), query_name, execution_time_ms, execution_time_ms / 50.0],
+                    [
+                        len(execution_times),
+                        query_name,
+                        execution_time_ms,
+                        execution_time_ms / 50.0,
+                    ],
                 )
 
             avg_query_time = statistics.mean(query_times)
@@ -432,7 +442,12 @@ class TestSemanticNetworkPerformance:
                  performance_ratio, vector_count)
                 VALUES (?, 'batch_processing', ?, 6000.0, ?, ?)
             """,
-                [batch_size, processing_time * 1000, (processing_time * 1000) / 6000.0, batch_size],
+                [
+                    batch_size,
+                    processing_time * 1000,
+                    (processing_time * 1000) / 6000.0,
+                    batch_size,
+                ],
             )
 
             logging.info(
@@ -568,7 +583,7 @@ class TestSemanticNetworkPerformance:
             # Simulate concurrent queries
             for query_batch in range(conn_count):
                 start_time = time.perf_counter()
-                result = conn.execute(test_query).fetchall()
+                conn.execute(test_query).fetchall()
                 end_time = time.perf_counter()
 
                 times.append((end_time - start_time) * 1000)
@@ -649,7 +664,7 @@ class TestSemanticNetworkPerformance:
             # Run each benchmark multiple times
             for iteration in range(10):
                 start_time = time.perf_counter()
-                result = conn.execute(query_sql).fetchall()
+                conn.execute(query_sql).fetchall()
                 end_time = time.perf_counter()
 
                 execution_time_ms = (end_time - start_time) * 1000

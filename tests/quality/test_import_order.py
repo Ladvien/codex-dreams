@@ -8,7 +8,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List
 
 import pytest
 
@@ -219,11 +219,15 @@ class TestImportOrder:
 
                 # Check that sections are in the right order
                 # Expected order: stdlib, third-party, first-party, local
-                current_section = "stdlib"
-                section_positions = {"stdlib": 0, "third_party": 1, "first_party": 2, "local": 3}
+                section_positions = {
+                    "stdlib": 0,
+                    "third_party": 1,
+                    "first_party": 2,
+                    "local": 3,
+                }
 
                 for line_num, import_line in import_lines:
-                    imports = extract_imports_from_file(file_path)
+                    extract_imports_from_file(file_path)
 
                     # Simplified check - just ensure no obvious violations
                     if (
@@ -242,7 +246,7 @@ class TestImportOrder:
                                 }
                             )
 
-            except Exception as e:
+            except Exception:
                 # Don't fail the test for analysis errors
                 continue
 
@@ -273,7 +277,11 @@ class TestImportOrder:
                             and not stripped_line.startswith("'")
                         ):
                             violations.append(
-                                {"file": str(file_path), "line": line_num, "content": stripped_line}
+                                {
+                                    "file": str(file_path),
+                                    "line": line_num,
+                                    "content": stripped_line,
+                                }
                             )
 
             except Exception as e:
@@ -295,7 +303,6 @@ class TestImportOrder:
 
         # Focus on src files only for this check
         src_files = [f for f in python_files if "/src/" in str(f)]
-        potential_unused = []
 
         for file_path in src_files:
             try:
@@ -342,7 +349,6 @@ class TestImportOrder:
 
         # This test is informational - don't fail for potential unused imports
         # as the heuristic is very basic
-        pass
 
     def test_relative_imports_in_src(self):
         """Ensure proper use of relative imports in src/ directory"""

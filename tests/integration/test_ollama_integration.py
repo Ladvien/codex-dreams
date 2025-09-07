@@ -21,9 +21,8 @@ import tempfile
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 import duckdb
 import pytest
@@ -188,7 +187,7 @@ class TestOllamaConnectivity:
 
             data = response.json()
             models = data.get("models", [])
-            model_names = [model["name"] for model in models]
+            [model["name"] for model in models]
 
             assert len(models) > 0, "Should have at least one model available"
             logger.info(f"Successfully connected to Ollama. Available models: {len(models)}")
@@ -284,7 +283,8 @@ class TestOllamaConnectivity:
         start_time = time.perf_counter()
 
         result = self.tester.call_ollama_generate(
-            "Extract key insight from: Team meeting about project goals.", model=test_model
+            "Extract key insight from: Team meeting about project goals.",
+            model=test_model,
         )
 
         response_time = time.perf_counter() - start_time
@@ -609,7 +609,8 @@ class TestOllamaCachingAndPerformance:
             try:
                 start_time = time.perf_counter()
                 result = self.tester.call_ollama_generate(
-                    f"What is {prompt_id} + 1? Answer with just the number.", model=test_model
+                    f"What is {prompt_id} + 1? Answer with just the number.",
+                    model=test_model,
                 )
                 response_time = time.perf_counter() - start_time
                 results_queue.put({"id": prompt_id, "result": result, "time": response_time})
@@ -723,7 +724,10 @@ class TestOllamaHealthChecks:
                     ),
                 }
             else:
-                health_status["generation"] = {"successful": False, "error": "No models available"}
+                health_status["generation"] = {
+                    "successful": False,
+                    "error": "No models available",
+                }
 
             # Test 4: Endpoint configuration
             health_status["configuration"] = {

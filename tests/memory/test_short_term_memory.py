@@ -14,14 +14,11 @@ Created: 2025-08-28
 """
 
 import json
-import os
 import sys
-import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
 
 import duckdb
-import pandas as pd
 import pytest
 
 # Add biological_memory to Python path for imports
@@ -169,8 +166,16 @@ class TestShortTermMemory:
         """Test spatial memory component extraction"""
         # Test spatial extraction logic
         test_cases = [
-            ("Schedule meeting in conference room 3", "office", "workplace environment"),
-            ("Client presentation at their site", "client_site", "external environment"),
+            (
+                "Schedule meeting in conference room 3",
+                "office",
+                "workplace environment",
+            ),
+            (
+                "Client presentation at their site",
+                "client_site",
+                "external environment",
+            ),
             ("Remote work from home office", "remote", "home workspace"),
             ("Travel to airport for business trip", "travel", "mobile environment"),
             ("General task with no location", "unspecified", "general space"),

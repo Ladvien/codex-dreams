@@ -20,9 +20,9 @@ import tempfile
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 import duckdb
 import psycopg2
@@ -45,7 +45,7 @@ sys.path.insert(0, str(project_root))
 class PostgreSQLConnectionConfig:
     """Configuration for PostgreSQL integration testing - PRODUCTION VALUES"""
 
-    host: str = os.getenv("POSTGRES_HOST", "192.168.1.104")
+    host: str = os.getenv("POSTGRES_HOST", "localhost")
     port: int = int(os.getenv("POSTGRES_PORT", "5432"))
     database: str = os.getenv("POSTGRES_DB", "codex_db")
     test_database: str = os.getenv("TEST_DB_NAME", "codex_db")  # Use production DB for real testing
@@ -424,7 +424,11 @@ class TestDuckDBPostgreSQLIntegration:
                         INSERT INTO {test_table} (content, importance_score, metadata)
                         VALUES (%s, %s, %s)
                     """,
-                        (content, importance, json.dumps({"source": "integration_test"})),
+                        (
+                            content,
+                            importance,
+                            json.dumps({"source": "integration_test"}),
+                        ),
                     )
 
         # Now test DuckDB processing of PostgreSQL data

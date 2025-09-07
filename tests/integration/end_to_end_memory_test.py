@@ -12,7 +12,6 @@ This module provides comprehensive integration testing for:
 - Performance benchmarks for the complete pipeline
 """
 
-import hashlib
 import json
 import logging
 import os
@@ -316,7 +315,10 @@ class BiologicalMemoryPipelineTester:
 
                 # Insert realistic biological memory test data
                 test_memories = [
-                    ("Working on quarterly business review and financial planning", 0.9),
+                    (
+                        "Working on quarterly business review and financial planning",
+                        0.9,
+                    ),
                     ("Team standup discussing sprint goals and blockers", 0.7),
                     ("Code review for authentication system improvements", 0.8),
                     ("Planning next product release features and timeline", 0.85),
@@ -338,9 +340,13 @@ class BiologicalMemoryPipelineTester:
                     metadata = {
                         "importance": importance,
                         "source": "e2e_test",
-                        "category": ["planning", "development", "review", "client", "operations"][
-                            i % 5
-                        ],
+                        "category": [
+                            "planning",
+                            "development",
+                            "review",
+                            "client",
+                            "operations",
+                        ][i % 5],
                         "complexity": min(1.0, 0.5 + (importance * 0.5)),
                     }
 
@@ -498,7 +504,11 @@ Client Relations and Service, Operations and System Maintenance"""
                     # Create semantic associations with Hebbian learning
                     associations = [
                         (goal, "memory_goal", strength * 0.9),
-                        (tasks.split(",")[0].strip() if tasks else "task", goal, hebbian * 0.8),
+                        (
+                            tasks.split(",")[0].strip() if tasks else "task",
+                            goal,
+                            hebbian * 0.8,
+                        ),
                         ("episodic_memory", goal, strength * hebbian * 0.7),
                     ]
 
@@ -515,7 +525,12 @@ Client Relations and Service, Operations and System Maintenance"""
                                 (concept_a, concept_b, association_strength, association_type, hebbian_trace)
                                 VALUES (?, ?, ?, 'consolidation', ?)
                             """,
-                                (concept_a[:50], concept_b[:50], assoc_strength, hebbian),
+                                (
+                                    concept_a[:50],
+                                    concept_b[:50],
+                                    assoc_strength,
+                                    hebbian,
+                                ),
                             )
 
                             ltm_associations_created += 1
@@ -551,7 +566,7 @@ Client Relations and Service, Operations and System Maintenance"""
     def test_biological_timing_constraints_end_to_end(self):
         """Test that complete pipeline meets biological timing constraints"""
         with self.pipeline:
-            test_memories = self.pipeline.setup_test_data_in_postgres(5)
+            self.pipeline.setup_test_data_in_postgres(5)
 
             with self.pipeline.get_integrated_duckdb() as duckdb_conn:
                 # Measure complete pipeline timing
@@ -621,7 +636,7 @@ Client Relations and Service, Operations and System Maintenance"""
     def test_hebbian_learning_with_live_services(self):
         """Test Hebbian learning algorithm with live LLM processing"""
         with self.pipeline:
-            test_memories = self.pipeline.setup_test_data_in_postgres(6)
+            self.pipeline.setup_test_data_in_postgres(6)
 
             with self.pipeline.get_integrated_duckdb() as duckdb_conn:
                 # Create initial semantic associations
@@ -724,7 +739,7 @@ Client Relations and Service, Operations and System Maintenance"""
     def test_error_recovery_in_complete_pipeline(self):
         """Test error recovery across the complete pipeline with service failures"""
         with self.pipeline:
-            test_memories = self.pipeline.setup_test_data_in_postgres(5)
+            self.pipeline.setup_test_data_in_postgres(5)
 
             with self.pipeline.get_integrated_duckdb() as duckdb_conn:
                 # Test pipeline continues despite LLM service failures

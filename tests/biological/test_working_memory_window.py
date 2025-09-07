@@ -12,7 +12,6 @@ Tests biological accuracy of attention window and capacity constraints.
 
 import random
 from datetime import datetime, timedelta
-from pathlib import Path
 
 import duckdb
 import pytest
@@ -63,7 +62,11 @@ class TestWorkingMemoryBiologicalAccuracy:
             # Outside 5-minute window (should be excluded)
             (base_time - timedelta(minutes=6), 0.9, "old_memory_1"),
             (base_time - timedelta(minutes=10), 0.8, "old_memory_2"),
-            (base_time - timedelta(minutes=30), 0.9, "stm_memory"),  # Short-term memory range
+            (
+                base_time - timedelta(minutes=30),
+                0.9,
+                "stm_memory",
+            ),  # Short-term memory range
         ]
 
         for created_at, strength, content in test_memories:
@@ -243,7 +246,11 @@ class TestWorkingMemoryBiologicalAccuracy:
             (base_time - timedelta(seconds=90), 0.85, "high_attention"),
             (base_time - timedelta(seconds=180), 0.75, "medium_attention"),
             (base_time - timedelta(seconds=270), 0.65, "low_attention"),
-            (base_time - timedelta(seconds=330), 0.55, "below_threshold"),  # Beyond 5 min
+            (
+                base_time - timedelta(seconds=330),
+                0.55,
+                "below_threshold",
+            ),  # Beyond 5 min
         ]
 
         for created_at, strength, content in attention_test_points:
@@ -353,7 +360,13 @@ class TestWorkingMemoryNeuralPlausibility:
                     created_at, last_accessed_at, access_count, memory_type
                 ) VALUES (?, ?, ['overload'], ?, ?, ?, 5, 'test')
             """,
-                [f"overload_{i}", f"Overload memory {i}", 0.8 + (i * 0.01), base_time, base_time],
+                [
+                    f"overload_{i}",
+                    f"Overload memory {i}",
+                    0.8 + (i * 0.01),
+                    base_time,
+                    base_time,
+                ],
             )
 
         # Test that capacity constraint is enforced

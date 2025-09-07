@@ -8,9 +8,7 @@ Tests memory processing performance to ensure:
 - Total test suite <5 minutes
 """
 
-import time
 from datetime import datetime, timezone
-from typing import Any, Dict, List
 
 import pytest
 

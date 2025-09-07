@@ -8,13 +8,11 @@ missing files, disk space issues, and network file system failures.
 import json
 import os
 import shutil
-import stat
 
 # Import from biological_memory error handling
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 
@@ -23,9 +21,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "biological_
 try:
     from error_handling import (
         BiologicalMemoryErrorHandler,
-        ErrorEvent,
-        ErrorType,
-        SecuritySanitizer,
     )
 except ImportError:
     pytest.skip("Error handling module not available", allow_module_level=True)
@@ -84,7 +79,10 @@ class TestFileIOErrorHandling:
         # Should handle FileNotFoundError gracefully
         with pytest.raises(FileNotFoundError):
             self.error_handler.exponential_backoff_retry(
-                read_missing_file, max_retries=3, base_delay=0.1, exceptions=(FileNotFoundError,)
+                read_missing_file,
+                max_retries=3,
+                base_delay=0.1,
+                exceptions=(FileNotFoundError,),
             )
 
         # Verify error was logged
@@ -100,7 +98,10 @@ class TestFileIOErrorHandling:
 
         with pytest.raises(OSError, match="No space left on device"):
             self.error_handler.exponential_backoff_retry(
-                mock_disk_space_check, max_retries=2, base_delay=0.1, exceptions=(OSError,)
+                mock_disk_space_check,
+                max_retries=2,
+                base_delay=0.1,
+                exceptions=(OSError,),
             )
 
     def test_file_locking_conflict_handling(self):
@@ -166,7 +167,10 @@ class TestFileIOErrorHandling:
         start_time = __import__("time").time()
 
         result = self.error_handler.exponential_backoff_retry(
-            network_file_operation, max_retries=1, base_delay=0.1, exceptions=(Exception,)
+            network_file_operation,
+            max_retries=1,
+            base_delay=0.1,
+            exceptions=(Exception,),
         )
 
         elapsed = __import__("time").time() - start_time
@@ -343,7 +347,10 @@ class TestFileIOErrorHandling:
             except OSError:
                 # On lock conflict, retry with exponential backoff
                 result = self.error_handler.exponential_backoff_retry(
-                    increment_counter, max_retries=3, base_delay=0.01, exceptions=(OSError,)
+                    increment_counter,
+                    max_retries=3,
+                    base_delay=0.01,
+                    exceptions=(OSError,),
                 )
                 assert isinstance(result, int)
 
@@ -357,7 +364,6 @@ class TestFileIOErrorHandling:
 
         def file_system_watcher():
             """Simplified file system watcher with error recovery"""
-            import time
 
             # Simulate watching for file changes
             test_file = watch_dir / "watched_file.txt"

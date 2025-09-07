@@ -5,13 +5,9 @@ Provides isolated DuckDB and PostgreSQL connections with proper cleanup,
 schema setup, and transaction-based test isolation.
 """
 
-import json
 import os
 import tempfile
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Dict, Generator
-from unittest.mock import Mock
+from typing import Generator
 
 import duckdb
 import pytest

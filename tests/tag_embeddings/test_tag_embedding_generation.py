@@ -16,9 +16,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../../biological_memory
 
 try:
     from ollama_embeddings import (
-        EmbeddingCache,
         cosine_similarity,
-        generate_embedding,
         generate_tag_embedding,
     )
 except ImportError as e:
@@ -173,9 +171,10 @@ class TestTagEmbeddingCaching:
 
     def test_cache_miss_and_store(self):
         """Test cache miss leads to generation and storage"""
-        with patch("ollama_embeddings.cache") as mock_cache, patch(
-            "ollama_embeddings.requests.post"
-        ) as mock_post:
+        with (
+            patch("ollama_embeddings.cache") as mock_cache,
+            patch("ollama_embeddings.requests.post") as mock_post,
+        ):
 
             # Mock cache miss
             mock_cache.get.return_value = None
@@ -230,11 +229,11 @@ class TestErrorHandling:
     def test_invalid_tag_types(self):
         """Test handling of invalid tag types"""
         # Should handle mixed types gracefully
-        result = generate_tag_embedding([123, "python", None, True])
+        generate_tag_embedding([123, "python", None, True])
 
         with patch("ollama_embeddings.generate_embedding") as mock_generate:
             mock_generate.return_value = [0.1] * 768
-            result = generate_tag_embedding([123, "python", None, True])
+            generate_tag_embedding([123, "python", None, True])
 
             # Should convert to strings and filter
             mock_generate.assert_called_once_with("123 | True | python", "nomic-embed-text", 3)
@@ -254,7 +253,12 @@ class TestErrorHandling:
 
     def test_special_characters_in_tags(self):
         """Test handling of special characters in tags"""
-        special_tags = ["tag@domain.com", "c++", "tag with spaces", "tag\nwith\nnewlines"]
+        special_tags = [
+            "tag@domain.com",
+            "c++",
+            "tag with spaces",
+            "tag\nwith\nnewlines",
+        ]
 
         with patch("ollama_embeddings.generate_embedding") as mock_generate:
             mock_generate.return_value = [0.1] * 768
@@ -269,5 +273,11 @@ class TestErrorHandling:
 if __name__ == "__main__":
     # Run specific test groups
     pytest.main(
-        [__file__, "-v", "--tb=short", "-k", "not integration"]  # Skip integration tests by default
+        [
+            __file__,
+            "-v",
+            "--tb=short",
+            "-k",
+            "not integration",
+        ]  # Skip integration tests by default
     )

@@ -6,7 +6,6 @@ Tests both UDF integration and fallback mathematical approximations.
 
 import os
 import sys
-from unittest.mock import Mock, patch
 
 import duckdb
 import pytest

@@ -11,7 +11,6 @@ This test suite validates:
 5. Credential rotation procedures are implemented correctly
 """
 
-import os
 import re
 import secrets
 import string

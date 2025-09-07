@@ -5,11 +5,9 @@ Tests error recovery, connection failures, data corruption handling,
 and system resilience under various failure conditions.
 """
 
-import os
-import sqlite3
 import tempfile
 from datetime import datetime, timezone
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import duckdb
 import pytest
@@ -192,7 +190,11 @@ class TestOllamaConnectionReliability:
         with pytest.raises(Exception) as exc_info:
             import requests
 
-            requests.post("http://localhost:11434/api/generate", json={"prompt": "test"}, timeout=1)
+            requests.post(
+                "http://localhost:11434/api/generate",
+                json={"prompt": "test"},
+                timeout=1,
+            )
 
         assert "Connection" in str(exc_info.value)
 

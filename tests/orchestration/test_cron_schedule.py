@@ -5,12 +5,6 @@ Tests biological rhythm scheduling mimicking sleep-wake cycles and
 memory consolidation patterns as specified in acceptance criteria.
 """
 
-import re
-from datetime import datetime, time
-from typing import List, Tuple
-
-import pytest
-
 
 class TestCronSyntaxValidation:
     """Test cron expression syntax and validity."""
@@ -36,7 +30,10 @@ class TestCronSyntaxValidation:
             parts = cron_expr.split()
 
             # Most should have 5 parts, working memory has 6 (includes seconds)
-            assert len(parts) in [5, 6], f"Cron expression should have 5-6 parts: {cron_expr}"
+            assert len(parts) in [
+                5,
+                6,
+            ], f"Cron expression should have 5-6 parts: {cron_expr}"
 
             # Validate each part is a valid cron field
             for part in parts:
@@ -315,7 +312,10 @@ class TestJobExecution:
         }
 
         for job, result in job_results.items():
-            assert result["status"] in ["success", "failure"], f"Job {job} should have valid status"
+            assert result["status"] in [
+                "success",
+                "failure",
+            ], f"Job {job} should have valid status"
             assert result["duration"] > 0, f"Job {job} should have positive duration"
 
             # Working memory should be fastest (continuous updates)
@@ -337,7 +337,7 @@ class TestErrorRecovery:
         ]
 
         for scenario in failure_scenarios:
-            job = scenario["job"]
+            scenario["job"]
             error = scenario["error"]
             should_retry = scenario["retry"]
 

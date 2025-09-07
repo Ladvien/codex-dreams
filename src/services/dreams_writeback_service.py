@@ -18,13 +18,12 @@ import logging
 import os
 import sys
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime, timezone
+from typing import Any, Dict, List
 
 import duckdb
 import psycopg2
 import psycopg2.extras
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 # Configure logging
 logging.basicConfig(
@@ -41,17 +40,15 @@ class DreamsWritebackService:
         # Database connections
         self.postgres_url = os.getenv(
             "POSTGRES_DB_URL",
-            "postgresql://codex_user:MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a@192.168.1.104:5432/codex_db",
+            os.getenv("POSTGRES_DB_URL"),
         )
-        self.duckdb_path = os.getenv(
-            "DUCKDB_PATH", "/Users/ladvien/biological_memory/dbs/memory.duckdb"
-        )
+        self.duckdb_path = os.getenv("DUCKDB_PATH", "./biological_memory/dbs/memory.duckdb")
 
         # Processing configuration
         self.batch_size = 1000
         self.session_id = str(uuid.uuid4())
 
-    def connect_postgres(self):
+    def connect_postgres(self) -> None:
         """Connect to PostgreSQL database."""
         try:
             conn = psycopg2.connect(self.postgres_url)
@@ -60,7 +57,7 @@ class DreamsWritebackService:
             logger.error(f"Failed to connect to PostgreSQL: {e}")
             raise
 
-    def connect_duckdb_readonly(self):
+    def connect_duckdb_readonly(self) -> None:
         """Connect to DuckDB in read-only mode."""
         try:
             # Use read-only mode to avoid conflicts with other processes
@@ -71,7 +68,7 @@ class DreamsWritebackService:
             # Try with in-memory database if file is locked
             return duckdb.connect(":memory:")
 
-    def write_working_memory(self):
+    def write_working_memory(self) -> int:
         """Write working memory snapshots to dreams schema."""
         logger.info("Writing working memory snapshots...")
         snapshot_id = str(uuid.uuid4())
@@ -86,7 +83,7 @@ class DreamsWritebackService:
             # Since we can't access DuckDB models directly, we'll query raw memories
             # and apply similar logic
             query = """
-            SELECT 
+            SELECT
                 id,
                 content,
                 timestamp,
@@ -102,7 +99,7 @@ class DreamsWritebackService:
             # For now, query from PostgreSQL directly since DuckDB may be locked
             pg_cursor.execute(
                 """
-                SELECT 
+                SELECT
                     id,
                     content,
                     created_at as timestamp,
@@ -123,9 +120,16 @@ class DreamsWritebackService:
 
             # Process and insert each memory
             for idx, memory in enumerate(memories):
-                memory_id, content, timestamp, metadata, activation, access_count, summary, tags = (
-                    memory
-                )
+                (
+                    memory_id,
+                    content,
+                    timestamp,
+                    metadata,
+                    activation,
+                    access_count,
+                    summary,
+                    tags,
+                ) = memory
 
                 # Simple importance scoring
                 importance = min(1.0, 0.5 + (len(content) / 10000))
@@ -158,7 +162,7 @@ class DreamsWritebackService:
                         memory_id,
                         content[:5000] if content else "",  # Truncate very long content
                         timestamp,
-                        json.dumps({"original_metadata": metadata}) if metadata else "{}",
+                        (json.dumps({"original_metadata": metadata}) if metadata else "{}"),
                         tags if tags else [],  # Use tags as entities
                         ["memory", "processing"],  # Default topics
                         "neutral",  # Default sentiment
@@ -194,7 +198,7 @@ class DreamsWritebackService:
             if duck_conn:
                 duck_conn.close()
 
-    def write_short_term_episodes(self):
+    def write_short_term_episodes(self) -> int:
         """Write short-term episodic memories to dreams schema."""
         logger.info("Writing short-term episodes...")
 
@@ -205,7 +209,7 @@ class DreamsWritebackService:
             # Query recent memories that should be in short-term storage
             pg_cursor.execute(
                 """
-                SELECT 
+                SELECT
                     id,
                     content,
                     created_at as timestamp,
@@ -280,7 +284,7 @@ class DreamsWritebackService:
             if pg_conn:
                 pg_conn.close()
 
-    def write_long_term_memories(self):
+    def write_long_term_memories(self) -> int:
         """Consolidate and write long-term memories to dreams schema."""
         logger.info("Writing long-term memories...")
 
@@ -291,7 +295,7 @@ class DreamsWritebackService:
             # Query memories ready for long-term consolidation
             pg_cursor.execute(
                 """
-                SELECT 
+                SELECT
                     ste.memory_id,
                     m.content,
                     m.summary as semantic_gist,
@@ -366,7 +370,11 @@ class DreamsWritebackService:
 
             # Record metrics
             self._record_metrics(
-                pg_cursor, "long_term_memories", len(consolidatable), len(consolidatable), 0
+                pg_cursor,
+                "long_term_memories",
+                len(consolidatable),
+                len(consolidatable),
+                0,
             )
             pg_conn.commit()
 
@@ -380,7 +388,7 @@ class DreamsWritebackService:
             if pg_conn:
                 pg_conn.close()
 
-    def write_semantic_network(self):
+    def write_semantic_network(self) -> int:
         """Build and write semantic network associations."""
         logger.info("Building semantic network...")
 
@@ -453,7 +461,7 @@ class DreamsWritebackService:
             if pg_conn:
                 pg_conn.close()
 
-    def extract_insights(self):
+    def extract_insights(self) -> List[Dict[str, Any]]:
         """Extract patterns and insights from processed memories."""
         logger.info("Extracting memory insights...")
 
@@ -464,7 +472,7 @@ class DreamsWritebackService:
             # Find recurring patterns
             pg_cursor.execute(
                 """
-                SELECT 
+                SELECT
                     t.tag,
                     COUNT(*) as frequency
                 FROM public.memories m,
@@ -519,7 +527,9 @@ class DreamsWritebackService:
             if pg_conn:
                 pg_conn.close()
 
-    def _record_metrics(self, cursor, stage: str, processed: int, successful: int, failed: int):
+    def _record_metrics(
+        self, cursor: Any, stage: str, processed: int, successful: int, failed: int
+    ) -> None:
         """Record processing metrics."""
         try:
             cursor.execute(
@@ -537,7 +547,7 @@ class DreamsWritebackService:
         except Exception as e:
             logger.warning(f"Could not record metrics: {e}")
 
-    def run_full_pipeline(self):
+    def run_full_pipeline(self) -> Dict[str, Any]:
         """Run the complete write-back pipeline."""
         logger.info(f"Starting full pipeline run (session: {self.session_id})")
 
@@ -550,7 +560,7 @@ class DreamsWritebackService:
 
         logger.info("Pipeline run complete")
 
-    def cleanup_old_data(self, days_to_keep: int = 30):
+    def cleanup_old_data(self, days_to_keep: int = 30) -> None:
         """Clean up old data from dreams schema."""
         logger.info(f"Cleaning up data older than {days_to_keep} days...")
 
@@ -596,7 +606,7 @@ class DreamsWritebackService:
                 pg_conn.close()
 
 
-def main():
+def main() -> None:
     """Main entry point for the write-back service."""
     service = DreamsWritebackService()
 

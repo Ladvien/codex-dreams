@@ -7,8 +7,6 @@ after the conftest.py refactoring.
 
 import inspect
 
-import pytest
-
 from tests.fixtures import database, mocking, test_data
 
 

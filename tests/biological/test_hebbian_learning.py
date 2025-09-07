@@ -17,11 +17,8 @@ Tests biological accuracy of:
 5. Co-activation strengthening with temporal correlation
 """
 
-import random
-from decimal import Decimal, getcontext
-from typing import List, Tuple
+from decimal import getcontext
 
-import numpy as np
 import pytest
 
 # Set precision for biological parameter testing
@@ -31,7 +28,7 @@ getcontext().prec = 10
 class TestHebbianLearningBiologicalAccuracy:
     """Test suite validating Hebbian learning follows neuroscience research"""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Setup test environment with biological parameters"""
         self.biological_learning_rate = 0.1  # From dbt_project.yml, biologically accurate
         self.min_learning_rate = 0.05  # Lower bound from literature
@@ -278,7 +275,7 @@ class TestHebbianLearningBiologicalAccuracy:
 
 
 @pytest.fixture
-def hebbian_test_data():
+def hebbian_test_data() -> dict:
     """Fixture providing test data for Hebbian learning validation"""
     return {
         "biological_learning_rate": 0.1,

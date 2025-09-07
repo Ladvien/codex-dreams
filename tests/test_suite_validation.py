@@ -10,12 +10,8 @@ This module validates that the test suite meets all requirements:
 """
 
 import os
-import tempfile
 from pathlib import Path
-from typing import List, Set
 
-import coverage
-import duckdb
 import pytest
 
 
@@ -97,8 +93,6 @@ class TestSuiteValidation:
     def test_real_service_functionality(self):
         """Validate real Ollama service works online."""
         import os
-
-        from tests.fixtures.mocking import real_ollama_service
 
         # Test that real service can be used if configured
         if os.getenv("OLLAMA_URL"):

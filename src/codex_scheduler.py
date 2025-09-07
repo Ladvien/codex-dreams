@@ -158,7 +158,7 @@ class CodexScheduler:
             "success_count": self.success_count,
             "last_run": self.last_run,
             "last_success": self.last_success,
-            "success_rate": self.success_count / self.run_count if self.run_count > 0 else 0,
+            "success_rate": (self.success_count / self.run_count if self.run_count > 0 else 0),
         }
 
 

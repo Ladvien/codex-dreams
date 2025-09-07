@@ -6,7 +6,6 @@ and configuration validation as specified in acceptance criteria.
 """
 
 import os
-from typing import Any, Dict
 from unittest.mock import Mock, patch
 
 import psycopg2
@@ -166,7 +165,8 @@ class TestOllamaConnection:
 
         # Test embedding request
         response = requests.post(
-            f"{ollama_url}/api/embeddings", json={"model": embedding_model, "prompt": "test text"}
+            f"{ollama_url}/api/embeddings",
+            json={"model": embedding_model, "prompt": "test text"},
         )
 
         assert response.status_code == 200, "Embedding endpoint should respond"
@@ -181,7 +181,7 @@ class TestOllamaConnection:
         # Accept short timeouts for fast testing
         if timeout == 0:
             timeout = 2  # Default if not set
-        
+
         # Timeout should be reasonable for LLM operations
         assert timeout >= 1, "Timeout should allow for LLM processing time"
         assert timeout <= 30, "Timeout should not be excessive for testing"

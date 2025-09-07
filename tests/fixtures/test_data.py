@@ -9,20 +9,22 @@ import json
 import os
 import random
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
-from typing import Any, Dict, Generator, List
+from typing import Any, Dict, List
 
+import duckdb
 import pytest
 
 
 @pytest.fixture(scope="session")
 def test_env_vars() -> Dict[str, str]:
     """Load test environment variables with fallback defaults."""
+    test_db_url = os.getenv(
+        "TEST_DATABASE_URL",
+        "postgresql://codex_user:test_password@localhost:5432/test_codex_db",
+    )
     return {
-        "POSTGRES_DB_URL": os.getenv(
-            "TEST_DATABASE_URL",
-            "postgresql://codex_user:test_password@localhost:5432/test_codex_db",
-        ),
+        "POSTGRES_DB_URL": test_db_url,
+        "TEST_DATABASE_URL": test_db_url,  # Add TEST_DATABASE_URL explicitly
         "OLLAMA_URL": os.getenv("OLLAMA_URL", "http://localhost:11434"),
         "OLLAMA_MODEL": os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b"),
         "EMBEDDING_MODEL": os.getenv("EMBEDDING_MODEL", "nomic-embed-text"),
@@ -66,7 +68,11 @@ def sample_memory_data():
             "id": 2,
             "content": "Reviewed code changes and provided feedback on pull request",
             "timestamp": datetime.now(timezone.utc),
-            "metadata": {"source": "github", "repository": "project-x", "lines_changed": 247},
+            "metadata": {
+                "source": "github",
+                "repository": "project-x",
+                "lines_changed": 247,
+            },
         },
         {
             "id": 3,
@@ -112,7 +118,12 @@ def working_memory_fixture(test_duckdb, sample_memory_data):
             """
             INSERT INTO raw_memories VALUES (?, ?, ?, ?)
         """,
-            (memory["id"], memory["content"], memory["timestamp"], json.dumps(memory["metadata"])),
+            (
+                memory["id"],
+                memory["content"],
+                memory["timestamp"],
+                json.dumps(memory["metadata"]),
+            ),
         )
 
     return conn
@@ -172,7 +183,9 @@ def short_term_memory_fixture(test_duckdb, sample_memory_data):
 
 
 @pytest.fixture(scope="function")
-def hebbian_learning_data(biological_memory_schema):
+def hebbian_learning_data(
+    biological_memory_schema: duckdb.DuckDBPyConnection,
+) -> duckdb.DuckDBPyConnection:
     """Generate test data for Hebbian learning algorithms."""
     conn = biological_memory_schema
 
@@ -310,11 +323,19 @@ def memory_lifecycle_data(biological_memory_schema):
     )
 
     stm_processed = [
-        ("Daily team coordination", "Attend standup, provide updates", "Listen, speak, take notes"),
+        (
+            "Daily team coordination",
+            "Attend standup, provide updates",
+            "Listen, speak, take notes",
+        ),
         ("Code quality assurance", "Review code changes", "Read, analyze, comment"),
         ("Architecture planning", "Discuss system design", "Think, propose, document"),
         ("Feature development", "Implement user story", "Code, test, debug"),
-        ("Process improvement", "Participate in retrospective", "Reflect, suggest, plan"),
+        (
+            "Process improvement",
+            "Participate in retrospective",
+            "Reflect, suggest, plan",
+        ),
     ]
 
     for i, (goal, tasks, actions) in enumerate(stm_processed):

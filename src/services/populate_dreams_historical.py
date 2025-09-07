@@ -12,7 +12,7 @@ import logging
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Tuple
+from typing import Any
 
 import psycopg2
 import psycopg2.extras
@@ -25,19 +25,19 @@ logger = logging.getLogger(__name__)
 class HistoricalDreamsPopulator:
     """Populate dreams schema with all historical memory data."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.postgres_url = os.getenv(
             "POSTGRES_DB_URL",
-            "postgresql://codex_user:MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a@192.168.1.104:5432/codex_db",
+            os.getenv("POSTGRES_DB_URL"),
         )
         self.session_id = str(uuid.uuid4())
         self.batch_size = 500
 
-    def connect_postgres(self):
+    def connect_postgres(self) -> Any:
         """Connect to PostgreSQL."""
         return psycopg2.connect(self.postgres_url)
 
-    def populate_working_memory_historical(self):
+    def populate_working_memory_historical(self) -> None:
         """Populate working memory with historical snapshots."""
         logger.info("Populating working memory with historical data...")
 
@@ -66,7 +66,7 @@ class HistoricalDreamsPopulator:
                     # Get top 7 memories for this hour window
                     pg_cursor.execute(
                         """
-                        SELECT 
+                        SELECT
                             id,
                             content,
                             created_at as timestamp,
@@ -90,9 +90,15 @@ class HistoricalDreamsPopulator:
 
                     # Insert each memory into working memory
                     for idx, memory in enumerate(memories):
-                        memory_id, content, timestamp, context, summary, tags, content_length = (
-                            memory
-                        )
+                        (
+                            memory_id,
+                            content,
+                            timestamp,
+                            context,
+                            summary,
+                            tags,
+                            content_length,
+                        ) = memory
 
                         # Calculate importance based on content length and position
                         importance = min(1.0, 0.3 + (content_length / 10000) + (7 - idx) * 0.1)
@@ -154,7 +160,7 @@ class HistoricalDreamsPopulator:
             pg_cursor.close()
             pg_conn.close()
 
-    def populate_short_term_episodes(self):
+    def populate_short_term_episodes(self) -> None:
         """Populate short-term episodes from all memories."""
         logger.info("Populating short-term episodes...")
 
@@ -165,7 +171,7 @@ class HistoricalDreamsPopulator:
             # Get all memories older than 5 minutes
             pg_cursor.execute(
                 """
-                SELECT 
+                SELECT
                     id,
                     content,
                     created_at as timestamp,
@@ -242,7 +248,7 @@ class HistoricalDreamsPopulator:
             pg_cursor.close()
             pg_conn.close()
 
-    def populate_long_term_memories(self):
+    def populate_long_term_memories(self) -> None:
         """Consolidate older memories into long-term storage."""
         logger.info("Populating long-term memories...")
 
@@ -253,7 +259,7 @@ class HistoricalDreamsPopulator:
             # Get episodes ready for consolidation
             pg_cursor.execute(
                 """
-                SELECT 
+                SELECT
                     ste.memory_id,
                     m.content,
                     m.summary,
@@ -335,7 +341,7 @@ class HistoricalDreamsPopulator:
             pg_cursor.close()
             pg_conn.close()
 
-    def build_semantic_network(self):
+    def build_semantic_network(self) -> None:
         """Build semantic network from consolidated memories."""
         logger.info("Building semantic network...")
 
@@ -436,8 +442,8 @@ class HistoricalDreamsPopulator:
                                     co_activation_count = dreams.semantic_network.co_activation_count + 1
                             """,
                                 (
-                                    concepts[i] if concepts[i] < concepts[j] else concepts[j],
-                                    concepts[j] if concepts[i] < concepts[j] else concepts[i],
+                                    (concepts[i] if concepts[i] < concepts[j] else concepts[j]),
+                                    (concepts[j] if concepts[i] < concepts[j] else concepts[i]),
                                     "semantic",
                                     importance,
                                 ),
@@ -454,7 +460,7 @@ class HistoricalDreamsPopulator:
             pg_cursor.close()
             pg_conn.close()
 
-    def run_full_population(self):
+    def run_full_population(self) -> None:
         """Run complete historical data population."""
         logger.info("=" * 60)
         logger.info("Starting full historical data population...")
@@ -474,7 +480,7 @@ class HistoricalDreamsPopulator:
         logger.info("Historical data population complete!")
         logger.info("=" * 60)
 
-    def show_statistics(self):
+    def show_statistics(self) -> None:
         """Display final statistics."""
         pg_conn = self.connect_postgres()
         pg_cursor = pg_conn.cursor()
@@ -507,7 +513,7 @@ class HistoricalDreamsPopulator:
             pg_conn.close()
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     populator = HistoricalDreamsPopulator()
     populator.run_full_population()

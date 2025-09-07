@@ -2,15 +2,13 @@
 Comprehensive tests for BiologicalMemoryErrorHandler
 """
 
-import json
 import os
 import sqlite3
 import sys
 import tempfile
 import time
-from datetime import datetime, timedelta
-from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from datetime import datetime
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -19,22 +17,16 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 from services.error_handling import (
     BiologicalMemoryError,
     BiologicalMemoryErrorHandler,
-    CacheError,
-    ConsolidationError,
     DatabaseError,
-    EmbeddingError,
     ErrorCategory,
     ErrorSeverity,
-    FileIOError,
     LLMError,
     NetworkError,
     TimeoutError,
-    WritebackError,
     get_global_error_handler,
     with_biological_timing_constraints,
     with_database_error_handling,
     with_error_handling,
-    with_llm_error_handling,
 )
 
 
@@ -262,11 +254,11 @@ class TestBiologicalMemoryErrorHandler:
             raise DatabaseError("test failure")
 
         # Successful execution
-        result = error_handler.safe_execute(successful_function, {}, 5)
+        result = error_handler.safe_execute(successful_function, 5)
         assert result == 10
 
         # Failed execution should return None and log error
-        result = error_handler.safe_execute(failing_function, {})
+        result = error_handler.safe_execute(failing_function)
         assert result is None
         assert len(error_handler.error_log) > 0
 
@@ -288,7 +280,8 @@ class TestBiologicalMemoryErrorHandler:
     def test_error_report_generation(self, error_handler):
         # Add some errors with biological context
         error_handler.handle_error(
-            DatabaseError("db error"), {"biological_context": {"memory_stage": "consolidation"}}
+            DatabaseError("db error"),
+            {"biological_context": {"memory_stage": "consolidation"}},
         )
         error_handler.handle_error(LLMError("llm error"))
 
@@ -388,8 +381,9 @@ class TestSystemIntegration:
                 assert len(rows) == 1
 
                 row = rows[0]
-                assert "Test persistence error" in row[3]  # message column
-                assert row[1] == "database"  # category column
+                # Columns: id(0), timestamp(1), category(2), severity(3), message(4)
+                assert "Test persistence error" in row[4]  # message column
+                assert row[2] == "database"  # category column
 
         finally:
             os.unlink(temp_path)

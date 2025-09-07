@@ -4,7 +4,6 @@ Database Path Validation Tests - BMP-CRITICAL-004
 Tests to ensure no hardcoded database paths exist in the codebase
 """
 
-import os
 import re
 from pathlib import Path
 from typing import List, Tuple

@@ -11,7 +11,6 @@ This test suite validates:
 5. Secure connection string templates
 """
 
-import os
 import re
 import unittest
 from pathlib import Path
@@ -252,7 +251,9 @@ class ConnectionSecurityTests(unittest.TestCase):
 
         # Verify masking is implemented
         self.assertGreater(
-            len(files_with_masking), 0, "No credential masking functions found in codebase"
+            len(files_with_masking),
+            0,
+            "No credential masking functions found in codebase",
         )
 
         print(f"✅ Found {len(files_with_masking)} files implementing credential masking")
@@ -333,7 +334,12 @@ class ConnectionSecurityTests(unittest.TestCase):
                         if key.upper() in ["POSTGRES_PASSWORD", "DATABASE_PASSWORD"]:
                             self.assertIn(
                                 value.lower(),
-                                ["your_password_here", "change_me", "defaultpassword", "password"],
+                                [
+                                    "your_password_here",
+                                    "change_me",
+                                    "defaultpassword",
+                                    "password",
+                                ],
                                 f"Environment file {env_file_name} line {line_num} has suspicious password value: {value}",
                             )
 

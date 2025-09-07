@@ -7,9 +7,9 @@ The ONE command interface that users interact with.
 import argparse
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Optional
 
-from .codex_config import CodexConfig, create_default_config, get_config
+from .codex_config import get_config
 from .codex_config_editor import (
     first_time_setup,
     interactive_config_editor,
@@ -33,7 +33,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         return 0
 
     try:
-        config = first_time_setup()
+        first_time_setup()
         return 0
     except KeyboardInterrupt:
         print("\n\n🛑 Setup cancelled")

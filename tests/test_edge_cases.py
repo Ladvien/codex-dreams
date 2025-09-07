@@ -15,11 +15,7 @@ Senior QA Engineer Review - Edge Cases to Test:
 """
 
 import json
-import os
-import sqlite3
-import tempfile
 from datetime import datetime, timezone
-from unittest.mock import patch
 
 import pytest
 
@@ -88,7 +84,11 @@ class TestDataBoundaryConditions:
             (3, "Code review: function() { return 'test'; }", '{"type": "code"}'),
             (4, "Math symbols: α + β = γ, ∑(x²) ≈ π", '{"domain": "math"}'),
             (5, "Emoji test: 🧠💡🚀✅🔬📊", '{"format": "emoji"}'),
-            (6, "SQL injection attempt: '; DROP TABLE memories; --", '{"security": "test"}'),
+            (
+                6,
+                "SQL injection attempt: '; DROP TABLE memories; --",
+                '{"security": "test"}',
+            ),
         ]
 
         for memory_id, content, metadata in unicode_memories:
@@ -213,7 +213,11 @@ class TestCapacityEdgeCases:
                 INSERT INTO raw_memories (id, content, metadata)
                 VALUES (?, ?, ?)
             """,
-                (i + 1, f"Memory item {i+1}", json.dumps({"importance": 0.5 + i * 0.05})),
+                (
+                    i + 1,
+                    f"Memory item {i+1}",
+                    json.dumps({"importance": 0.5 + i * 0.05}),
+                ),
             )
 
         # All should fit in working memory
@@ -269,7 +273,11 @@ class TestCapacityEdgeCases:
                 INSERT INTO raw_memories (id, content, metadata)
                 VALUES (?, ?, ?)
             """,
-                (i + 1, f"Overflow memory {i+1}", json.dumps({"importance": 1.0 - i * 0.01})),
+                (
+                    i + 1,
+                    f"Overflow memory {i+1}",
+                    json.dumps({"importance": 1.0 - i * 0.01}),
+                ),
             )
 
         # Simulate working memory selection with capacity enforcement
@@ -565,7 +573,11 @@ class TestSystemStabilityEdgeCases:
                     INSERT INTO raw_memories (id, content, metadata)
                     VALUES (?, ?, ?)
                 """,
-                    (memory_id, f"Cycle {cycle} Memory {i}", '{"cycle": ' + str(cycle) + "}"),
+                    (
+                        memory_id,
+                        f"Cycle {cycle} Memory {i}",
+                        '{"cycle": ' + str(cycle) + "}",
+                    ),
                 )
 
             # Delete half of them

@@ -12,20 +12,14 @@ Research validation:
 - Kleitman & Rosenberg (1953): Ultradian rhythm cycles
 """
 
-import json
 import os
 import subprocess
 import sys
-import threading
-import time
-from datetime import datetime
-from datetime import time as dt_time
-from datetime import timedelta
-from unittest.mock import MagicMock, Mock, patch
+from datetime import datetime, timedelta
+from unittest.mock import Mock, patch
 
 import pytest
 
-from src.daemon.config import DaemonConfig
 from src.orchestration.biological_rhythm_scheduler import (
     BiologicalMemoryProcessor,
     BiologicalRhythmScheduler,
@@ -428,7 +422,7 @@ class TestChronobiologyValidation:
 
     def test_working_memory_timing_miller_1956(self):
         """Validate working memory timing follows Miller (1956) research"""
-        scheduler = BiologicalRhythmScheduler()
+        BiologicalRhythmScheduler()
 
         # Miller's research shows optimal working memory updates every 5-7 minutes
         # Our implementation uses 5 minutes (300 seconds)
@@ -440,7 +434,7 @@ class TestChronobiologyValidation:
 
     def test_ultradian_cycle_timing_kleitman_1953(self):
         """Validate ultradian cycle timing follows Kleitman & Rosenberg (1953)"""
-        scheduler = BiologicalRhythmScheduler()
+        BiologicalRhythmScheduler()
 
         # Kleitman's research shows 90-minute basic rest-activity cycle
         ultradian_interval = 5400  # 90 minutes in seconds
@@ -466,7 +460,7 @@ class TestChronobiologyValidation:
 
     def test_synaptic_homeostasis_timing_tononi_2006(self):
         """Validate synaptic homeostasis timing follows Tononi & Cirelli (2006)"""
-        scheduler = BiologicalRhythmScheduler()
+        BiologicalRhythmScheduler()
 
         # Tononi's research shows synaptic homeostasis occurs during sleep,
         # optimally once per week for maintenance
@@ -529,7 +523,12 @@ class TestPerformanceMetrics:
     def test_failure_rate_calculation(self):
         """Test failure rate calculation in metrics"""
         # Execute cycles with mixed success/failure
-        self.scheduler.processor.continuous_processing.side_effect = [True, False, True, False]
+        self.scheduler.processor.continuous_processing.side_effect = [
+            True,
+            False,
+            True,
+            False,
+        ]
 
         for _ in range(4):
             self.scheduler._execute_rhythm_cycle(BiologicalRhythmType.CONTINUOUS)

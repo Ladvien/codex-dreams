@@ -21,13 +21,11 @@ import os
 import shutil
 
 # Set up path for imports
-import sys
 import tempfile
 import time
 import unittest
 from pathlib import Path
-from typing import Any, Dict, List
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import duckdb
 
@@ -35,13 +33,10 @@ from src.services import llm_integration_service
 from src.services.llm_integration_service import LLMIntegrationService as OllamaLLMService
 from src.services.llm_integration_service import (
     LLMResponse,
-    get_llm_service,
     initialize_llm_service,
-    llm_generate,
     llm_generate_embedding,
     llm_generate_json,
     llm_health_check,
-    llm_metrics,
     prompt,
     register_llm_functions,
 )
@@ -52,7 +47,7 @@ class TestOllamaEndpointConfiguration(unittest.TestCase):
 
     def setUp(self):
         """Set up environment configuration tests"""
-        self.required_endpoint = os.getenv("OLLAMA_URL", "http://192.168.1.110:11434")
+        self.required_endpoint = os.getenv("OLLAMA_URL", "http://localhost:11434")
         self.required_model = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
         self.embedding_model = "nomic-embed-text"
 
@@ -60,7 +55,8 @@ class TestOllamaEndpointConfiguration(unittest.TestCase):
         """Test that environment variables are correctly configured"""
         # Test OLLAMA_URL
         with patch.dict(
-            os.environ, {"OLLAMA_URL": self.required_endpoint, "OLLAMA_MODEL": self.required_model}
+            os.environ,
+            {"OLLAMA_URL": self.required_endpoint, "OLLAMA_MODEL": self.required_model},
         ):
             service = initialize_llm_service()
             self.assertEqual(service.base_url, self.required_endpoint)
@@ -109,7 +105,7 @@ class TestPromptFunctionArchitectureCompliance(unittest.TestCase):
 
         # Initialize service
         service = initialize_llm_service(
-            base_url=os.getenv("OLLAMA_URL", "http://192.168.1.110:11434"),
+            base_url=os.getenv("OLLAMA_URL", "http://localhost:11434"),
             model_name="gpt-oss:20b",
             cache_db_path=self.cache_db_path,
         )
@@ -118,7 +114,7 @@ class TestPromptFunctionArchitectureCompliance(unittest.TestCase):
         result = prompt(
             "Extract key insight from: Working on quarterly business review",
             model="ollama",
-            base_url=os.getenv("OLLAMA_URL", "http://192.168.1.110:11434"),
+            base_url=os.getenv("OLLAMA_URL", "http://localhost:11434"),
             model_name="gpt-oss",
         )
 
@@ -137,7 +133,7 @@ class TestPromptFunctionArchitectureCompliance(unittest.TestCase):
                 SELECT prompt(
                     'Extract key insight from test content',
                     'ollama',
-                    'http://192.168.1.110:11434',
+                    'http://localhost:11434',
                     'gpt-oss',
                     30
                 ) as insight
@@ -159,7 +155,7 @@ class TestLLMUDFFunctionIntegration(unittest.TestCase):
 
         # Initialize service for testing
         initialize_llm_service(
-            base_url=os.getenv("OLLAMA_URL", "http://192.168.1.110:11434"),
+            base_url=os.getenv("OLLAMA_URL", "http://localhost:11434"),
             model_name="gpt-oss:20b",
             cache_db_path=self.cache_db_path,
         )
@@ -193,8 +189,8 @@ class TestLLMUDFFunctionIntegration(unittest.TestCase):
         """Test llm_generate_embedding() UDF function"""
         # Mock embedding response from Ollama
         mock_response = Mock()
-        # Generate a realistic 768-dimensional embedding vector
-        mock_embedding = [0.1 * i for i in range(768)]
+        # Generate a realistic 384-dimensional embedding vector (nomic-embed-text dimension)
+        mock_embedding = [0.1 * i for i in range(384)]
         mock_response.json.return_value = {"embedding": mock_embedding}
         mock_response.raise_for_status.return_value = None
         mock_post.return_value = mock_response
@@ -203,7 +199,7 @@ class TestLLMUDFFunctionIntegration(unittest.TestCase):
 
         # Should return list of floats with correct dimension
         self.assertIsInstance(result, list)
-        self.assertEqual(len(result), 768)
+        self.assertEqual(len(result), 384)
         self.assertTrue(all(isinstance(x, float) for x in result))
 
     def test_duckdb_udf_registration_comprehensive(self):
@@ -236,7 +232,9 @@ class TestLLMUDFFunctionIntegration(unittest.TestCase):
 
             for expected in expected_functions:
                 self.assertIn(
-                    expected, function_names, f"Function {expected} not registered with DuckDB"
+                    expected,
+                    function_names,
+                    f"Function {expected} not registered with DuckDB",
                 )
 
 
@@ -260,7 +258,7 @@ class TestErrorHandlingAndFallbacks(unittest.TestCase):
 
         mock_post.side_effect = requests.exceptions.ConnectTimeout("Connection timed out")
 
-        service = OllamaLLMService(base_url=os.getenv("OLLAMA_URL", "http://192.168.1.110:11434"))
+        service = OllamaLLMService(base_url=os.getenv("OLLAMA_URL", "http://localhost:11434"))
 
         response = service._call_ollama_api("Test prompt")
 
@@ -314,7 +312,7 @@ class TestErrorHandlingAndFallbacks(unittest.TestCase):
 
         mock_post.side_effect = requests.exceptions.Timeout("Request timed out after 30 seconds")
 
-        service = OllamaLLMService(base_url=os.getenv("OLLAMA_URL", "http://192.168.1.110:11434"))
+        service = OllamaLLMService(base_url=os.getenv("OLLAMA_URL", "http://localhost:11434"))
 
         start_time = time.time()
         response = service._call_ollama_api("Test prompt", timeout=2)
@@ -350,7 +348,7 @@ class TestCachingSystemPerformance(unittest.TestCase):
         mock_response.raise_for_status.return_value = None
         mock_post.return_value = mock_response
 
-        service = OllamaLLMService(base_url=os.getenv("OLLAMA_URL", "http://192.168.1.110:11434"))
+        service = OllamaLLMService(base_url=os.getenv("OLLAMA_URL", "http://localhost:11434"))
 
         # Make repeated requests with some duplicates
         test_prompts = [
@@ -374,7 +372,7 @@ class TestCachingSystemPerformance(unittest.TestCase):
 
     def test_cache_performance_improvement(self):
         """Test cached responses are significantly faster"""
-        service = OllamaLLMService(base_url=os.getenv("OLLAMA_URL", "http://192.168.1.110:11434"))
+        service = OllamaLLMService(base_url=os.getenv("OLLAMA_URL", "http://localhost:11434"))
 
         # Prime cache with test data
         test_response = LLMResponse(
@@ -411,7 +409,7 @@ class TestBiologicalMemoryPipelineIntegration(unittest.TestCase):
 
         # Initialize LLM service
         initialize_llm_service(
-            base_url=os.getenv("OLLAMA_URL", "http://192.168.1.110:11434"),
+            base_url=os.getenv("OLLAMA_URL", "http://localhost:11434"),
             model_name="gpt-oss:20b",
             cache_db_path=self.cache_db_path,
         )
@@ -460,7 +458,7 @@ class TestBiologicalMemoryPipelineIntegration(unittest.TestCase):
                             'Financial Planning and Management, Project Management and Execution, ' ||
                             'Client Relations and Service, Operations and System Maintenance.',
                             'gpt-oss',
-                            'http://192.168.1.110:11434',
+                            'http://localhost:11434',
                             1
                         ),
                         '{"goal": "General Task Processing", "confidence": 0.0}'
@@ -554,7 +552,7 @@ class TestLLMServiceHealthAndMetrics(unittest.TestCase):
         mock_get.return_value = mock_response
 
         service = OllamaLLMService(
-            base_url=os.getenv("OLLAMA_URL", "http://192.168.1.110:11434"),
+            base_url=os.getenv("OLLAMA_URL", "http://localhost:11434"),
             model_name="gpt-oss:20b",
             cache_db_path=self.cache_db_path,
         )
@@ -562,14 +560,14 @@ class TestLLMServiceHealthAndMetrics(unittest.TestCase):
         health = service.health_check()
 
         self.assertEqual(health["status"], "healthy")
-        self.assertEqual(health["endpoint"], "http://192.168.1.110:11434")
+        self.assertEqual(health["endpoint"], "http://localhost:11434")
         self.assertEqual(health["model"], "gpt-oss:20b")
         self.assertTrue(health["model_available"])
         self.assertEqual(health["models_count"], 2)
 
     def test_metrics_collection_and_reporting(self):
         """Test metrics collection includes all required metrics"""
-        service = OllamaLLMService(base_url=os.getenv("OLLAMA_URL", "http://192.168.1.110:11434"))
+        service = OllamaLLMService(base_url=os.getenv("OLLAMA_URL", "http://localhost:11434"))
 
         # Simulate some activity
         service.metrics["total_requests"] = 100
@@ -599,14 +597,12 @@ class TestLLMServiceHealthAndMetrics(unittest.TestCase):
         # Verify calculations
         self.assertEqual(metrics["cache_hit_rate_percent"], 60.0)
         self.assertEqual(metrics["model"], "gpt-oss:20b")
-        self.assertEqual(metrics["endpoint"], "http://192.168.1.110:11434")
+        self.assertEqual(metrics["endpoint"], "http://localhost:11434")
 
     def test_health_check_udf_function(self):
         """Test llm_health_check() UDF function"""
         # Initialize service
-        service = initialize_llm_service(
-            base_url=os.getenv("OLLAMA_URL", "http://192.168.1.110:11434")
-        )
+        service = initialize_llm_service(base_url=os.getenv("OLLAMA_URL", "http://localhost:11434"))
 
         health_json = llm_health_check()
         health = json.loads(health_json)
@@ -619,11 +615,12 @@ class TestLLMServiceHealthAndMetrics(unittest.TestCase):
 if __name__ == "__main__":
     # Configure logging for test runs
     logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     print("Running comprehensive Ollama integration tests for STORY-005...")
-    print(f"Target endpoint: http://192.168.1.110:11434")
+    print(f"Target endpoint: http://localhost:11434")
     print(f"Target model: gpt-oss:20b")
     print(f"Target embedding model: nomic-embed-text")
     print("=" * 80)

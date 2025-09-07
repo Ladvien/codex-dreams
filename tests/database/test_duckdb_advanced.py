@@ -6,13 +6,8 @@ Additional comprehensive testing for edge cases, performance, and reliability.
 
 import json
 import os
-import shutil
-import tempfile
-import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import duckdb
 import pytest
@@ -30,7 +25,8 @@ class TestDuckDBAdvanced:
         cls.postgres_url = os.getenv(
             "TEST_DATABASE_URL",
             os.getenv(
-                "POSTGRES_DB_URL", "postgresql://codex_user:defaultpassword@localhost:5432/codex_db"
+                "POSTGRES_DB_URL",
+                "postgresql://codex_user:defaultpassword@localhost:5432/codex_db",
             ),
         )
         cls.ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
@@ -799,7 +795,14 @@ class TestBiologicalMemoryIntegration:
         """
         ).fetchall()
 
-        required_columns = ["id", "text_input", "model", "embedding", "dimensions", "timestamp"]
+        required_columns = [
+            "id",
+            "text_input",
+            "model",
+            "embedding",
+            "dimensions",
+            "timestamp",
+        ]
         actual_columns = [col[0] for col in columns]
 
         for req_col in required_columns:

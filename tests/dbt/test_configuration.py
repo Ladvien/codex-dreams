@@ -4,11 +4,9 @@ Comprehensive dbt Project Configuration Validation Tests
 Tests STORY-002 requirements for biological memory processing
 """
 
-import os
 import sys
 import unittest
 from pathlib import Path
-from typing import Any, Dict, List
 
 import yaml
 
@@ -53,7 +51,9 @@ class DbtConfigurationTest(unittest.TestCase):
 
         for var_name, expected_default in required_ollama_vars.items():
             self.assertIn(
-                var_name, self.vars_config, f"Missing required Ollama variable: {var_name}"
+                var_name,
+                self.vars_config,
+                f"Missing required Ollama variable: {var_name}",
             )
 
             var_value = self.vars_config[var_name]
@@ -69,17 +69,23 @@ class DbtConfigurationTest(unittest.TestCase):
                 # For security-sensitive variables, don't expect hardcoded defaults
                 if expected_default is not None:
                     self.assertIn(
-                        expected_default, var_value, f"{var_name} should have correct default value"
+                        expected_default,
+                        var_value,
+                        f"{var_name} should have correct default value",
                     )
                 else:
                     # Security-sensitive variables should not have defaults
                     self.assertNotIn(
-                        "localhost", var_value, f"{var_name} should not contain hardcoded localhost"
+                        "localhost",
+                        var_value,
+                        f"{var_name} should not contain hardcoded localhost",
                     )
             else:
                 # ollama_temperature is directly set
                 self.assertEqual(
-                    var_value, expected_default, f"{var_name} should equal {expected_default}"
+                    var_value,
+                    expected_default,
+                    f"{var_name} should equal {expected_default}",
                 )
 
     def test_biological_timing_parameters(self):
@@ -143,7 +149,9 @@ class DbtConfigurationTest(unittest.TestCase):
             if model_group in self.models_config:
                 model_config = self.models_config[model_group]
                 self.assertIn(
-                    "+materialized", model_config, f"Missing +materialized in {model_group}"
+                    "+materialized",
+                    model_config,
+                    f"Missing +materialized in {model_group}",
                 )
                 actual_mat = model_config["+materialized"]
                 self.assertEqual(
@@ -182,7 +190,9 @@ class DbtConfigurationTest(unittest.TestCase):
             if model in self.models_config:
                 config = self.models_config[model]
                 self.assertEqual(
-                    config.get("+materialized"), "incremental", f"{model} should be incremental"
+                    config.get("+materialized"),
+                    "incremental",
+                    f"{model} should be incremental",
                 )
 
                 self.assertIn("+unique_key", config, f"{model} missing unique key")
@@ -239,7 +249,9 @@ class DbtConfigurationTest(unittest.TestCase):
 
         for section in required_sections:
             self.assertIn(
-                section, self.config, f"Missing required configuration section: {section}"
+                section,
+                self.config,
+                f"Missing required configuration section: {section}",
             )
 
     def test_environment_variable_security(self):
@@ -253,7 +265,9 @@ class DbtConfigurationTest(unittest.TestCase):
                 self.assertIn("env_var(", var_value, f"{var} should use env_var() for security")
                 # Should not contain hardcoded values
                 self.assertNotIn(
-                    "localhost", var_value, f"{var} should not contain hardcoded localhost"
+                    "localhost",
+                    var_value,
+                    f"{var} should not contain hardcoded localhost",
                 )
 
 

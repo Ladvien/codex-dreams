@@ -46,9 +46,14 @@ class TestFormatting:
         assert len(python_files) > 0, "No Python files found"
 
         # Run black in check mode
-        cmd = [sys.executable, "-m", "black", "--check", "--diff", "--line-length=100"] + [
-            str(f) for f in python_files
-        ]
+        cmd = [
+            sys.executable,
+            "-m",
+            "black",
+            "--check",
+            "--diff",
+            "--line-length=100",
+        ] + [str(f) for f in python_files]
 
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
@@ -146,7 +151,11 @@ class TestFormatting:
                         # Only check for tab characters (Black handles the rest)
                         if "\t" in line:
                             violations.append(
-                                {"file": str(file_path), "line": line_num, "issue": "contains tabs"}
+                                {
+                                    "file": str(file_path),
+                                    "line": line_num,
+                                    "issue": "contains tabs",
+                                }
                             )
 
             except Exception as e:

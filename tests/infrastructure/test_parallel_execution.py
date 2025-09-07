@@ -6,12 +6,9 @@ management and no race conditions.
 """
 
 import multiprocessing
-import os
-import tempfile
 import threading
 import time
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
-from unittest.mock import patch
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pytest
 
@@ -23,7 +20,7 @@ class TestParallelCapabilities:
         """Test that the test architecture is compatible with pytest-xdist."""
         # Check if pytest-xdist is available
         try:
-            import xdist
+            pass
 
             xdist_available = True
         except ImportError:
@@ -37,10 +34,6 @@ class TestParallelCapabilities:
 
     def test_concurrent_database_connections(self):
         """Test that multiple database connections can coexist."""
-        import os
-        import tempfile
-
-        import duckdb
 
         def create_isolated_connection(worker_id):
             """Create an isolated database connection."""
@@ -69,7 +62,10 @@ class TestParallelCapabilities:
 
                 # Create test table
                 conn.execute("CREATE TABLE worker_test (worker_id INTEGER, timestamp TIMESTAMP)")
-                conn.execute("INSERT INTO worker_test VALUES (?, CURRENT_TIMESTAMP)", (worker_id,))
+                conn.execute(
+                    "INSERT INTO worker_test VALUES (?, CURRENT_TIMESTAMP)",
+                    (worker_id,),
+                )
 
                 # Verify data
                 result = conn.execute("SELECT worker_id FROM worker_test").fetchall()
@@ -234,7 +230,7 @@ class TestPerformanceOptimizations:
                 import tempfile
 
                 with tempfile.NamedTemporaryFile(delete=True) as f:
-                    db_path = f.name
+                    f.name
 
                 # Simulate schema creation
                 time.sleep(0.001)  # Minimal setup time
@@ -362,7 +358,7 @@ class TestPerformanceOptimizations:
 
             # Simulate biological memory test operations
             working_memory = list(range(min(7, test_id % 10)))  # Miller's limit
-            processed_memory = [x * 2 for x in working_memory]
+            [x * 2 for x in working_memory]
 
             time.sleep(0.005)  # 5ms execution
             exec_time = time.perf_counter() - exec_start

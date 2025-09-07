@@ -16,7 +16,6 @@ import json
 import os
 import tempfile
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
 
 import duckdb
 import pytest
@@ -87,7 +86,12 @@ class TestAdvancedEpisodicMemoryEnhancement:
                 "memory_id": "mem_001",
                 "content": "Starting product launch strategy presentation in main conference room",
                 "timestamp": datetime.now(),
-                "metadata": ["product_launch", "strategy", "presentation", "team_meeting"],
+                "metadata": [
+                    "product_launch",
+                    "strategy",
+                    "presentation",
+                    "team_meeting",
+                ],
                 "level_0_goal": "Product Launch Strategy",
                 "episode_cluster_name": "product_launch_001",
                 "episode_cluster_id": 1,
@@ -130,7 +134,12 @@ class TestAdvancedEpisodicMemoryEnhancement:
                 "memory_id": "mem_003",
                 "content": "Finalizing timeline and resource allocation for product launch execution",
                 "timestamp": datetime.now() + timedelta(minutes=15),
-                "metadata": ["product_launch", "timeline", "resource_allocation", "execution"],
+                "metadata": [
+                    "product_launch",
+                    "timeline",
+                    "resource_allocation",
+                    "execution",
+                ],
                 "level_0_goal": "Product Launch Strategy",
                 "episode_cluster_name": "product_launch_001",
                 "episode_cluster_id": 1,
@@ -527,7 +536,7 @@ class TestAdvancedEpisodicMemoryEnhancement:
         # Check that interference-adjusted strengths follow expected patterns
         individual_adjusted = float(individual_episode[4])
         collaborative_adjusted = float(collaborative_episode[4])
-        public_adjusted = float(public_episode[4])
+        float(public_episode[4])
 
         # Individual work should retain more strength despite lower base
         # activation
@@ -551,7 +560,10 @@ class TestAdvancedEpisodicMemoryEnhancement:
                 "temporal_gap_seconds": 300,  # Very tight coupling
                 "level_0_goal": "Strategic Planning",
                 "spatial_extraction": json.dumps(
-                    {"location_type": "workplace", "spatial_context": "professional_environment"}
+                    {
+                        "location_type": "workplace",
+                        "spatial_context": "professional_environment",
+                    }
                 ),
                 "activation_strength": 0.9,
             },
@@ -565,7 +577,10 @@ class TestAdvancedEpisodicMemoryEnhancement:
                 "temporal_gap_seconds": 1200,  # Moderate coupling
                 "level_0_goal": "Project Management",
                 "spatial_extraction": json.dumps(
-                    {"location_type": "workplace", "spatial_context": "professional_environment"}
+                    {
+                        "location_type": "workplace",
+                        "spatial_context": "professional_environment",
+                    }
                 ),
                 "activation_strength": 0.75,
             },
@@ -579,7 +594,10 @@ class TestAdvancedEpisodicMemoryEnhancement:
                 "temporal_gap_seconds": 0,
                 "level_0_goal": "Communication",
                 "spatial_extraction": json.dumps(
-                    {"location_type": "unspecified", "spatial_context": "general_environment"}
+                    {
+                        "location_type": "unspecified",
+                        "spatial_context": "general_environment",
+                    }
                 ),
                 "activation_strength": 0.4,
             },

@@ -5,8 +5,7 @@ Tests for database error handling in the biological memory system
 import os
 import sqlite3
 import sys
-import tempfile
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import psycopg2
 import pytest
@@ -180,7 +179,8 @@ class TestDatabaseErrorHandling:
         migration_error = Exception("column does not exist after migration")
 
         error_record = error_handler.handle_error(
-            migration_error, {"operation": "schema_migration", "migration_version": "v2.1.0"}
+            migration_error,
+            {"operation": "schema_migration", "migration_version": "v2.1.0"},
         )
 
         # Should be high severity as it affects system functionality

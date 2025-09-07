@@ -71,7 +71,9 @@ class TestDuckDBPerformanceConfig(unittest.TestCase):
 
         # Ensure at least some settings were applied
         self.assertGreater(
-            successful_settings, 0, "At least some performance settings should be applied"
+            successful_settings,
+            0,
+            "At least some performance settings should be applied",
         )
 
     def test_memory_limit_setting(self):
@@ -226,7 +228,8 @@ class TestDuckDBPerformanceConfig(unittest.TestCase):
 
         self.assertIsNotNone(result)
         self.assertEqual(
-            result[0], "DuckDB optimized for biological memory workload - Target: <50ms queries"
+            result[0],
+            "DuckDB optimized for biological memory workload - Target: <50ms queries",
         )
         self.assertEqual(result[1], "8GB")
         self.assertEqual(result[2], "4")
@@ -364,7 +367,9 @@ class TestDuckDBConfigValidation(unittest.TestCase):
             "Should document remote table index limitations",
         )
         self.assertIn(
-            "postgres_scanner", content.lower(), "Should mention postgres_scanner for remote tables"
+            "postgres_scanner",
+            content.lower(),
+            "Should mention postgres_scanner for remote tables",
         )
 
 

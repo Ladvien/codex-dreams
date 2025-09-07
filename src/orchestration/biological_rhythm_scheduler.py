@@ -25,7 +25,6 @@ Research Foundation:
 
 import json
 import logging
-import math
 import os
 import signal
 import subprocess
@@ -34,13 +33,11 @@ import threading
 import time
 import traceback
 from collections import defaultdict
-from datetime import datetime
-from datetime import time as dt_time
-from datetime import timedelta
+from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
 from types import FrameType
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from src.daemon.config import DaemonConfig
 
@@ -92,7 +89,12 @@ class BiologicalMemoryProcessor:
     def run_dbt_models(self, tags: List[str], models: Optional[List[str]] = None) -> bool:
         """Execute dbt models with specific tags or model names"""
         try:
-            cmd = ["dbt", "run", "--profiles-dir", str(self.dbt_project_dir / "profiles")]
+            cmd = [
+                "dbt",
+                "run",
+                "--profiles-dir",
+                str(self.dbt_project_dir / "profiles"),
+            ]
 
             if tags:
                 for tag in tags:
@@ -150,7 +152,8 @@ class BiologicalMemoryProcessor:
         """Long-term consolidation - 90 minute ultradian cycles"""
         self.logger.info("🔄 Running long-term memory consolidation (ultradian cycle)")
         return self.run_dbt_models(
-            tags=["long_term", "consolidation"], models=["memory_replay", "ltm_semantic_network"]
+            tags=["long_term", "consolidation"],
+            models=["memory_replay", "ltm_semantic_network"],
         )
 
     def deep_sleep_consolidation(self) -> bool:
@@ -271,7 +274,10 @@ class BiologicalRhythmScheduler:
         circadian_phase = self._get_current_circadian_phase()
 
         # Only run during wake hours (biological accuracy)
-        if circadian_phase not in [CircadianPhase.WAKE_ACTIVE, CircadianPhase.WAKE_QUIET]:
+        if circadian_phase not in [
+            CircadianPhase.WAKE_ACTIVE,
+            CircadianPhase.WAKE_QUIET,
+        ]:
             return False
 
         time_diff = (datetime.now() - self.last_continuous).total_seconds()

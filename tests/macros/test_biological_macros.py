@@ -5,10 +5,8 @@ Tests custom dbt macros for biological processes including Hebbian learning,
 synaptic homeostasis, and association strengthening as specified in acceptance criteria.
 """
 
-import json
 import math
 from datetime import datetime, timedelta, timezone
-from unittest.mock import Mock, patch
 
 import pytest
 
@@ -350,7 +348,10 @@ class TestMacroParameterization:
     def test_ollama_configuration_access(self):
         """Test access to Ollama configuration in macros."""
         # Test macro access to Ollama settings
-        ollama_config = {"ollama_host": "http://localhost:11434", "ollama_model": "gpt-oss:20b"}
+        ollama_config = {
+            "ollama_host": "http://localhost:11434",
+            "ollama_model": "gpt-oss:20b",
+        }
 
         for key, value in ollama_config.items():
             assert value is not None, f"{key} should be configured"
@@ -456,7 +457,7 @@ class TestAdvancedHebbianImplementation:
     def test_temporal_coactivation_windows(self):
         """Test precise 5-minute temporal co-activation windows."""
         # Test that co-activations are counted within exact 5-minute windows
-        base_time = datetime.now(timezone.utc)
+        datetime.now(timezone.utc)
 
         test_cases = [
             # 30 seconds - within window
@@ -484,7 +485,11 @@ class TestAdvancedHebbianImplementation:
         """Test accurate co-activation counting with semantic categories."""
         # Simulate STM memories with shared categories
         memories = [
-            {"id": 1, "timestamp": datetime.now(timezone.utc), "semantic_category": "meeting"},
+            {
+                "id": 1,
+                "timestamp": datetime.now(timezone.utc),
+                "semantic_category": "meeting",
+            },
             {
                 "id": 2,
                 "timestamp": datetime.now(timezone.utc) - timedelta(minutes=2),
@@ -530,7 +535,11 @@ class TestAdvancedHebbianImplementation:
         test_scenarios = [
             {"current_strength": 0.1, "coactivations": 3, "learning_rate": 0.1},
             {"current_strength": 0.5, "coactivations": 5, "learning_rate": 0.1},
-            {"current_strength": 0.9, "coactivations": 2, "learning_rate": 0.1},  # Near saturation
+            {
+                "current_strength": 0.9,
+                "coactivations": 2,
+                "learning_rate": 0.1,
+            },  # Near saturation
         ]
 
         for scenario in test_scenarios:
@@ -635,8 +644,18 @@ class TestAdvancedSynapticHomeostasis:
     def test_weak_connection_identification(self):
         """Test identification of weak connections for pruning."""
         connection_data = [
-            {"strength": 0.005, "age": "remote", "access_freq": 1, "should_prune": True},
-            {"strength": 0.008, "age": "remote", "access_freq": 0, "should_prune": True},
+            {
+                "strength": 0.005,
+                "age": "remote",
+                "access_freq": 1,
+                "should_prune": True,
+            },
+            {
+                "strength": 0.008,
+                "age": "remote",
+                "access_freq": 0,
+                "should_prune": True,
+            },
             {
                 "strength": 0.012,
                 "age": "remote",
@@ -702,7 +721,11 @@ class TestAdvancedAssociationStrengthening:
             {"id": 2, "category": "financial_planning", "strength": 0.7},
             {"id": 3, "category": "technical_procedures", "strength": 0.6},
             {"id": 4, "category": "social_cognition", "strength": 0.5},
-            {"id": 5, "category": "work_meeting", "strength": 0.4},  # Same category as #1
+            {
+                "id": 5,
+                "category": "work_meeting",
+                "strength": 0.4,
+            },  # Same category as #1
         ]
 
         # Generate cross-category pairs (distant associations)

@@ -4,10 +4,8 @@ Live connection testing for BMP-002.
 Tests actual connections to PostgreSQL and Ollama when available.
 """
 
-import json
 import os
 import time
-from pathlib import Path
 
 import duckdb
 import requests
@@ -24,7 +22,8 @@ class LiveConnectionTester:
         self.postgres_url = os.getenv(
             "TEST_DATABASE_URL",
             os.getenv(
-                "POSTGRES_DB_URL", "postgresql://codex_user:defaultpassword@localhost:5432/codex_db"
+                "POSTGRES_DB_URL",
+                "postgresql://codex_user:defaultpassword@localhost:5432/codex_db",
             ),
         )
         self.ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
@@ -54,7 +53,8 @@ class LiveConnectionTester:
 
             # Test basic query
             result = conn.execute(
-                "SELECT version() FROM postgres_query(?, 'SELECT version();')", [self.postgres_url]
+                "SELECT version() FROM postgres_query(?, 'SELECT version();')",
+                [self.postgres_url],
             ).fetchone()
 
             if result:

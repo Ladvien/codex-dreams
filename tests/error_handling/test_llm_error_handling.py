@@ -2,11 +2,10 @@
 Tests for LLM service error handling in the biological memory system
 """
 
-import json
 import os
 import sys
 import time
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 import requests
@@ -16,7 +15,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 from services.error_handling import (
     BiologicalMemoryErrorHandler,
     LLMError,
-    NetworkError,
     TimeoutError,
     handle_llm_service_error,
     with_llm_error_handling,

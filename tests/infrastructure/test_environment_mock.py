@@ -3,9 +3,8 @@ Mock tests for BMP-001 when live servers are not available
 These tests validate configuration and connection logic without requiring live endpoints
 """
 
-import json
 import os
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -167,7 +166,11 @@ def test_ollama_connection_mock(mock_post, mock_get):
     """Test Ollama connection with mocked HTTP responses."""
     # Mock API responses
     mock_get.return_value.json.return_value = {
-        "models": [{"name": "gpt-oss:20b"}, {"name": "nomic-embed-text"}, {"name": "other-model"}]
+        "models": [
+            {"name": "gpt-oss:20b"},
+            {"name": "nomic-embed-text"},
+            {"name": "other-model"},
+        ]
     }
     mock_get.return_value.raise_for_status = Mock()
 

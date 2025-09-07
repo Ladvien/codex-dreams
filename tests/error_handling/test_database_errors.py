@@ -6,14 +6,11 @@ connection failures, timeouts, transaction rollbacks, and resource exhaustion.
 """
 
 import os
-import sqlite3
 
 # Import from biological_memory error handling
 import sys
 import tempfile
 import time
-from datetime import datetime, timezone
-from unittest.mock import MagicMock, Mock, patch
 
 import duckdb
 import pytest
@@ -25,7 +22,6 @@ try:
         BiologicalMemoryErrorHandler,
         CircuitBreaker,
         DeadLetterQueue,
-        ErrorEvent,
         ErrorType,
         SecuritySanitizer,
     )
@@ -213,7 +209,11 @@ class TestDatabaseErrorHandling:
         dlq = DeadLetterQueue(dlq_path)
 
         # Test enqueueing failed operation
-        memory_data = {"id": "test_memory_1", "content": "Test memory content", "strength": 0.8}
+        memory_data = {
+            "id": "test_memory_1",
+            "content": "Test memory content",
+            "strength": 0.8,
+        }
 
         dlq.enqueue(
             message_id="msg_001",
@@ -318,7 +318,10 @@ class TestDatabaseErrorHandling:
                 ).fetchone()[0]
 
                 # Update with new value
-                conn.execute("UPDATE concurrent_test SET counter = ? WHERE id = 1", (current + 1,))
+                conn.execute(
+                    "UPDATE concurrent_test SET counter = ? WHERE id = 1",
+                    (current + 1,),
+                )
 
             # Verify final value
             final_value = conn.execute(
@@ -356,7 +359,8 @@ class TestDatabaseErrorHandling:
             for i, invalid_data in enumerate(constraint_violations):
                 with pytest.raises(Exception):
                     conn.execute(
-                        "INSERT INTO schema_validation_test VALUES (?, ?, ?)", invalid_data
+                        "INSERT INTO schema_validation_test VALUES (?, ?, ?)",
+                        invalid_data,
                     )
 
             # Test valid data insertion

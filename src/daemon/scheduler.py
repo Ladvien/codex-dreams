@@ -4,7 +4,6 @@ Cross-platform daemon scheduler for codex-dreams insights generation.
 Supports Windows, macOS, and Linux with configurable scheduling.
 """
 
-import json
 import logging
 import os
 import signal
@@ -17,9 +16,9 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
 from types import FrameType
-from typing import Callable, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
-from .config import DaemonConfig, load_config
+from .config import DaemonConfig
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -86,7 +85,9 @@ class DaemonMetrics:
             "success_rate": round(success_rate, 2),
             "average_runtime": str(avg_runtime),
             "last_run": self.last_run_time.isoformat() if self.last_run_time else None,
-            "last_success": self.last_success_time.isoformat() if self.last_success_time else None,
+            "last_success": (
+                self.last_success_time.isoformat() if self.last_success_time else None
+            ),
             "last_error": self.last_error,
             "errors_by_type": dict(self.error_count_by_type),
         }
@@ -361,7 +362,10 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(description="Codex Dreams Daemon Scheduler")
     parser.add_argument(
-        "--config", type=Path, default=get_default_config_path(), help="Configuration file path"
+        "--config",
+        type=Path,
+        default=get_default_config_path(),
+        help="Configuration file path",
     )
     parser.add_argument("--daemon", action="store_true", help="Run in daemon mode (background)")
     parser.add_argument("--interval", type=int, help="Interval between runs in minutes")

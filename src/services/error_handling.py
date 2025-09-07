@@ -4,22 +4,19 @@ Error Handling Service - Comprehensive error management for biological memory sy
 
 import json
 import logging
-import os
-import pickle
 import sqlite3
 import sys
 import time
 import traceback
 from contextlib import contextmanager
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from functools import wraps
 from pathlib import Path
 from threading import Lock
-from typing import Any, Callable, Dict, Generator, List, Optional, Union
+from typing import Any, Callable, Dict, Generator, Optional, Union
 
 import psycopg2
-import requests
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +114,8 @@ class TimeoutError(BiologicalMemoryError):
     """Timeout errors with biological timing context"""
 
     def __init__(self, message: str, biological_context: str = None, **kwargs):
-        details = kwargs.get("details", {})
+        # Extract details and remove from kwargs to avoid duplication
+        details = kwargs.pop("details", {})
         if biological_context:
             details["biological_context"] = biological_context
         super().__init__(message, category=ErrorCategory.TIMEOUT, details=details, **kwargs)
@@ -127,7 +125,8 @@ class FileIOError(BiologicalMemoryError):
     """File I/O errors"""
 
     def __init__(self, message: str, file_path: str = None, **kwargs):
-        details = kwargs.get("details", {})
+        # Extract details and remove from kwargs to avoid duplication
+        details = kwargs.pop("details", {})
         if file_path:
             details["file_path"] = file_path
         super().__init__(message, category=ErrorCategory.FILE_IO, details=details, **kwargs)
@@ -187,28 +186,29 @@ class BiologicalMemoryErrorHandler:
         self._initialize_persistent_storage()
         logger.info("BiologicalMemoryErrorHandler initialized with comprehensive error handling")
 
-    def _setup_structured_logging(self):
+    def _setup_structured_logging(self) -> None:
         """Setup structured logging with appropriate levels"""
         # Configure root logger if not already configured
         logging.basicConfig(
             level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s - [%(filename)s:%(lineno)d]',
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s - [%(filename)s:%(lineno)d]",
             handlers=[
                 logging.StreamHandler(sys.stdout),
-                logging.FileHandler('biological_memory_errors.log', mode='a')
-            ]
+                logging.FileHandler("biological_memory_errors.log", mode="a"),
+            ],
         )
-        
+
         # Ensure our logger uses the configuration
         global logger
-        logger.setLevel(self.config.get('log_level', logging.INFO))
-    
-    def _initialize_persistent_storage(self):
+        logger.setLevel(self.config.get("log_level", logging.INFO))
+
+    def _initialize_persistent_storage(self) -> None:
         """Initialize persistent error storage"""
-        self.error_db_path = self.config.get('error_db_path', 'biological_memory_errors.db')
+        self.error_db_path = self.config.get("error_db_path", "biological_memory_errors.db")
         try:
             with sqlite3.connect(self.error_db_path) as conn:
-                conn.execute("""
+                conn.execute(
+                    """
                     CREATE TABLE IF NOT EXISTS error_log (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         timestamp TEXT,
@@ -220,12 +220,13 @@ class BiologicalMemoryErrorHandler:
                         resolved BOOLEAN DEFAULT FALSE,
                         created_at TEXT DEFAULT CURRENT_TIMESTAMP
                     )
-                """)
+                """
+                )
                 conn.commit()
         except Exception as e:
             logger.warning(f"Could not initialize error database: {e}")
-    
-    def _register_default_handlers(self):
+
+    def _register_default_handlers(self) -> None:
         """Register default error handlers with biological context"""
         self.register_handler(ErrorCategory.DATABASE, self._handle_database_error)
         self.register_handler(ErrorCategory.NETWORK, self._handle_network_error)
@@ -239,7 +240,7 @@ class BiologicalMemoryErrorHandler:
         self.register_handler(ErrorCategory.CONSOLIDATION, self._handle_consolidation_error)
         self.register_handler(ErrorCategory.BIOLOGICAL_TIMING, self._handle_biological_timing_error)
 
-    def register_handler(self, category: ErrorCategory, handler: Callable):
+    def register_handler(self, category: ErrorCategory, handler: Callable) -> None:
         """Register a custom error handler for a category"""
         self.error_handlers[category] = handler
 
@@ -270,17 +271,25 @@ class BiologicalMemoryErrorHandler:
 
         # Structured logging based on severity
         if severity == ErrorSeverity.CRITICAL:
-            logger.critical(f"CRITICAL ERROR: {category.value} - {error}", 
-                           extra={'error_id': error_record['error_id']})
+            logger.critical(
+                f"CRITICAL ERROR: {category.value} - {error}",
+                extra={"error_id": error_record["error_id"]},
+            )
         elif severity == ErrorSeverity.HIGH:
-            logger.error(f"HIGH SEVERITY: {category.value} - {error}", 
-                        extra={'error_id': error_record['error_id']})
+            logger.error(
+                f"HIGH SEVERITY: {category.value} - {error}",
+                extra={"error_id": error_record["error_id"]},
+            )
         elif severity == ErrorSeverity.MEDIUM:
-            logger.warning(f"MEDIUM SEVERITY: {category.value} - {error}", 
-                          extra={'error_id': error_record['error_id']})
+            logger.warning(
+                f"MEDIUM SEVERITY: {category.value} - {error}",
+                extra={"error_id": error_record["error_id"]},
+            )
         else:
-            logger.info(f"LOW SEVERITY: {category.value} - {error}", 
-                       extra={'error_id': error_record['error_id']})
+            logger.info(
+                f"LOW SEVERITY: {category.value} - {error}",
+                extra={"error_id": error_record["error_id"]},
+            )
 
         # Execute handler if available
         if category in self.error_handlers:
@@ -294,7 +303,10 @@ class BiologicalMemoryErrorHandler:
                 error_record["recovery_error"] = str(handler_error)
         else:
             error_record["recovery_attempted"] = False
-            error_record["recovery_result"] = {"action": "no_handler", "fallback": "log_only"}
+            error_record["recovery_result"] = {
+                "action": "no_handler",
+                "fallback": "log_only",
+            }
 
         return error_record
 
@@ -302,98 +314,163 @@ class BiologicalMemoryErrorHandler:
         """Capture current system state for error analysis"""
         try:
             import psutil
+
             return {
                 "memory_usage": psutil.virtual_memory()._asdict(),
                 "cpu_usage": psutil.cpu_percent(interval=0.1),
-                "disk_usage": psutil.disk_usage('/')._asdict(),
+                "disk_usage": psutil.disk_usage("/")._asdict(),
                 "process_count": len(psutil.pids()),
             }
         except ImportError:
             return {
                 "memory_usage": "psutil not available",
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
             return {"error_capturing_state": str(e)}
-    
+
     def _extract_biological_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Extract biological memory system context from error context"""
         bio_context = {}
-        
-        # Memory stage context
-        if 'memory_stage' in context:
-            bio_context['memory_stage'] = context['memory_stage']
-        if 'consolidation_phase' in context:
-            bio_context['consolidation_phase'] = context['consolidation_phase']
-        if 'working_memory_capacity' in context:
-            bio_context['working_memory_capacity'] = context['working_memory_capacity']
-            
+
+        # Check if biological_context is nested
+        if "biological_context" in context and isinstance(context["biological_context"], dict):
+            # Extract from nested biological_context
+            nested_bio = context["biological_context"]
+            if "memory_stage" in nested_bio:
+                bio_context["memory_stage"] = nested_bio["memory_stage"]
+            if "consolidation_phase" in nested_bio:
+                bio_context["consolidation_phase"] = nested_bio["consolidation_phase"]
+            if "working_memory_capacity" in nested_bio:
+                bio_context["working_memory_capacity"] = nested_bio["working_memory_capacity"]
+            if "biological_rhythm" in nested_bio:
+                bio_context["biological_rhythm"] = nested_bio["biological_rhythm"]
+            if "sleep_phase" in nested_bio:
+                bio_context["sleep_phase"] = nested_bio["sleep_phase"]
+            if "operation_type" in nested_bio:
+                bio_context["operation_type"] = nested_bio["operation_type"]
+
+        # Also check for direct context (backwards compatibility)
+        if "memory_stage" in context:
+            bio_context["memory_stage"] = context["memory_stage"]
+        if "consolidation_phase" in context:
+            bio_context["consolidation_phase"] = context["consolidation_phase"]
+        if "working_memory_capacity" in context:
+            bio_context["working_memory_capacity"] = context["working_memory_capacity"]
+
         # Timing context
-        if 'biological_rhythm' in context:
-            bio_context['biological_rhythm'] = context['biological_rhythm']
-        if 'sleep_phase' in context:
-            bio_context['sleep_phase'] = context['sleep_phase']
-            
+        if "biological_rhythm" in context:
+            bio_context["biological_rhythm"] = context["biological_rhythm"]
+        if "sleep_phase" in context:
+            bio_context["sleep_phase"] = context["sleep_phase"]
+
         # Operation context
-        if 'operation_type' in context:
-            bio_context['operation_type'] = context['operation_type']
-            
+        if "operation_type" in context:
+            bio_context["operation_type"] = context["operation_type"]
+
         return bio_context
-    
-    def _persist_error(self, error_record: Dict[str, Any]):
+
+    def _persist_error(self, error_record: Dict[str, Any]) -> None:
         """Persist error to database for analysis"""
         try:
             with sqlite3.connect(self.error_db_path) as conn:
-                conn.execute("""
+                conn.execute(
+                    """
                     INSERT INTO error_log (timestamp, category, severity, message, details, traceback)
                     VALUES (?, ?, ?, ?, ?, ?)
-                """, (
-                    error_record['timestamp'],
-                    error_record['category'], 
-                    error_record['severity'],
-                    error_record['message'],
-                    json.dumps(error_record.get('details', {})),
-                    error_record.get('traceback', '')
-                ))
+                """,
+                    (
+                        error_record["timestamp"],
+                        error_record["category"],
+                        error_record["severity"],
+                        error_record["message"],
+                        json.dumps(error_record.get("details", {})),
+                        error_record.get("traceback", ""),
+                    ),
+                )
                 conn.commit()
         except Exception as e:
             logger.warning(f"Could not persist error to database: {e}")
-    
+
     def _classify_error(self, error: Exception) -> ErrorCategory:
         """Classify error into biological memory system category"""
         error_str = str(error).lower()
         error_type = type(error).__name__.lower()
-        
+
         # Check if it's already a BiologicalMemoryError with category
         if isinstance(error, BiologicalMemoryError):
             return error.category
 
-        # Database errors
-        if any(term in error_str for term in ['database', 'sql', 'duckdb', 'postgres', 'psycopg2']):
+        # Check for specific exception types first (more reliable than string matching)
+        # psycopg2 database errors should always be categorized as DATABASE
+        try:
+            import psycopg2
+
+            if isinstance(
+                error,
+                (
+                    psycopg2.DatabaseError,
+                    psycopg2.OperationalError,
+                    psycopg2.IntegrityError,
+                    psycopg2.DataError,
+                ),
+            ):
+                return ErrorCategory.DATABASE
+        except ImportError:
+            pass
+
+        # Check for specific connection error types first
+        try:
+            import requests.exceptions
+
+            if isinstance(error, requests.exceptions.ConnectionError):
+                return ErrorCategory.NETWORK
+            # HTTPError should also be classified as NETWORK (HTTP status errors)
+            if isinstance(error, requests.exceptions.HTTPError):
+                return ErrorCategory.NETWORK
+        except ImportError:
+            pass
+
+        # Database errors (check pool-specific and migration errors before general connection errors)
+        if any(
+            term in error_str
+            for term in [
+                "database",
+                "sql",
+                "duckdb",
+                "postgres",
+                "psycopg2",
+                "connection pool",
+                "pool exhausted",
+                "migration",
+                "column does not exist",
+                "schema",
+            ]
+        ):
             return ErrorCategory.DATABASE
-        elif any(term in error_str for term in ['connection', 'network', 'host']):
+        elif any(term in error_str for term in ["connection", "network", "host"]):
             return ErrorCategory.NETWORK
-        elif 'timeout' in error_str or 'timed out' in error_str:
+        elif "timeout" in error_str or "timed out" in error_str:
             return ErrorCategory.TIMEOUT
-        elif any(term in error_str for term in ['llm', 'ollama', 'generate', 'prompt']):
+        elif any(term in error_str for term in ["llm", "ollama", "generate", "prompt"]):
             return ErrorCategory.LLM
-        elif any(term in error_str for term in ['embedding', 'vector', 'similarity']):
+        elif any(term in error_str for term in ["embedding", "vector", "similarity"]):
             return ErrorCategory.EMBEDDING
-        elif any(term in error_str for term in ['file', 'directory', 'permission', 'path', 'io']):
+        elif any(term in error_str for term in ["file", "directory", "permission", "path", "io"]):
             return ErrorCategory.FILE_IO
-        elif any(term in error_str for term in ['cache', 'pickle', 'redis']):
+        elif any(term in error_str for term in ["cache", "pickle", "redis"]):
             return ErrorCategory.CACHE
-        elif any(term in error_str for term in ['writeback', 'transfer', 'sync']):
+        elif any(term in error_str for term in ["writeback", "transfer", "sync"]):
             return ErrorCategory.WRITEBACK
-        elif any(term in error_str for term in ['consolidation', 'hebbian', 'replay']):
+        elif any(term in error_str for term in ["consolidation", "hebbian", "replay"]):
             return ErrorCategory.CONSOLIDATION
-        elif any(term in error_str for term in ['security', 'permission', 'unauthorized', 'auth']):
+        elif any(term in error_str for term in ["security", "permission", "unauthorized", "auth"]):
             return ErrorCategory.SECURITY
-        elif any(term in error_str for term in ['working_memory', 'sleep', 'rhythm', 'biological']):
+        elif any(term in error_str for term in ["working_memory", "sleep", "rhythm", "biological"]):
             return ErrorCategory.BIOLOGICAL_TIMING
-        elif any(term in error_type for term in ['validation', 'value', 'type']):
+        elif any(term in error_type for term in ["validation", "value", "type"]):
             return ErrorCategory.VALIDATION
-        elif 'memory' in error_str:
+        elif "memory" in error_str:
             return ErrorCategory.MEMORY
         else:
             return ErrorCategory.UNKNOWN
@@ -401,80 +478,95 @@ class BiologicalMemoryErrorHandler:
     def _assess_severity(self, error: Exception, category: ErrorCategory) -> ErrorSeverity:
         """Assess error severity with biological memory system context"""
         error_str = str(error).lower()
-        
+
         # Already classified BiologicalMemoryError
         if isinstance(error, BiologicalMemoryError):
             return error.severity
-        
+
         # Critical severity conditions
         if category == ErrorCategory.SECURITY:
             return ErrorSeverity.CRITICAL
-        elif category == ErrorCategory.DATABASE and any(term in error_str for term in ['corruption', 'constraint', 'integrity']):
+        elif category == ErrorCategory.DATABASE and any(
+            term in error_str for term in ["corruption", "constraint", "integrity"]
+        ):
             return ErrorSeverity.CRITICAL
-        elif category == ErrorCategory.CONSOLIDATION and 'memory_loss' in error_str:
+        elif category == ErrorCategory.CONSOLIDATION and "memory_loss" in error_str:
             return ErrorSeverity.CRITICAL
-        
+
         # High severity conditions
-        elif category == ErrorCategory.DATABASE and any(term in error_str for term in ['connection', 'authentication']):
+        elif category == ErrorCategory.DATABASE and any(
+            term in error_str for term in ["migration", "schema", "column does not exist"]
+        ):
             return ErrorSeverity.HIGH
-        elif category == ErrorCategory.WRITEBACK and 'data_loss' in error_str:
+        elif category == ErrorCategory.DATABASE and any(
+            term in error_str for term in ["connection", "authentication"]
+        ):
             return ErrorSeverity.HIGH
-        elif category == ErrorCategory.BIOLOGICAL_TIMING and any(term in error_str for term in ['sleep_disruption', 'rhythm_failure']):
+        elif category == ErrorCategory.WRITEBACK and "data_loss" in error_str:
             return ErrorSeverity.HIGH
-        elif category == ErrorCategory.LLM and 'service_down' in error_str:
+        elif category == ErrorCategory.BIOLOGICAL_TIMING and any(
+            term in error_str for term in ["sleep_disruption", "rhythm_failure"]
+        ):
             return ErrorSeverity.HIGH
-        
+        elif category == ErrorCategory.LLM and "service_down" in error_str:
+            return ErrorSeverity.HIGH
+
         # Medium severity (default for most operational errors)
-        elif category in [ErrorCategory.TIMEOUT, ErrorCategory.NETWORK, ErrorCategory.CACHE]:
+        elif category in [
+            ErrorCategory.TIMEOUT,
+            ErrorCategory.NETWORK,
+            ErrorCategory.CACHE,
+        ]:
             return ErrorSeverity.MEDIUM
-        elif category == ErrorCategory.EMBEDDING and 'generation_failed' in error_str:
+        elif category == ErrorCategory.EMBEDDING and "generation_failed" in error_str:
             return ErrorSeverity.MEDIUM
-        elif category == ErrorCategory.FILE_IO and 'permission' not in error_str:
+        elif category == ErrorCategory.FILE_IO and "permission" not in error_str:
             return ErrorSeverity.MEDIUM
-        
+
         # Low severity (recoverable errors)
         elif category == ErrorCategory.VALIDATION:
             return ErrorSeverity.LOW
-        elif 'retry' in error_str or 'temporary' in error_str:
+        elif "retry" in error_str or "temporary" in error_str:
             return ErrorSeverity.LOW
-        
+
         # Default to medium
         return ErrorSeverity.MEDIUM
 
     def _handle_database_error(self, error: Exception, record: Dict) -> Dict:
         """Handle database errors with biological memory context"""
         error_str = str(error).lower()
-        
-        if 'connection' in error_str or 'network' in error_str:
-            return {
-                "action": "retry_with_exponential_backoff",
-                "fallback": "use_cached_data",
-                "max_retries": 5,
-                "initial_delay": 2.0,
-                "biological_note": "Connection failures may disrupt memory consolidation"
-            }
-        elif 'timeout' in error_str:
+
+        # Check for timeout first (more specific than general connection issues)
+        if "timeout" in error_str:
             return {
                 "action": "increase_timeout_and_retry",
                 "fallback": "async_processing",
                 "max_retries": 3,
                 "timeout_multiplier": 1.5,
-                "biological_note": "Respect biological timing constraints during retry"
+                "biological_note": "Respect biological timing constraints during retry",
             }
-        elif 'lock' in error_str or 'deadlock' in error_str:
+        elif "connection" in error_str or "connect" in error_str or "network" in error_str:
+            return {
+                "action": "retry_with_exponential_backoff",
+                "fallback": "use_cached_data",
+                "max_retries": 5,
+                "initial_delay": 2.0,
+                "biological_note": "Connection failures may disrupt memory consolidation",
+            }
+        elif "lock" in error_str or "deadlock" in error_str:
             return {
                 "action": "retry_with_jitter",
                 "fallback": "defer_to_next_cycle",
                 "max_retries": 10,
                 "jitter_range": (0.1, 2.0),
-                "biological_note": "Database contention during memory writeback"
+                "biological_note": "Database contention during memory writeback",
             }
         else:
             return {
                 "action": "retry_with_backoff",
                 "fallback": "use_cached_data",
                 "max_retries": 3,
-                "biological_note": "General database error during memory processing"
+                "biological_note": "General database error during memory processing",
             }
 
     def _handle_network_error(self, error: Exception, record: Dict) -> Dict:
@@ -486,65 +578,65 @@ class BiologicalMemoryErrorHandler:
             "base_delay": 1.0,
             "max_delay": 60.0,
             "circuit_breaker": True,
-            "biological_note": "Network issues may affect LLM processing and embedding generation"
+            "biological_note": "Network issues may affect LLM processing and embedding generation",
         }
 
     def _handle_llm_error(self, error: Exception, record: Dict) -> Dict:
         """Handle LLM service errors with intelligent fallbacks"""
         error_str = str(error).lower()
-        
-        if 'timeout' in error_str:
+
+        if "timeout" in error_str:
             return {
                 "action": "increase_timeout_and_retry",
                 "fallback": "use_cached_responses",
                 "max_retries": 2,
                 "timeout_increase": 1.5,
-                "biological_note": "LLM timeout may affect memory enrichment"
+                "biological_note": "LLM timeout may affect memory enrichment",
             }
-        elif 'model' in error_str and 'not found' in error_str:
+        elif "model" in error_str and "not found" in error_str:
             return {
                 "action": "use_fallback_model",
                 "fallback": "skip_llm_processing",
                 "max_retries": 1,
                 "fallback_model": "llama2:7b",
-                "biological_note": "Model unavailable, using simpler processing"
+                "biological_note": "Model unavailable, using simpler processing",
             }
-        elif 'service unavailable' in error_str or '503' in error_str:
+        elif "service unavailable" in error_str or "503" in error_str:
             return {
                 "action": "circuit_breaker_pattern",
                 "fallback": "use_cached_responses",
                 "max_retries": 3,
                 "circuit_timeout": 300,  # 5 minutes
-                "biological_note": "LLM service down, using cached data to maintain memory flow"
+                "biological_note": "LLM service down, using cached data to maintain memory flow",
             }
         else:
             return {
                 "action": "retry_with_backoff",
                 "fallback": "use_cached_embeddings",
                 "max_retries": 2,
-                "biological_note": "General LLM error during memory processing"
+                "biological_note": "General LLM error during memory processing",
             }
 
     def _handle_timeout_error(self, error: Exception, record: Dict) -> Dict:
         """Handle timeout errors with biological timing awareness"""
-        context = record.get('biological_context', {})
-        
+        context = record.get("biological_context", {})
+
         # Determine biological context for timeout handling
-        if context.get('memory_stage') == 'working_memory':
+        if context.get("memory_stage") == "working_memory":
             return {
                 "action": "respect_biological_limit",
                 "fallback": "defer_to_consolidation",
                 "max_retries": 1,
-                "biological_note": "Working memory timeout - respecting 5-minute window",
-                "timeout_strategy": "biological_constraint"
+                "biological_note": "Working memory timeout - respecting biological 5-minute window",
+                "timeout_strategy": "biological_constraint",
             }
-        elif context.get('memory_stage') == 'consolidation':
+        elif context.get("memory_stage") == "consolidation":
             return {
                 "action": "extend_consolidation_window",
                 "fallback": "partial_consolidation",
                 "max_retries": 2,
                 "extended_timeout": self.retry_config["consolidation_timeout"] * 1.5,
-                "biological_note": "Consolidation timeout - allowing extended processing"
+                "biological_note": "Consolidation timeout - allowing extended processing",
             }
         else:
             return {
@@ -552,13 +644,13 @@ class BiologicalMemoryErrorHandler:
                 "fallback": "async_processing",
                 "max_retries": 1,
                 "timeout_multiplier": 1.5,
-                "biological_note": "General timeout - increasing processing window"
+                "biological_note": "General timeout - increasing processing window",
             }
 
     def _handle_security_error(self, error: Exception, record: Dict) -> Dict:
         """Handle security errors with immediate containment"""
         logger.critical(f"SECURITY BREACH DETECTED: {error}")
-        
+
         # Immediate containment actions
         security_actions = {
             "action": "immediate_containment",
@@ -568,23 +660,200 @@ class BiologicalMemoryErrorHandler:
                 "disable_external_connections",
                 "backup_current_state",
                 "enable_audit_logging",
-                "notify_security_team"
+                "notify_security_team",
             ],
-            "biological_note": "Security incident - protecting memory system integrity"
+            "biological_note": "Security incident - protecting memory system integrity",
         }
-        
+
         # Additional logging for security incidents
         try:
             with sqlite3.connect(self.error_db_path) as conn:
-                conn.execute("""
+                conn.execute(
+                    """
                     INSERT INTO security_incidents (timestamp, error_type, details, severity)
                     VALUES (?, ?, ?, 'CRITICAL')
-                """, (datetime.now().isoformat(), str(type(error).__name__), str(error)))
+                """,
+                    (datetime.now().isoformat(), str(type(error).__name__), str(error)),
+                )
                 conn.commit()
         except Exception as log_error:
             logger.error(f"Failed to log security incident: {log_error}")
-        
+
         return security_actions
+
+    def _handle_embedding_error(self, error: Exception, record: Dict) -> Dict:
+        """Handle embedding generation errors"""
+        error_str = str(error).lower()
+
+        if "timeout" in error_str:
+            return {
+                "action": "increase_timeout_and_retry",
+                "fallback": "use_zero_vector",
+                "max_retries": 2,
+                "timeout_increase": 1.5,
+                "biological_note": "Embedding timeout - using fallback vector",
+            }
+        elif "dimension" in error_str and "mismatch" in error_str:
+            return {
+                "action": "normalize_dimensions",
+                "fallback": "default_embedding",
+                "max_retries": 1,
+                "biological_note": "Embedding dimension mismatch - normalizing",
+            }
+        elif "failed to generate" in error_str or "generation" in error_str:
+            return {
+                "action": "retry_with_fallback_model",
+                "fallback": "use_zero_vector",
+                "max_retries": 2,
+                "biological_note": "Embedding generation failed - affects semantic similarity",
+            }
+        else:
+            return {
+                "action": "retry_with_fallback_model",
+                "fallback": "use_zero_vector",
+                "max_retries": 2,
+                "biological_note": "General embedding error - affects semantic similarity",
+            }
+
+    def _handle_file_io_error(self, error: Exception, record: Dict) -> Dict:
+        """Handle file I/O errors with cleanup"""
+        error_str = str(error).lower()
+
+        if "permission" in error_str:
+            return {
+                "action": "check_permissions_and_retry",
+                "fallback": "use_memory_cache",
+                "max_retries": 1,
+                "biological_note": "File permission error - attempting fallback",
+            }
+        elif "not found" in error_str or "no such file" in error_str:
+            return {
+                "action": "create_file_and_retry",
+                "fallback": "use_default_data",
+                "max_retries": 2,
+                "biological_note": "File not found - creating with defaults",
+            }
+        else:
+            return {
+                "action": "retry_with_cleanup",
+                "fallback": "use_memory_cache",
+                "max_retries": 3,
+                "biological_note": "File I/O error - cleaning up and retrying",
+            }
+
+    def _handle_cache_error(self, error: Exception, record: Dict) -> Dict:
+        """Handle cache-related errors"""
+        return {
+            "action": "clear_cache_and_retry",
+            "fallback": "direct_computation",
+            "max_retries": 2,
+            "biological_note": "Cache error - falling back to direct computation",
+        }
+
+    def _handle_writeback_error(self, error: Exception, record: Dict) -> Dict:
+        """Handle memory writeback errors"""
+        error_str = str(error).lower()
+
+        if "deadlock" in error_str or "lock" in error_str:
+            return {
+                "action": "retry_with_jitter",
+                "fallback": "defer_to_next_cycle",
+                "max_retries": 5,
+                "jitter_range": (0.5, 3.0),
+                "biological_note": "Writeback deadlock - deferring to next cycle",
+            }
+        elif "failed to write" in error_str or "write" in error_str:
+            return {
+                "action": "retry_with_validation",
+                "fallback": "queue_for_later",
+                "max_retries": 3,
+                "validation_steps": [
+                    "check_data_integrity",
+                    "verify_schema_compatibility",
+                    "validate_memory_coherence",
+                ],
+                "biological_note": "Writeback failure - validating data before retry",
+            }
+        else:
+            return {
+                "action": "retry_with_exponential_backoff",
+                "fallback": "queue_for_retry",
+                "max_retries": 3,
+                "biological_note": "Writeback error - queuing for later retry",
+            }
+
+    def _handle_consolidation_error(self, error: Exception, record: Dict) -> Dict:
+        """Handle memory consolidation errors"""
+        error_str = str(error).lower()
+
+        if "memory_loss" in error_str:
+            return {
+                "action": "emergency_backup",
+                "fallback": "alert_admin",
+                "max_retries": 0,
+                "biological_note": "CRITICAL: Memory loss detected during consolidation",
+            }
+        else:
+            return {
+                "action": "partial_consolidation",
+                "fallback": "defer_to_next_cycle",
+                "max_retries": 2,
+                "biological_note": "Consolidation error - attempting partial consolidation",
+            }
+
+    def _handle_biological_timing_error(self, error: Exception, record: Dict) -> Dict:
+        """Handle biological timing constraint violations"""
+        context = record.get("biological_context", {})
+
+        if context.get("memory_stage") == "working_memory":
+            return {
+                "action": "respect_working_memory_limit",
+                "fallback": "truncate_processing",
+                "max_retries": 0,
+                "biological_note": "Working memory exceeded 5-minute limit - truncating",
+            }
+        else:
+            return {
+                "action": "extend_timing_window",
+                "fallback": "defer_processing",
+                "max_retries": 1,
+                "biological_note": "Timing constraint violated - extending window",
+            }
+
+    def _adjust_retries_for_biological_context(self, context: Dict[str, Any]) -> int:
+        """Adjust retry count based on biological memory stage constraints"""
+        bio_context = context.get("biological_context", {})
+        memory_stage = bio_context.get("memory_stage", "")
+
+        if memory_stage == "working_memory":
+            # Working memory has strict 5-minute window, minimal retries
+            return min(2, self.retry_config["max_retries"])
+        elif memory_stage == "consolidation":
+            # Consolidation can afford more retries
+            return self.retry_config["max_retries"]
+        else:
+            # Default to configured max retries
+            return self.retry_config["max_retries"]
+
+    def _calculate_biological_delay(self, attempt: int, context: Dict[str, Any]) -> float:
+        """Calculate retry delay based on biological constraints"""
+        bio_context = context.get("biological_context", {})
+        memory_stage = bio_context.get("memory_stage", "")
+
+        base_delay = self.retry_config["base_delay"]
+
+        if memory_stage == "working_memory":
+            # Working memory needs fast retries within 5-minute window
+            return min(base_delay * (1.5**attempt), 5.0)
+        elif memory_stage == "consolidation":
+            # Consolidation can afford longer delays
+            return min(base_delay * (2**attempt), self.retry_config["max_delay"])
+        else:
+            # Default exponential backoff
+            return min(
+                base_delay * (self.retry_config["exponential_base"] ** attempt),
+                self.retry_config["max_delay"],
+            )
 
     def retry_with_backoff(self, func: Callable, *args, **kwargs) -> Any:
         """Retry function with exponential backoff"""
@@ -617,14 +886,26 @@ class BiologicalMemoryErrorHandler:
     def get_error_stats(self) -> Dict[str, Any]:
         """Get error statistics"""
         if not self.error_log:
-            return {"total_errors": 0, "categories": {}, "severities": {}}
+            return {
+                "total_errors": 0,
+                "categories": {},
+                "severities": {},
+                "error_trends": {},
+                "recent_errors": [],
+            }
 
         stats = {
             "total_errors": len(self.error_log),
             "categories": {},
             "severities": {},
             "recent_errors": self.error_log[-10:],
+            "error_trends": {},
+            "recovery_success_rate": 0.0,
         }
+
+        # Calculate category and severity distributions
+        recovery_attempts = 0
+        recovery_successes = 0
 
         for error in self.error_log:
             cat = error["category"]
@@ -632,18 +913,143 @@ class BiologicalMemoryErrorHandler:
             stats["categories"][cat] = stats["categories"].get(cat, 0) + 1
             stats["severities"][sev] = stats["severities"].get(sev, 0) + 1
 
+            # Track recovery attempts
+            if error.get("recovery_attempted"):
+                recovery_attempts += 1
+                if error.get("recovery_result", {}).get("success", False):
+                    recovery_successes += 1
+
+        # Calculate recovery success rate
+        if recovery_attempts > 0:
+            stats["recovery_success_rate"] = recovery_successes / recovery_attempts
+        else:
+            stats["recovery_success_rate"] = 0.0
+
+        # Calculate error trends (errors per time window)
+        from collections import defaultdict
+
+        time_buckets = defaultdict(int)
+        for error in self.error_log:
+            if "timestamp" in error:
+                # Group by hour
+                timestamp = error["timestamp"]
+                if isinstance(timestamp, str):
+                    import datetime
+
+                    timestamp = datetime.datetime.fromisoformat(timestamp)
+                    hour_key = timestamp.strftime("%Y-%m-%d %H:00")
+                    time_buckets[hour_key] += 1
+
+        stats["error_trends"] = dict(time_buckets)
+
         return stats
 
+    def generate_error_report(self) -> str:
+        """Generate a comprehensive error report"""
+        stats = self.get_error_stats()
 
-def with_error_handling(category: ErrorCategory = ErrorCategory.UNKNOWN):
+        report_lines = [
+            "=" * 60,
+            "Biological Memory System - Error Analysis Report",
+            "=" * 60,
+            f"Total Errors: {stats['total_errors']}",
+            "",
+            "Error Categories:",
+        ]
+
+        for category, count in stats["categories"].items():
+            report_lines.append(f"  - {category}: {count}")
+
+        report_lines.extend(
+            [
+                "",
+                "Error Severities:",
+            ]
+        )
+
+        for severity, count in stats["severities"].items():
+            report_lines.append(f"  - {severity}: {count}")
+
+        if stats.get("error_trends"):
+            report_lines.extend(
+                [
+                    "",
+                    "Error Trends (by hour):",
+                ]
+            )
+            for time_window, count in sorted(stats["error_trends"].items()):
+                report_lines.append(f"  - {time_window}: {count}")
+
+        if stats.get("recent_errors"):
+            report_lines.extend(
+                [
+                    "",
+                    "Recent Errors:",
+                ]
+            )
+            for error in stats["recent_errors"][-5:]:  # Last 5 errors
+                report_lines.append(
+                    f"  [{error.get('timestamp', 'N/A')}] {error.get('category', 'unknown')}: {error.get('message', 'No message')}"
+                )
+                if error.get("biological_context"):
+                    bio_ctx = error["biological_context"]
+                    if bio_ctx:
+                        report_lines.append(f"    Biological Context: {bio_ctx}")
+
+        # Add biological memory stage patterns analysis
+        report_lines.extend(
+            [
+                "",
+                "Biological Memory Stage Patterns:",
+            ]
+        )
+
+        stage_counts = {}
+        for error in self.error_log:
+            bio_ctx = error.get("biological_context", {})
+            if bio_ctx and "memory_stage" in bio_ctx:
+                stage = bio_ctx["memory_stage"]
+                stage_counts[stage] = stage_counts.get(stage, 0) + 1
+
+        if stage_counts:
+            for stage, count in stage_counts.items():
+                report_lines.append(f"  - {stage}: {count} errors")
+        else:
+            report_lines.append("  No memory stage patterns detected")
+
+        report_lines.extend(
+            [
+                "",
+                "=" * 60,
+            ]
+        )
+
+        return "\n".join(report_lines)
+
+
+def with_error_handling(
+    category: ErrorCategory = ErrorCategory.UNKNOWN,
+    biological_context: Optional[Dict[str, Any]] = None,
+    timeout_seconds: Optional[float] = None,
+) -> Callable:
     """Decorator for adding error handling to functions"""
 
-    def decorator(func):
+    def decorator(func: Callable) -> Callable:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> Any:
             try:
                 return func(*args, **kwargs)
             except Exception as e:
+                # Handle specific timeout exceptions
+                try:
+                    import requests.exceptions
+
+                    if isinstance(e, requests.exceptions.Timeout):
+                        raise TimeoutError(str(e))
+                except ImportError:
+                    pass
+
+                # For other exceptions, wrap in BiologicalMemoryError
                 error = BiologicalMemoryError(
                     str(e), category=category, details={"function": func.__name__}
                 )
@@ -655,72 +1061,90 @@ def with_error_handling(category: ErrorCategory = ErrorCategory.UNKNOWN):
     return decorator
 
 
-def with_database_error_handling(timeout_seconds: float = 60.0):
+def with_database_error_handling(timeout_seconds: float = 60.0) -> Callable:
     """Decorator specifically for database operations"""
-    return with_error_handling(
-        category=ErrorCategory.DATABASE,
-        biological_context={'operation_type': 'database'},
-        timeout_seconds=timeout_seconds
-    )
+
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs) -> Any:
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                error = DatabaseError(
+                    str(e),
+                    details={"function": func.__name__, "operation_type": "database"},
+                    retry_suggested=True,
+                )
+                logger.error(f"Database error in {func.__name__}: {error}")
+                raise error
+
+        return wrapper
+
+    return decorator
 
 
-def with_llm_error_handling(timeout_seconds: float = 30.0):
+def with_llm_error_handling(timeout_seconds: float = 30.0) -> Callable:
     """Decorator specifically for LLM operations"""
     return with_error_handling(
         category=ErrorCategory.LLM,
-        biological_context={'operation_type': 'llm_processing'},
-        timeout_seconds=timeout_seconds
+        biological_context={"operation_type": "llm_processing"},
+        timeout_seconds=timeout_seconds,
     )
 
 
-def with_embedding_error_handling(timeout_seconds: float = 45.0):
+def with_embedding_error_handling(timeout_seconds: float = 45.0) -> Callable:
     """Decorator specifically for embedding operations"""
     return with_error_handling(
         category=ErrorCategory.EMBEDDING,
-        biological_context={'operation_type': 'embedding_generation'},
-        timeout_seconds=timeout_seconds
+        biological_context={"operation_type": "embedding_generation"},
+        timeout_seconds=timeout_seconds,
     )
 
 
-def with_biological_timing_constraints(memory_stage: str, max_duration: float = None):
+def with_biological_timing_constraints(memory_stage: str, max_duration: float = None) -> Callable:
     """Decorator that enforces biological timing constraints"""
-    def decorator(func):
+
+    def decorator(func: Callable) -> Callable:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> Any:
             start_time = time.time()
-            
+
             # Set biological constraints
-            if memory_stage == 'working_memory' and not max_duration:
+            if memory_stage == "working_memory" and not max_duration:
                 max_duration_actual = 300.0  # 5 minutes
-            elif memory_stage == 'consolidation' and not max_duration:
+            elif memory_stage == "consolidation" and not max_duration:
                 max_duration_actual = 3600.0  # 1 hour
             else:
                 max_duration_actual = max_duration or 600.0  # 10 minutes default
-            
+
             try:
                 result = func(*args, **kwargs)
-                
+
                 # Check if we exceeded biological constraints
                 duration = time.time() - start_time
                 if duration > max_duration_actual:
-                    logger.warning(f"Function {func.__name__} exceeded biological constraint: "
-                                 f"{duration:.1f}s > {max_duration_actual}s for {memory_stage}")
-                
+                    logger.warning(
+                        f"Function {func.__name__} exceeded biological constraint: "
+                        f"{duration:.1f}s > {max_duration_actual}s for {memory_stage}"
+                    )
+
                 return result
             except Exception as e:
                 duration = time.time() - start_time
                 context = {
-                    'memory_stage': memory_stage,
-                    'duration_seconds': duration,
-                    'max_allowed_duration': max_duration_actual
+                    "memory_stage": memory_stage,
+                    "duration_seconds": duration,
+                    "max_allowed_duration": max_duration_actual,
                 }
                 raise BiologicalMemoryError(
                     f"Error in {memory_stage} processing after {duration:.1f}s: {e}",
                     category=ErrorCategory.BIOLOGICAL_TIMING,
                     details=context,
-                    cause=e
+                    cause=e,
                 )
+
         return wrapper
+
     return decorator
 
 
@@ -737,7 +1161,10 @@ def get_global_error_handler() -> BiologicalMemoryErrorHandler:
 
 
 @contextmanager
-def database_transaction(connection, error_handler: Optional[BiologicalMemoryErrorHandler] = None):
+def database_transaction(
+    connection: Union[Any, psycopg2.extensions.connection, duckdb.DuckDBPyConnection],
+    error_handler: Optional[BiologicalMemoryErrorHandler] = None,
+) -> Generator:
     """Context manager for database transactions with comprehensive error handling"""
     try:
         yield connection
@@ -747,55 +1174,62 @@ def database_transaction(connection, error_handler: Optional[BiologicalMemoryErr
             connection.rollback()
         except Exception as rollback_error:
             logger.error(f"Rollback failed: {rollback_error}")
-        
+
         if error_handler:
-            error_handler.handle_error(e, {'operation': 'database_transaction'})
+            error_handler.handle_error(e, {"operation": "database_transaction"})
         raise DatabaseError(f"Transaction failed: {e}", cause=e)
 
 
-def log_biological_error(error: Exception, memory_stage: str = None, 
-                        operation_type: str = None, details: Dict = None):
+def log_biological_error(
+    error: Exception,
+    memory_stage: str = None,
+    operation_type: str = None,
+    details: Dict = None,
+) -> None:
     """Convenience function for logging errors with biological context"""
     handler = get_global_error_handler()
     context = {
-        'biological_context': {
-            'memory_stage': memory_stage,
-            'operation_type': operation_type
+        "biological_context": {
+            "memory_stage": memory_stage,
+            "operation_type": operation_type,
         },
-        'details': details or {}
+        "details": details or {},
     }
     handler.handle_error(error, context)
 
 
 # Utility functions for common error scenarios
 
-def handle_database_connection_error(func: Callable, *args, **kwargs):
+
+def handle_database_connection_error(func: Callable, *args, **kwargs) -> Any:
     """Handle database connection errors with automatic retry"""
     handler = get_global_error_handler()
-    return handler.safe_execute(func, {'operation_type': 'database_connection'}, *args, **kwargs)
+    return handler.safe_execute(func, {"operation_type": "database_connection"}, *args, **kwargs)
 
 
-def handle_llm_service_error(func: Callable, *args, **kwargs):
+def handle_llm_service_error(func: Callable, *args, **kwargs) -> Any:
     """Handle LLM service errors with fallback strategies"""
     handler = get_global_error_handler()
-    return handler.safe_execute(func, {'operation_type': 'llm_service'}, *args, **kwargs)
+    return handler.safe_execute(func, {"operation_type": "llm_service"}, *args, **kwargs)
 
 
-def handle_file_operation_error(func: Callable, file_path: str, *args, **kwargs):
+def handle_file_operation_error(func: Callable, file_path: str, *args, **kwargs) -> Any:
     """Handle file operation errors with cleanup"""
     handler = get_global_error_handler()
-    
-    def cleanup():
+
+    def cleanup() -> None:
         # Clean up any temporary files or locks
         try:
-            temp_file = Path(file_path).with_suffix('.tmp')
+            temp_file = Path(file_path).with_suffix(".tmp")
             if temp_file.exists():
                 temp_file.unlink()
         except Exception as e:
             logger.debug(f"Cleanup warning: {e}")
-    
+
     return handler.safe_execute_with_cleanup(
-        func, cleanup, 
-        {'operation_type': 'file_io', 'file_path': file_path}, 
-        *args, **kwargs
+        func,
+        cleanup,
+        {"operation_type": "file_io", "file_path": file_path},
+        *args,
+        **kwargs,
     )

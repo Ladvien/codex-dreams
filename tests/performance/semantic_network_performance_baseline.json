@@ -1,37 +1,37 @@
 {
-  "timestamp": "2025-09-03T02:54:19.457535+00:00",
+  "timestamp": "2025-09-07T00:59:58.107272+00:00",
   "memory_count": 5000,
-  "system_avg_performance_ms": 0.357985058799386,
+  "system_avg_performance_ms": 0.28190084325615317,
   "queries_meeting_target": 5,
   "total_queries": 5,
   "individual_results": {
     "simple_count": {
-      "avg_time_ms": 0.14298749738372862,
-      "p95_time_ms": 0.3951250109821558,
+      "avg_time_ms": 0.12427090259734541,
+      "p95_time_ms": 0.36275002639740705,
       "target_ms": 10.0,
       "meets_target": true
     },
     "avg_retrieval_strength": {
-      "avg_time_ms": 0.13890830159652978,
-      "p95_time_ms": 0.17870802548713982,
+      "avg_time_ms": 0.1091375044779852,
+      "p95_time_ms": 0.16908301040530205,
       "target_ms": 20.0,
       "meets_target": true
     },
     "semantic_category_stats": {
-      "avg_time_ms": 0.4629750968888402,
-      "p95_time_ms": 0.7425840012729168,
+      "avg_time_ms": 0.4120083060115576,
+      "p95_time_ms": 0.6472500099334866,
       "target_ms": 50.0,
       "meets_target": true
     },
     "top_memories": {
-      "avg_time_ms": 0.444458398851566,
-      "p95_time_ms": 2.0846250117756426,
+      "avg_time_ms": 0.2382458042120561,
+      "p95_time_ms": 0.313459022436291,
       "target_ms": 40.0,
       "meets_target": true
     },
     "cortical_region_analysis": {
-      "avg_time_ms": 0.6005959992762655,
-      "p95_time_ms": 0.8259169990196824,
+      "avg_time_ms": 0.5258416989818215,
+      "p95_time_ms": 0.7020420162007213,
       "target_ms": 60.0,
       "meets_target": true
     }

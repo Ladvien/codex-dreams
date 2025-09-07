@@ -35,7 +35,7 @@ class ConnectionRetry:
         """Reset retry counter"""
         self.current_retry = 0
 
-    def retry_with_backoff(self, func: Callable[..., Any], *args, **kwargs) -> Any:
+    def retry_with_backoff(self, func: Callable, *args, **kwargs) -> Any:
         """Retry function with exponential backoff"""
         self.reset()
         last_exception = None
@@ -239,7 +239,11 @@ class OllamaConnection:
 
         available_models = [m.get("name", "") for m in data.get("models", [])]
 
-        return {"status": "connected", "base_url": self.url, "available_models": available_models}
+        return {
+            "status": "connected",
+            "base_url": self.url,
+            "available_models": available_models,
+        }
 
     def validate_models(self) -> bool:
         """Validate required models are available"""

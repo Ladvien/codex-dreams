@@ -19,8 +19,7 @@ import sys
 import tempfile
 import time
 import traceback
-from contextlib import contextmanager
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -572,7 +571,7 @@ def run_integration_test_suite_with_health_checks():
     try:
         # Run health checks
         logger.info("Running pre-test health checks...")
-        health_results = health_checker.run_all_health_checks()
+        health_checker.run_all_health_checks()
 
         # Generate and display health report
         health_report = health_checker.generate_health_report()

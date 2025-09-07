@@ -5,7 +5,6 @@ Comprehensive tests for timeout handling, external service failures,
 circuit breakers, and service unavailability scenarios.
 """
 
-import asyncio
 import os
 
 # Import from biological_memory error handling
@@ -14,7 +13,7 @@ import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeoutError
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock
 
 import pytest
 import requests
@@ -25,9 +24,6 @@ try:
     from error_handling import (
         BiologicalMemoryErrorHandler,
         CircuitBreaker,
-        ErrorEvent,
-        ErrorType,
-        SecuritySanitizer,
     )
 except ImportError:
     pytest.skip("Error handling module not available", allow_module_level=True)
@@ -60,7 +56,10 @@ class TestTimeoutHandling:
 
         # Test successful connection within timeout
         result = self.error_handler.exponential_backoff_retry(
-            slow_database_connection, max_retries=1, base_delay=0.1, exceptions=(Exception,)
+            slow_database_connection,
+            max_retries=1,
+            base_delay=0.1,
+            exceptions=(Exception,),
         )
         assert result == "Connected"
 
@@ -115,7 +114,10 @@ class TestTimeoutHandling:
         for i in range(5):
             try:
                 result = self.error_handler.exponential_backoff_retry(
-                    slow_postgresql_query, max_retries=2, base_delay=0.05, exceptions=(Exception,)
+                    slow_postgresql_query,
+                    max_retries=2,
+                    base_delay=0.05,
+                    exceptions=(Exception,),
                 )
                 successful_queries += 1
             except Exception as e:
@@ -226,7 +228,10 @@ class TestTimeoutHandling:
             # Inner operation has its own timeout handling
             try:
                 result = self.error_handler.exponential_backoff_retry(
-                    inner_operation, max_retries=1, base_delay=0.1, exceptions=(Exception,)
+                    inner_operation,
+                    max_retries=1,
+                    base_delay=0.1,
+                    exceptions=(Exception,),
                 )
                 return f"Outer completed with: {result}"
             except Exception:
@@ -318,7 +323,10 @@ class TestTimeoutHandling:
             # Each timeout type should be handled appropriately
             with pytest.raises(exception_type):
                 self.error_handler.exponential_backoff_retry(
-                    timeout_operation, max_retries=1, base_delay=0.05, exceptions=(exception_type,)
+                    timeout_operation,
+                    max_retries=1,
+                    base_delay=0.05,
+                    exceptions=(exception_type,),
                 )
 
             # Error should be logged with appropriate categorization

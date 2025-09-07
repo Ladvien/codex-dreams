@@ -9,9 +9,8 @@ Validates that memory consolidation follows neuroscience research patterns:
 
 import os
 import sys
-import time
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -251,7 +250,7 @@ class TestBiologicalAccuracyValidation:
         # McGaugh's research shows memory consolidation is most effective
         # within specific time windows after encoding
 
-        scheduler = BiologicalRhythmScheduler()
+        BiologicalRhythmScheduler()
 
         # Short-term consolidation should occur within 30 minutes of encoding
         # Our 20-minute cycle ensures this requirement is met
@@ -284,7 +283,7 @@ class TestBiologicalAccuracyValidation:
         # Frankland's research shows hippocampal-neocortical dialogue
         # follows specific timing patterns for memory transfer
 
-        scheduler = BiologicalRhythmScheduler()
+        BiologicalRhythmScheduler()
 
         # Long-term consolidation (90 minutes) should align with
         # hippocampal replay cycles identified by Frankland

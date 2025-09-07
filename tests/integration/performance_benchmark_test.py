@@ -19,14 +19,12 @@ import os
 import statistics
 import sys
 import tempfile
-import threading
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional, Tuple
-from unittest.mock import patch
+from typing import List, NamedTuple, Optional
 
 import duckdb
 import psycopg2
@@ -605,7 +603,10 @@ class TestLLMServicePerformance:
             try:
                 response = requests.post(
                     f"{self.tester.config.ollama_url}/api/embeddings",
-                    json={"model": test_model, "prompt": "semantic concept for biological memory"},
+                    json={
+                        "model": test_model,
+                        "prompt": "semantic concept for biological memory",
+                    },
                     timeout=15,
                 )
 
@@ -870,10 +871,10 @@ class TestBiologicalRhythmPerformance:
                 # Verify forgetting curve applied correctly
                 strength_data = conn.execute(
                     """
-                    SELECT age_days, AVG(strength) as avg_strength
+                    SELECT CAST(age_days AS INTEGER) as age_days, AVG(strength) as avg_strength
                     FROM memory_strengths
                     GROUP BY CAST(age_days AS INTEGER)
-                    ORDER BY age_days
+                    ORDER BY CAST(age_days AS INTEGER)
                     LIMIT 10
                 """
                 ).fetchall()

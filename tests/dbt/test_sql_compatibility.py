@@ -5,7 +5,6 @@ Tests to ensure no PostgreSQL-specific syntax remains in dbt project files
 Part of STORY-DBT-010: DuckDB SQL Compatibility & Post-hook Fixes
 """
 
-import os
 import re
 from pathlib import Path
 
@@ -161,7 +160,11 @@ class TestSQLCompatibility:
             lines = content.split("\n")
 
             for line_num, line in enumerate(lines, 1):
-                if re.search(POSTGRESQL_PATTERNS["refresh_materialized_view"], line, re.IGNORECASE):
+                if re.search(
+                    POSTGRESQL_PATTERNS["refresh_materialized_view"],
+                    line,
+                    re.IGNORECASE,
+                ):
                     if not is_commented_line(line):
                         violations.append(
                             {
@@ -226,7 +229,12 @@ class TestSQLCompatibility:
 
     def test_comments_explain_postgresql_removals(self):
         """Test that removed PostgreSQL features have explanatory comments"""
-        required_explanations = ["PostgreSQL", "DuckDB", "not supported", "compatibility"]
+        required_explanations = [
+            "PostgreSQL",
+            "DuckDB",
+            "not supported",
+            "compatibility",
+        ]
 
         comment_files = []
 
@@ -239,7 +247,12 @@ class TestSQLCompatibility:
                     line_lower = line.lower()
                     if any(
                         keyword in line_lower
-                        for keyword in ["gin", "vacuum", "analyze", "refresh materialized"]
+                        for keyword in [
+                            "gin",
+                            "vacuum",
+                            "analyze",
+                            "refresh materialized",
+                        ]
                     ):
                         # This is a comment about removed PostgreSQL features
                         if any(explanation in line_lower for explanation in required_explanations):

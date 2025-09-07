@@ -8,16 +8,13 @@ and the existing health check infrastructure, adding biological parameter endpoi
 to the health monitoring HTTP interface.
 """
 
-import json
 import logging
 
 # Import existing health monitoring components
-import sys
 import time
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler
-from pathlib import Path
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Type
 
 from src.services.health_check_service import (
     ComprehensiveHealthMonitor,

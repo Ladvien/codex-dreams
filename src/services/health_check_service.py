@@ -6,7 +6,11 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
+
+from .error_handling import (
+    get_global_error_handler,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +43,10 @@ class ComprehensiveHealthMonitor:
         self.config = config or {}
         self.services = {}
         self.last_check_results = {}
-        logger.info("Health monitor initialized")
+        self.error_handler = get_global_error_handler()
+        logger.info("Health monitor initialized with comprehensive error handling")
 
-    def register_service(self, name: str, check_func):
+    def register_service(self, name: str, check_func: Callable) -> None:
         """Register a service for health monitoring"""
         self.services[name] = check_func
         logger.debug(f"Registered service: {name}")

@@ -13,13 +13,10 @@ Tests cover:
 - Integration with health monitoring
 """
 
-import json
-import os
 import sys
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -28,9 +25,7 @@ from src.monitoring.biological_parameter_monitor import (
     AlertType,
     BiologicalParameter,
     BiologicalParameterMonitor,
-    ParameterAlert,
     ParameterStatus,
-    get_biological_parameter_monitor,
 )
 from src.monitoring.health_integration import (
     BiologicalHealthIntegration,
@@ -453,12 +448,16 @@ class TestHealthIntegration:
     def test_enhanced_health_check_method(self, mock_health_monitor, biological_integration):
         """Test enhanced health check method that includes biological parameters"""
         # Mock original health check results
-        original_results = {"postgresql": Mock(), "duckdb": Mock(), "system_resources": Mock()}
+        original_results = {
+            "postgresql": Mock(),
+            "duckdb": Mock(),
+            "system_resources": Mock(),
+        }
 
         mock_health_monitor.run_comprehensive_health_check = Mock(return_value=original_results)
 
         # Integrate biological monitoring
-        integration = integrate_biological_monitoring(mock_health_monitor)
+        integrate_biological_monitoring(mock_health_monitor)
 
         # Run enhanced health check
         enhanced_results = mock_health_monitor.run_comprehensive_health_check()

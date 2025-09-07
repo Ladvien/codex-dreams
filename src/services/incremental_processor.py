@@ -22,7 +22,7 @@ import os
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Generator, List, Optional, Set
+from typing import Any, Dict, Generator, List, Optional
 
 import duckdb
 import pandas as pd
@@ -70,7 +70,10 @@ class IncrementalProcessor:
     """
 
     def __init__(
-        self, postgres_url: str = None, duckdb_path: str = None, default_lookback_hours: int = 24
+        self,
+        postgres_url: str = None,
+        duckdb_path: str = None,
+        default_lookback_hours: int = 24,
     ):
         """
         Initialize the incremental processor
@@ -436,7 +439,8 @@ class IncrementalProcessor:
                     """
 
                     cursor.execute(
-                        overlap_query, (stage, new_batch.watermark_start, new_batch.watermark_end)
+                        overlap_query,
+                        (stage, new_batch.watermark_start, new_batch.watermark_end),
                     )
                     overlap_count = cursor.fetchone()[0]
 
@@ -586,7 +590,8 @@ class IncrementalProcessor:
                                     "type": "reduce_batch_size",
                                     "reason": f"High failure rate ({optimization['failure_rate']:.1%})",
                                     "suggested_batch_size": max(
-                                        500, int(optimization["current_avg_batch_size"] * 0.7)
+                                        500,
+                                        int(optimization["current_avg_batch_size"] * 0.7),
                                     ),
                                 }
                             )
@@ -610,7 +615,8 @@ class IncrementalProcessor:
                                     "type": "increase_batch_size",
                                     "reason": "Small batch sizes may be inefficient",
                                     "suggested_batch_size": min(
-                                        2000, int(optimization["current_avg_batch_size"] * 2)
+                                        2000,
+                                        int(optimization["current_avg_batch_size"] * 2),
                                     ),
                                 }
                             )

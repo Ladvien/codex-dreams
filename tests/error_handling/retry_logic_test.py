@@ -6,14 +6,12 @@ dead letter queues, and recovery strategies.
 """
 
 import os
-import random
 
 # Import from biological_memory error handling
 import sys
 import tempfile
 import time
 from datetime import datetime, timezone
-from unittest.mock import Mock, patch
 
 import pytest
 
@@ -23,10 +21,8 @@ try:
     from error_handling import (
         BiologicalMemoryErrorHandler,
         CircuitBreaker,
-        DeadLetterQueue,
         ErrorEvent,
         ErrorType,
-        RecoveryStrategy,
     )
 except ImportError:
     pytest.skip("Error handling module not available", allow_module_level=True)
@@ -165,7 +161,10 @@ class TestRetryLogic:
             return {"results": partial_results, "final_attempt": attempt_count}
 
         result = self.error_handler.exponential_backoff_retry(
-            operation_with_partial_success, max_retries=5, base_delay=0.05, exceptions=(Exception,)
+            operation_with_partial_success,
+            max_retries=5,
+            base_delay=0.05,
+            exceptions=(Exception,),
         )
 
         assert result["final_attempt"] == 4
@@ -200,7 +199,10 @@ class TestRetryLogic:
                 raise e
 
         result = self.error_handler.exponential_backoff_retry(
-            enhanced_retry_operation, max_retries=3, base_delay=0.05, exceptions=(Exception,)
+            enhanced_retry_operation,
+            max_retries=3,
+            base_delay=0.05,
+            exceptions=(Exception,),
         )
 
         assert result == "Success on attempt 3"
@@ -233,7 +235,10 @@ class TestRetryLogic:
             return operation_context
 
         result = self.error_handler.exponential_backoff_retry(
-            context_aware_operation, max_retries=3, base_delay=0.05, exceptions=(Exception,)
+            context_aware_operation,
+            max_retries=3,
+            base_delay=0.05,
+            exceptions=(Exception,),
         )
 
         # Verify context was preserved across attempts
@@ -530,7 +535,7 @@ class TestDeadLetterQueueRecovery:
                 "message_id": f"batch_msg_{i}",
                 "operation": f"operation_type_{i % 3}",
                 "data": {"batch_id": i, "content": f"batch content {i}"},
-                "error_type": ErrorType.CONNECTION_FAILURE if i % 2 == 0 else ErrorType.TIMEOUT,
+                "error_type": (ErrorType.CONNECTION_FAILURE if i % 2 == 0 else ErrorType.TIMEOUT),
             }
             for i in range(10)
         ]
@@ -601,7 +606,14 @@ class TestRecoveryStrategies:
 
         # Test degradation for different failed components
         degradation_scenarios = [
-            ("duckdb", ["consolidation_processing", "deep_consolidation", "analytics_dashboard"]),
+            (
+                "duckdb",
+                [
+                    "consolidation_processing",
+                    "deep_consolidation",
+                    "analytics_dashboard",
+                ],
+            ),
             ("ollama", ["rem_sleep_processing", "creative_associations"]),
             ("postgres", ["working_memory_processing"]),
         ]
@@ -729,7 +741,10 @@ class TestRecoveryStrategies:
 
         # Execute with retry and resource cleanup
         result = self.error_handler.exponential_backoff_retry(
-            resource_intensive_operation, max_retries=3, base_delay=0.05, exceptions=(Exception,)
+            resource_intensive_operation,
+            max_retries=3,
+            base_delay=0.05,
+            exceptions=(Exception,),
         )
 
         assert result["status"] == "success"

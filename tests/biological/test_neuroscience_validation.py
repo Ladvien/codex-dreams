@@ -16,10 +16,7 @@ Test Coverage:
 import json
 import sqlite3
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Any, Dict, List
 
-import numpy as np
 import pytest
 
 
@@ -109,9 +106,30 @@ class TestNeuroscienceValidation:
                 "Miller (1956), Cowan (2001)",
                 datetime.now(),
             ),
-            ("hebbian_learning_rate", 0.1, 0.01, 0.2, "Kandel & Hawkins (1992)", datetime.now()),
-            ("synaptic_decay_rate", 0.001, 0.0001, 0.01, "Kandel & Hawkins (1992)", datetime.now()),
-            ("consolidation_threshold", 0.5, 0.3, 0.7, "McGaugh (2000)", datetime.now()),
+            (
+                "hebbian_learning_rate",
+                0.1,
+                0.01,
+                0.2,
+                "Kandel & Hawkins (1992)",
+                datetime.now(),
+            ),
+            (
+                "synaptic_decay_rate",
+                0.001,
+                0.0001,
+                0.01,
+                "Kandel & Hawkins (1992)",
+                datetime.now(),
+            ),
+            (
+                "consolidation_threshold",
+                0.5,
+                0.3,
+                0.7,
+                "McGaugh (2000)",
+                datetime.now(),
+            ),
             ("homeostasis_target", 0.5, 0.3, 0.7, "Turrigiano (2008)", datetime.now()),
         ]
 
@@ -365,7 +383,15 @@ class TestNeuroscienceValidation:
             ("concept3", "evaluation", "parietal_cortex", 0.6, 0.7, 0.6, 0.7),
         ]
 
-        for mem_id, category, region, strength, centrality, degree, clustering in semantic_memories:
+        for (
+            mem_id,
+            category,
+            region,
+            strength,
+            centrality,
+            degree,
+            clustering,
+        ) in semantic_memories:
             memory_db.execute(
                 """
                 INSERT INTO ltm_semantic_network
@@ -536,14 +562,27 @@ class TestNeuroscienceValidation:
             ("neutral1", "Neutral content", 0.6, 0.3, False),
         ]
 
-        for mem_id, content, strength, emotion, should_consolidate in emotional_memories:
+        for (
+            mem_id,
+            content,
+            strength,
+            emotion,
+            should_consolidate,
+        ) in emotional_memories:
             memory_db.execute(
                 """
                 INSERT INTO stm_hierarchical_episodes
                 (id, content, stm_strength, emotional_salience, ready_for_consolidation, timestamp)
                 VALUES (?, ?, ?, ?, ?, ?)
             """,
-                (mem_id, content, strength, emotion, should_consolidate, datetime.now()),
+                (
+                    mem_id,
+                    content,
+                    strength,
+                    emotion,
+                    should_consolidate,
+                    datetime.now(),
+                ),
             )
 
         # Verify emotional memories are prioritized for consolidation
@@ -852,7 +891,13 @@ class TestNeuroscienceValidation:
             ("health3", 0.3, 0.4, 0.2, "poor"),
         ]
 
-        for mem_id, retrieval, centrality, stability, expected_health in network_memories:
+        for (
+            mem_id,
+            retrieval,
+            centrality,
+            stability,
+            expected_health,
+        ) in network_memories:
             memory_db.execute(
                 """
                 INSERT INTO ltm_semantic_network

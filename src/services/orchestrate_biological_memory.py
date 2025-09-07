@@ -2,12 +2,10 @@
 Biological Memory Orchestrator - Main orchestration service
 """
 
-import json
 import logging
 import os
-import time
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import Any, Dict, Optional
 
 import duckdb
 import psycopg2
@@ -27,7 +25,9 @@ class BiologicalMemoryOrchestrator:
         self.logger = logger  # Make logger accessible for tests
         # Add error handler for compatibility
         self.error_handler = type(
-            "ErrorHandler", (), {"exponential_backoff_retry": lambda self, *a, **k: None}
+            "ErrorHandler",
+            (),
+            {"exponential_backoff_retry": lambda self, *a, **k: None},
         )()
         # Security patterns for argument validation (compiled regex)
         import re
@@ -57,7 +57,7 @@ class BiologicalMemoryOrchestrator:
             "forgetting_rate": 0.05,
         }
 
-    def connect(self):
+    def connect(self) -> None:
         """Establish database connections"""
         try:
             # Connect to DuckDB
@@ -98,7 +98,7 @@ class BiologicalMemoryOrchestrator:
             "password": password,
         }
 
-    def run_pipeline(self):
+    def run_pipeline(self) -> None:
         """Run the complete memory processing pipeline"""
         if not self.duckdb_conn:
             if not self.connect():
@@ -128,7 +128,7 @@ class BiologicalMemoryOrchestrator:
         finally:
             self.running = False
 
-    def _process_working_memory(self):
+    def _process_working_memory(self) -> int:
         """Process working memory with Miller's 7±2 constraint"""
         query = f"""
         CREATE OR REPLACE VIEW working_memory AS
@@ -142,7 +142,7 @@ class BiologicalMemoryOrchestrator:
         self.duckdb_conn.execute(query)
         logger.debug("Working memory processed")
 
-    def _process_short_term_memory(self):
+    def _process_short_term_memory(self) -> int:
         """Process short-term memory with hierarchical structure"""
         query = f"""
         CREATE OR REPLACE VIEW short_term_memory AS
@@ -152,7 +152,7 @@ class BiologicalMemoryOrchestrator:
         self.duckdb_conn.execute(query)
         logger.debug("Short-term memory processed")
 
-    def _consolidate_memories(self):
+    def _consolidate_memories(self) -> int:
         """Consolidate memories using Hebbian learning"""
         query = f"""
         CREATE OR REPLACE VIEW consolidated_memories AS
@@ -165,7 +165,7 @@ class BiologicalMemoryOrchestrator:
         self.duckdb_conn.execute(query)
         logger.debug("Memory consolidation completed")
 
-    def _update_long_term_memory(self):
+    def _update_long_term_memory(self) -> int:
         """Update long-term memory with consolidated memories"""
         query = f"""
         CREATE OR REPLACE VIEW long_term_memory AS
@@ -189,7 +189,7 @@ class BiologicalMemoryOrchestrator:
             },
         }
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Shutdown orchestrator and close connections"""
         self.running = False
         if self.duckdb_conn:
@@ -275,7 +275,7 @@ class BiologicalMemoryOrchestrator:
         """Sanitize command for safe logging - alias for compatibility"""
         return self._sanitize_command(command)
 
-    def run_dbt_command(self, command: str, log_file: str = None, timeout: int = 30) -> Any:
+    def run_dbt_command(self, command: str, log_file: str = None, timeout: int = 30) -> bool:
         """Run a dbt command securely"""
         import subprocess
 

@@ -14,7 +14,6 @@ Date: 2025-09-01
 Story: DB-008
 """
 
-import os
 import sys
 import unittest
 from pathlib import Path
@@ -129,7 +128,11 @@ class TestPostgreSQLExtensionStandardization(unittest.TestCase):
 
     def test_environment_variable_standardization(self):
         """Test that environment variable usage is standardized."""
-        standardized_files = [self.setup_sql_path, self.test_sql_path, self.monitor_sql_path]
+        standardized_files = [
+            self.setup_sql_path,
+            self.test_sql_path,
+            self.monitor_sql_path,
+        ]
 
         for sql_file in standardized_files:
             if sql_file.exists():

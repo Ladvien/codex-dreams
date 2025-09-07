@@ -5,9 +5,7 @@ Tests to verify that schema.yml files exist and are valid for all model director
 Part of STORY-DBT-011: Missing Schema Documentation & Model Validation
 """
 
-import os
 from pathlib import Path
-from typing import Any, Dict, List
 
 import pytest
 import yaml

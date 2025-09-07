@@ -5,10 +5,7 @@ Provides real implementations for Ollama LLM service
 and database connections, enabling authentic testing with live services.
 """
 
-import json
 import os
-import time
-from typing import Any, Dict, Optional
 
 import duckdb
 import psycopg2
@@ -19,7 +16,7 @@ import requests
 @pytest.fixture(scope="session")
 def real_ollama_service():
     """Real Ollama service connection for authentic testing."""
-    ollama_url = os.getenv("OLLAMA_URL", "http://192.168.1.110:11434")
+    ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
     ollama_model = os.getenv("OLLAMA_MODEL", "gpt-oss:20b")
     embedding_model = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
 
@@ -80,7 +77,12 @@ def real_ollama_service():
             try:
                 response = requests.post(
                     f"{self.url}/api/generate",
-                    json={"model": self.model, "prompt": prompt, "stream": False, **kwargs},
+                    json={
+                        "model": self.model,
+                        "prompt": prompt,
+                        "stream": False,
+                        **kwargs,
+                    },
                     timeout=5,  # Short timeout for tests
                 )
                 response.raise_for_status()

@@ -7,7 +7,6 @@ and that parallel execution works correctly.
 
 import os
 import tempfile
-import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pytest
@@ -76,7 +75,7 @@ class TestIsolation:
         assert os.getenv("POSTGRES_DB_URL") == test_env_vars["POSTGRES_DB_URL"]
 
         # Modify an environment variable within test
-        original_value = os.getenv("OLLAMA_TIMEOUT")
+        os.getenv("OLLAMA_TIMEOUT")
         os.environ["OLLAMA_TIMEOUT"] = "999"
 
         # Verify change took effect
@@ -198,8 +197,6 @@ class TestParallelExecution:
     def test_mock_thread_safety(self):
         """Test that mock fixtures are thread-safe."""
         import json
-
-        from tests.fixtures.mocking import real_ollama
 
         def test_mock_in_thread(thread_id):
             """Test mock responses in parallel."""

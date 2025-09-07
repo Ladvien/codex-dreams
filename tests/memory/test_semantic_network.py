@@ -5,10 +5,8 @@ Tests semantic memory with cortical organization, retrieval mechanisms,
 and graph-based similarity as specified in acceptance criteria.
 """
 
-import json
 import math
 from datetime import datetime, timedelta, timezone
-from unittest.mock import Mock, patch
 
 import pytest
 
@@ -20,7 +18,10 @@ class TestSemanticSimilarity:
     def test_semantic_similarity_scoring(self, real_ollama_service):
         """Test LLM similarity scoring between memory gists."""
         gist_pairs = [
-            ("Team meeting about project planning", "Group discussion on project strategy"),
+            (
+                "Team meeting about project planning",
+                "Group discussion on project strategy",
+            ),
             ("Code review session with peers", "Database optimization meeting"),
             ("Lunch conversation with colleagues", "Code review session with peers"),
         ]

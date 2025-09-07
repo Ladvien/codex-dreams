@@ -155,7 +155,7 @@ class TestHealthIndicators:
             "association_cortex": 200,
         }
 
-        total_memories = sum(cortical_regions.values())
+        sum(cortical_regions.values())
         region_count = len(cortical_regions)
 
         # Test distribution balance
@@ -420,8 +420,17 @@ class TestMonitoringIntegration:
                 "last_updated": datetime.now(timezone.utc),
             },
             "distribution": {
-                "by_age": {"recent": 150, "week_old": 300, "month_old": 500, "remote": 1550},
-                "by_state": {"episodic": 1000, "consolidating": 800, "schematized": 700},
+                "by_age": {
+                    "recent": 150,
+                    "week_old": 300,
+                    "month_old": 500,
+                    "remote": 1550,
+                },
+                "by_state": {
+                    "episodic": 1000,
+                    "consolidating": 800,
+                    "schematized": 700,
+                },
             },
             "performance": {
                 "avg_retrieval_strength": 0.68,

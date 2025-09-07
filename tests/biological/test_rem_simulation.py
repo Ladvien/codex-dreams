@@ -11,9 +11,8 @@ Validates REM sleep timing and creative processing based on:
 import os
 import subprocess
 import sys
-import time
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -331,7 +330,10 @@ class TestREMSleepFailureRecovery:
     def test_rem_continues_after_failure(self):
         """Test REM simulation continues scheduling after failures"""
         # First attempt fails
-        self.scheduler.processor.rem_sleep_simulation.side_effect = [Exception("Error"), True]
+        self.scheduler.processor.rem_sleep_simulation.side_effect = [
+            Exception("Error"),
+            True,
+        ]
 
         # First execution fails
         result1 = self.scheduler._execute_rhythm_cycle(BiologicalRhythmType.REM_SLEEP)

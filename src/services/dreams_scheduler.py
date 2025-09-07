@@ -5,9 +5,8 @@ Runs the write-back pipeline on biological rhythms
 """
 
 import logging
-import os
 import time
-from datetime import datetime
+from typing import Optional
 
 import schedule
 from dreams_writeback_service import DreamsWritebackService
@@ -19,7 +18,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def run_working_memory():
+def run_working_memory() -> None:
     """Run working memory write-back (every 5 seconds)."""
     try:
         service = DreamsWritebackService()
@@ -28,7 +27,7 @@ def run_working_memory():
         logger.error(f"Error in working memory write-back: {e}")
 
 
-def run_short_term():
+def run_short_term() -> None:
     """Run short-term memory write-back (every 5 minutes)."""
     try:
         service = DreamsWritebackService()
@@ -37,7 +36,7 @@ def run_short_term():
         logger.error(f"Error in short-term write-back: {e}")
 
 
-def run_long_term():
+def run_long_term() -> None:
     """Run long-term consolidation (every hour)."""
     try:
         service = DreamsWritebackService()
@@ -46,7 +45,7 @@ def run_long_term():
         logger.error(f"Error in long-term consolidation: {e}")
 
 
-def run_semantic():
+def run_semantic() -> None:
     """Run semantic network building (daily at 3 AM)."""
     try:
         service = DreamsWritebackService()
@@ -56,7 +55,7 @@ def run_semantic():
         logger.error(f"Error in semantic network building: {e}")
 
 
-def run_cleanup():
+def run_cleanup() -> None:
     """Run cleanup (weekly on Sunday at 3 AM)."""
     try:
         service = DreamsWritebackService()

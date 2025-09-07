@@ -21,23 +21,24 @@ import os
 import sys
 import tempfile
 import uuid
-from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
 
-import duckdb
 import psycopg2
 import psycopg2.extras
 import pytest
 
-from src.scripts.run_writeback_after_dbt import run_writeback_integration, validate_dbt_success
+from src.scripts.run_writeback_after_dbt import (
+    validate_dbt_success,
+)
 from src.services.incremental_processor import (
     IncrementalBatch,
     IncrementalProcessor,
     ProcessingState,
 )
-from src.services.memory_writeback_service import MemoryWritebackService, ProcessingMetrics
+from src.services.memory_writeback_service import (
+    MemoryWritebackService,
+)
 
 # Add src directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
@@ -48,7 +49,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 def test_postgres_url():
     """Get test PostgreSQL connection URL"""
     return os.getenv(
-        "TEST_DATABASE_URL", "postgresql://codex_user:test_password@localhost:5432/test_codex_db"
+        "TEST_DATABASE_URL",
+        "postgresql://codex_user:test_password@localhost:5432/test_codex_db",
     )
 
 
@@ -91,11 +93,13 @@ class TestWritebackInfrastructure:
                     schema_sql = f.read()
 
                 # Drop existing triggers to avoid conflicts
-                cursor.execute("""
-                    DROP TRIGGER IF EXISTS trigger_processed_memories_updated_at 
+                cursor.execute(
+                    """
+                    DROP TRIGGER IF EXISTS trigger_processed_memories_updated_at
                     ON codex_processed.processed_memories CASCADE
-                """)
-                
+                """
+                )
+
                 try:
                     cursor.execute(schema_sql)
                     test_db_connection.commit()
@@ -187,7 +191,15 @@ class TestWritebackInfrastructure:
                     id, content, timestamp, importance_score, activation_strength, access_count, metadata
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s)
                 """,
-                (parent_memory_id, "Test memory content", datetime.now(), 0.8, 1.0, 1, "{}"),
+                (
+                    parent_memory_id,
+                    "Test memory content",
+                    datetime.now(),
+                    0.8,
+                    1.0,
+                    1,
+                    "{}",
+                ),
             )
 
             # Test processed_memories constraints with valid foreign key
@@ -482,7 +494,6 @@ class TestIncrementalProcessor:
 
     def test_processing_state_creation(self, real_incremental_processor):
         """Test processing state creation and management"""
-        processor = real_incremental_processor
 
         # Test state creation
         timestamp = datetime.now(timezone.utc)
@@ -777,10 +788,18 @@ class TestDBTIntegration:
         from scripts.run_writeback_after_dbt import determine_processing_stages
 
         # Test with specific models
-        executed_models = ["memory_replay", "mvp_memory_insights", "concept_associations"]
+        executed_models = [
+            "memory_replay",
+            "mvp_memory_insights",
+            "concept_associations",
+        ]
         stages = determine_processing_stages(executed_models)
 
-        expected_stages = ["processed_memories", "generated_insights", "memory_associations"]
+        expected_stages = [
+            "processed_memories",
+            "generated_insights",
+            "memory_associations",
+        ]
         assert set(stages) == set(expected_stages)
 
         # Test with no models (should return all stages)
@@ -859,7 +878,11 @@ class TestDBTIntegration:
                 )
 
                 # Verify real results
-                assert results["overall_status"] in ["completed", "completed_with_errors", "failed"]
+                assert results["overall_status"] in [
+                    "completed",
+                    "completed_with_errors",
+                    "failed",
+                ]
                 assert results["dbt_validation"] is True
                 assert "stages_executed" in results
                 assert isinstance(results["stages_executed"], list)
@@ -978,7 +1001,9 @@ class TestErrorHandlingAndRecovery:
         from src.services.memory_writeback_service import ProcessingMetrics
 
         real_metrics = ProcessingMetrics(
-            session_id="test_session", batch_id="test_batch", processing_stage="test_stage"
+            session_id="test_session",
+            batch_id="test_batch",
+            processing_stage="test_stage",
         )
 
         # Test that the service handles database errors gracefully
@@ -1063,7 +1088,7 @@ class TestPerformanceAndScalability:
             for i in range(1000)  # ~2MB total
         ]
 
-        initial_memory = sys.getsizeof(large_dataset)
+        sys.getsizeof(large_dataset)
 
         # Process in chunks (simulating batching)
         chunk_size = 100

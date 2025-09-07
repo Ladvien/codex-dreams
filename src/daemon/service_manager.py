@@ -12,7 +12,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from .config import DaemonConfig, get_default_config_path, load_config
 
@@ -127,7 +127,7 @@ class ServiceManager:
 
     def _install_windows_service(self, user_mode: bool = False) -> bool:
         """Install Windows service using NSSM or PowerShell"""
-        service_name = self.config.service_name
+        self.config.service_name
 
         # Try to use NSSM first (Non-Sucking Service Manager)
         if shutil.which("nssm"):
@@ -146,14 +146,26 @@ class ServiceManager:
 
         commands = [
             ["nssm", "install", service_name, python_exe, str(script_path)],
-            ["nssm", "set", service_name, "Description", self.config.service_description],
+            [
+                "nssm",
+                "set",
+                service_name,
+                "Description",
+                self.config.service_description,
+            ],
             ["nssm", "set", service_name, "Start", "SERVICE_AUTO_START"],
         ]
 
         # Add working directory if specified
         if self.config.working_directory:
             commands.append(
-                ["nssm", "set", service_name, "AppDirectory", self.config.working_directory]
+                [
+                    "nssm",
+                    "set",
+                    service_name,
+                    "AppDirectory",
+                    self.config.working_directory,
+                ]
             )
 
         # Add environment file if specified
@@ -332,7 +344,9 @@ WantedBy=multi-user.target
         # Try NSSM first
         if shutil.which("nssm"):
             result = subprocess.run(
-                ["nssm", "remove", service_name, "confirm"], capture_output=True, text=True
+                ["nssm", "remove", service_name, "confirm"],
+                capture_output=True,
+                text=True,
             )
         else:
             # Fallback to PowerShell
@@ -430,7 +444,9 @@ WantedBy=multi-user.target
         service_name = self.config.service_name
 
         result = subprocess.run(
-            ["systemctl", action, f"{service_name}.service"], capture_output=True, text=True
+            ["systemctl", action, f"{service_name}.service"],
+            capture_output=True,
+            text=True,
         )
         return result.returncode == 0
 
@@ -497,7 +513,9 @@ WantedBy=multi-user.target
 
             # Check if service is enabled
             result = subprocess.run(
-                ["systemctl", "is-enabled", service_file], capture_output=True, text=True
+                ["systemctl", "is-enabled", service_file],
+                capture_output=True,
+                text=True,
             )
             status["enabled"] = result.stdout.strip() == "enabled"
 
@@ -515,7 +533,10 @@ def main() -> None:
         help="Service management action",
     )
     parser.add_argument(
-        "--config", type=Path, default=get_default_config_path(), help="Configuration file path"
+        "--config",
+        type=Path,
+        default=get_default_config_path(),
+        help="Configuration file path",
     )
     parser.add_argument(
         "--user", action="store_true", help="Install as user service (not system-wide)"

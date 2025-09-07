@@ -5,7 +5,6 @@ Tests edge cases, error conditions, and resource limits
 
 import json
 import os
-import time
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -332,7 +331,6 @@ def test_ollama_network_errors(mock_get):
 def test_environment_config_thread_safety():
     """Test environment configuration in multi-threaded scenarios."""
     import concurrent.futures
-    import threading
 
     env_vars = {
         "POSTGRES_DB_URL": "postgresql://test:test@host:5432/db",

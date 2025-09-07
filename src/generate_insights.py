@@ -4,11 +4,10 @@ MVP Insights Generator
 Processes memories through Ollama and writes insights back to PostgreSQL
 """
 
-import json
 import os
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import duckdb
 import psycopg2
@@ -30,7 +29,13 @@ try:
     if ":" in auth_part:
         password = auth_part.split(":")[1]
         # Only check for exact matches of insecure passwords
-        if password.lower() in ["password", "defaultpassword", "test", "admin", "123456"]:
+        if password.lower() in [
+            "password",
+            "defaultpassword",
+            "test",
+            "admin",
+            "123456",
+        ]:
             raise ValueError(
                 "Default or insecure password detected. Please use a secure password in POSTGRES_DB_URL"
             )
@@ -129,7 +134,7 @@ def extract_tags(content: str) -> List[str]:
     return keywords
 
 
-def generate_insight(content: str, related_memories: List[str] = None) -> Dict[str, Any]:
+def generate_insight(content: str, related_memories: Optional[List[str]] = None) -> Dict[str, Any]:
     """Generate an insight from memory content"""
 
     # Build context with related memories if available
@@ -278,7 +283,7 @@ def process_memories() -> None:
         content = row["content"]
         # For now, we don't have related memories in the base table
         # This would come from a more sophisticated biological memory analysis
-        related_memories = []
+        related_memories: List[str] = []
 
         print(f"\n[{idx + 1}/{len(memories_df)}] Processing memory {str(memory_id)[:8]}...")
         print(

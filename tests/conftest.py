@@ -11,7 +11,6 @@ This modular approach enables better maintainability, parallel testing,
 and proper test isolation.
 """
 
-import os
 from pathlib import Path
 
 import pytest
@@ -37,7 +36,7 @@ def pytest_configure(config):
     # Enable parallel execution if pytest-xdist is available
     if config.option.dist == "no":
         try:
-            import xdist
+            pass
 
             # Set up for automatic parallel execution
             config.option.dist = "worksteal"
