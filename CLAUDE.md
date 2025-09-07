@@ -198,3 +198,55 @@ All test files should:
 - Connect to TEST_DATABASE_URL for isolation
 - Mock Ollama responses for offline testing
 - Achieve >90% code coverage
+
+## Repository Maintenance Rules
+
+### Commit Hygiene
+- Commit changes daily - never let uncommitted files exceed 50
+- Use semantic commit messages following conventional commits (feat:, fix:, chore:, refactor:)
+- Group related changes into logical commits
+- Never commit with failing tests
+- Use `--no-verify` sparingly and only when pre-commit hooks have false positives
+
+### File Organization
+- All Python scripts must go in `src/` or `scripts/`, never in root
+- Test files use consistent `test_*.py` naming (not `*_test.py`)
+- Documentation goes in `docs/` directory only
+- Delete empty directories immediately using `find . -type d -empty -delete`
+- Configuration files belong in project subdirectories, not root
+
+### Before Creating New Files
+- Check if similar functionality already exists
+- Reuse existing patterns and utilities
+- Consolidate related code into existing modules
+- Remove deprecated code immediately, don't just comment it out
+- Prefer editing existing files over creating new ones
+
+### Regular Cleanup Tasks (Weekly)
+- Run `git clean -n` to identify untracked files for review
+- Remove empty directories: `find . -type d -empty -delete`
+- Check for duplicate test files and consolidate
+- Review and clean up TODO comments
+- Archive or delete experimental code that's no longer needed
+- Run `git status --short | wc -l` to monitor uncommitted changes
+
+### Testing Discipline
+- One test file per source module following directory structure
+- Delete test files when source code is removed
+- Keep test data in `tests/fixtures/`
+- Mock external services consistently (Ollama, PostgreSQL)
+- Never let test suite exceed 5 minutes total runtime
+
+### Documentation Standards
+- Update README when adding major features
+- Remove outdated documentation immediately
+- Keep BACKLOG.md current or delete it
+- Document architectural decisions in ARCHITECTURE.md, not scattered files
+- Use clear, descriptive commit messages that explain the "why"
+
+### Code Quality Gates
+- Run linting and type checking before commits
+- Fix flake8 and mypy errors, don't suppress them
+- Maintain consistent code formatting
+- Keep functions under 50 lines, modules under 500 lines
+- Delete dead code immediately
