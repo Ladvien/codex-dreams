@@ -1,6 +1,83 @@
 version: 2
 
 models:
+  - name: raw_memories
+    description: "Raw memories source table - entry point for the 4-stage biological memory pipeline"
+    columns:
+      - name: id
+        description: "Unique identifier for memory"
+        tests:
+          - unique
+          - not_null
+      - name: content
+        description: "Raw memory content text"
+        tests:
+          - not_null
+      - name: timestamp
+        description: "When memory was created"
+        tests:
+          - not_null
+
+  - name: wm_semantic_context
+    description: "Working memory with semantic context using embedding-based similarity for memory selection"
+    columns:
+      - name: memory_id
+        description: "Unique identifier for memory in working memory"
+        tests:
+          - unique
+          - not_null
+
+      - name: wm_slot
+        description: "Working memory slot position (1-7±2)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 9
+
+      - name: semantic_cluster
+        description: "Semantic cluster assignment (0-6)"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 6
+
+      - name: semantic_topic
+        description: "Semantic topic derived from cluster"
+        tests:
+          - accepted_values:
+              values: ['Technical Development', 'Communication & Collaboration',
+                       'Project Management', 'Strategic Planning', 'Problem Solving',
+                       'Knowledge Management', 'Personal Development', 'General']
+
+      - name: semantic_coherence
+        description: "Average similarity to other memories in working memory (0.0-1.0)"
+
+      - name: semantic_novelty
+        description: "Inverse of average similarity, indicates uniqueness (0.0-1.0)"
+
+      - name: semantic_priority
+        description: "Priority score based on semantic factors (0.0-1.0)"
+
+      - name: selection_method
+        description: "How memory was selected for working memory"
+        tests:
+          - accepted_values:
+              values: ['cluster_leader', 'global_priority', 'overflow']
+
+      - name: memory_status
+        description: "Status of memory in working memory"
+        tests:
+          - accepted_values:
+              values: ['active', 'buffer']
+
+    tests:
+      - dbt_utils.fewer_rows_than:
+          compare_model: ref('raw_memories')
+      - dbt_utils.equal_rowcount:
+          compare_model: ref('wm_active_context')
+          group_by_columns: ['memory_id']
+
   - name: wm_active_context
     description: "Working memory implementation with Miller's 7±2 capacity constraint and 5-minute temporal window"
     columns:

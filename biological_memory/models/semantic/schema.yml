@@ -12,69 +12,69 @@ models:
           - relationships:
               to: ref('raw_memories')
               field: id
-      
+
       - name: content
         description: "Raw memory content text"
         tests:
           - not_null
-      
+
       - name: content_embedding
         description: "768-dimensional embedding vector of content"
-      
+
       - name: summary_embedding
         description: "768-dimensional embedding vector of summary"
-      
+
       - name: context_embedding
         description: "768-dimensional embedding vector of context"
-      
+
       - name: combined_embedding
         description: "Weighted combination of content, summary, and context embeddings"
-      
+
       - name: final_embedding
         description: "L2-normalized combined embedding for similarity calculations"
         tests:
           - not_null
-      
+
       - name: embedding_model
         description: "Model used to generate embeddings (e.g., nomic-embed-text)"
         tests:
           - not_null
           - accepted_values:
               values: ['nomic-embed-text', 'all-minilm', 'text-embedding-ada-002']
-      
+
       - name: embedding_dimensions
         description: "Number of dimensions in embedding vector"
         tests:
           - not_null
           - accepted_values:
               values: [768, 384, 1536]
-      
+
       - name: embedding_magnitude
         description: "L2 norm of the embedding vector (should be ~1.0 after normalization)"
-      
+
       - name: embedding_sparsity
         description: "Percentage of near-zero values in embedding"
-      
+
       - name: consolidation_priority
         description: "Priority score for memory consolidation (importance * emotional_valence)"
-      
+
       - name: processing_time_ms
         description: "Time taken to generate embeddings in milliseconds"
-      
+
       - name: is_processed
         description: "Whether embedding generation completed successfully"
         tests:
           - not_null
-      
+
       - name: has_error
         description: "Whether an error occurred during embedding generation"
-    
+
     tests:
       - dbt_utils.recency:
           datepart: hour
           field: created_at
           interval: 1
-      
+
   - name: semantic_network
     description: "Associative connections between memories based on embedding similarity and Hebbian learning"
     columns:
@@ -83,7 +83,7 @@ models:
         tests:
           - unique
           - not_null
-      
+
       - name: memory_id_1
         description: "First memory in the connection (lower ID)"
         tests:
@@ -91,7 +91,7 @@ models:
           - relationships:
               to: ref('memory_embeddings')
               field: memory_id
-      
+
       - name: memory_id_2
         description: "Second memory in the connection (higher ID)"
         tests:
@@ -99,7 +99,7 @@ models:
           - relationships:
               to: ref('memory_embeddings')
               field: memory_id
-      
+
       - name: association_strength
         description: "Strength of association between memories (0.0-1.0)"
         tests:
@@ -107,121 +107,62 @@ models:
           - dbt_utils.accepted_range:
               min_value: 0.0
               max_value: 1.0
-      
+
       - name: association_type
         description: "Type of association (semantic_strong, semantic_medium, temporal, cluster, emotional, weak)"
         tests:
           - not_null
           - accepted_values:
               values: ['semantic_strong', 'semantic_medium', 'temporal', 'cluster', 'emotional', 'weak']
-      
+
       - name: semantic_similarity
         description: "Cosine similarity between memory embeddings (-1.0 to 1.0)"
         tests:
           - dbt_utils.accepted_range:
               min_value: -1.0
               max_value: 1.0
-      
+
       - name: temporal_proximity
         description: "How close memories are in time (0.0-1.0)"
-      
+
       - name: cluster_coherence
         description: "Whether memories belong to same semantic cluster (0.0 or 1.0)"
-      
+
       - name: emotional_congruence
         description: "Similarity of emotional valence between memories (0.0-1.0)"
-      
+
       - name: hebbian_strength
         description: "Strength based on Hebbian learning rule"
-      
+
       - name: co_activation_count
         description: "Number of times memories have been co-activated"
         tests:
           - not_null
           - dbt_utils.at_least_one
-      
+
       - name: connection_strength
         description: "Categorical strength of connection (strong, medium, weak)"
         tests:
           - accepted_values:
               values: ['strong', 'medium', 'weak']
-      
+
       - name: synaptic_state
         description: "Current state of synaptic connection (potentiating, depressing, stable)"
         tests:
           - accepted_values:
               values: ['potentiating', 'depressing', 'stable']
-      
+
       - name: last_activated
         description: "Timestamp of last activation"
         tests:
           - not_null
-    
+
     tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns:
             - memory_id_1
             - memory_id_2
 
-  - name: wm_semantic_context  
-    description: "Working memory with semantic context using embedding-based similarity for memory selection"
-    columns:
-      - name: memory_id
-        description: "Unique identifier for memory in working memory"
-        tests:
-          - unique
-          - not_null
-      
-      - name: wm_slot
-        description: "Working memory slot position (1-7±2)"
-        tests:
-          - not_null
-          - dbt_utils.accepted_range:
-              min_value: 1
-              max_value: 9
-      
-      - name: semantic_cluster
-        description: "Semantic cluster assignment (0-6)"
-        tests:
-          - dbt_utils.accepted_range:
-              min_value: 0
-              max_value: 6
-      
-      - name: semantic_topic
-        description: "Semantic topic derived from cluster"
-        tests:
-          - accepted_values:
-              values: ['Technical Development', 'Communication & Collaboration', 
-                       'Project Management', 'Strategic Planning', 'Problem Solving',
-                       'Knowledge Management', 'Personal Development', 'General']
-      
-      - name: semantic_coherence
-        description: "Average similarity to other memories in working memory (0.0-1.0)"
-      
-      - name: semantic_novelty
-        description: "Inverse of average similarity, indicates uniqueness (0.0-1.0)"
-      
-      - name: semantic_priority
-        description: "Priority score based on semantic factors (0.0-1.0)"
-      
-      - name: selection_method
-        description: "How memory was selected for working memory"
-        tests:
-          - accepted_values:
-              values: ['cluster_leader', 'global_priority', 'overflow']
-      
-      - name: memory_status
-        description: "Status of memory in working memory"
-        tests:
-          - accepted_values:
-              values: ['active', 'buffer']
-    
-    tests:
-      - dbt_utils.fewer_rows_than:
-          compare_model: ref('raw_memories')
-      - dbt_utils.equal_rowcount:
-          compare_model: ref('wm_active_context')
-          group_by_columns: ['memory_id']
 
 # Metrics removed - dbt Cloud/Semantic Layer feature
 # To re-enable, move to separate semantic_metrics.yml file

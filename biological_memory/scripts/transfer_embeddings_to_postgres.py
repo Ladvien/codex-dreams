@@ -18,9 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Database configurations
 DUCKDB_PATH = os.getenv("DUCKDB_PATH", "/tmp/memory.duckdb")
-POSTGRES_URL = (
-    "postgresql://codex_user:MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a@192.168.1.104:5432/codex_db"
-)
+POSTGRES_URL = os.getenv("POSTGRES_DB_URL")
 
 
 def connect_duckdb() -> duckdb.DuckDBPyConnection:
@@ -36,7 +34,7 @@ def connect_postgres() -> psycopg2.extensions.connection:
 def extract_embeddings_from_duckdb(conn: duckdb.DuckDBPyConnection) -> List[Tuple]:
     """Extract embeddings data from DuckDB memory_embeddings table"""
     query = """
-    SELECT 
+    SELECT
         memory_id,
         content,
         context,
@@ -46,8 +44,8 @@ def extract_embeddings_from_duckdb(conn: duckdb.DuckDBPyConnection) -> List[Tupl
         embedding_magnitude,
         created_at,
         updated_at
-    FROM main.memory_embeddings 
-    WHERE final_embedding IS NOT NULL 
+    FROM main.memory_embeddings
+    WHERE final_embedding IS NOT NULL
       AND semantic_cluster IS NOT NULL
     ORDER BY updated_at DESC
     """
@@ -115,8 +113,8 @@ def transfer_embeddings_to_postgres(
 
             # Update PostgreSQL memories table
             update_query = """
-            UPDATE memories 
-            SET 
+            UPDATE memories
+            SET
                 embedding_vector = %s::vector(768),
                 embedding_reduced = %s::vector(256),
                 vector_magnitude = %s,
@@ -154,7 +152,7 @@ def transfer_embeddings_to_postgres(
     return transferred_count
 
 
-def create_pgvector_indexes(pg_conn: psycopg2.extensions.connection):
+def create_pgvector_indexes(pg_conn: psycopg2.extensions.connection) -> None:
     """Create HNSW indexes for fast similarity search"""
     cursor = pg_conn.cursor()
 
@@ -168,7 +166,7 @@ def create_pgvector_indexes(pg_conn: psycopg2.extensions.connection):
         WITH (m = 16, ef_construction = 64)
         """,
         """
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_embedding_reduced_hnsw  
+        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memories_embedding_reduced_hnsw
         ON memories USING hnsw (embedding_reduced vector_cosine_ops)
         WITH (m = 16, ef_construction = 64)
         """,
@@ -207,10 +205,10 @@ def verify_transfer_quality(pg_conn: psycopg2.extensions.connection) -> dict:
         "memories_with_clusters": "SELECT COUNT(*) FROM memories WHERE semantic_cluster IS NOT NULL",
         "avg_vector_magnitude": "SELECT AVG(vector_magnitude) FROM memories WHERE vector_magnitude IS NOT NULL",
         "cluster_distribution": """
-            SELECT semantic_cluster, COUNT(*) 
-            FROM memories 
-            WHERE semantic_cluster IS NOT NULL 
-            GROUP BY semantic_cluster 
+            SELECT semantic_cluster, COUNT(*)
+            FROM memories
+            WHERE semantic_cluster IS NOT NULL
+            GROUP BY semantic_cluster
             ORDER BY semantic_cluster
         """,
     }
@@ -264,7 +262,7 @@ def main():
         create_pgvector_indexes(postgres_conn)
 
         # Verify transfer quality
-        quality_report = verify_transfer_quality(postgres_conn)
+        verify_transfer_quality(postgres_conn)
 
         # Close connections
         duckdb_conn.close()

@@ -4,8 +4,8 @@ Performance Benchmarks for Memory Embeddings System
 Tests performance characteristics and scalability
 """
 
-import time
-from typing import List
+
+from typing import Any, List, Optional
 
 import numpy as np
 import pytest
@@ -25,7 +25,7 @@ class TestEmbeddingPerformance:
     def test_embedding_generation_speed(self, benchmark):
         """Benchmark embedding generation speed"""
 
-        def generate_test_embedding():
+        def generate_test_embedding() -> Optional[List[float]]:
             return generate_embedding("Sample text for embedding generation performance test")
 
         result = benchmark(generate_test_embedding)
@@ -43,7 +43,7 @@ class TestEmbeddingPerformance:
         # Pre-populate cache
         cache.set(test_text, "test-model", test_embedding)
 
-        def cache_retrieval():
+        def cache_retrieval() -> Optional[List[float]]:
             return cache.get(test_text, "test-model")
 
         result = benchmark(cache_retrieval)
@@ -55,7 +55,7 @@ class TestEmbeddingPerformance:
         emb1 = np.random.randn(768).tolist()
         emb2 = np.random.randn(768).tolist()
 
-        def calculate_similarity():
+        def calculate_similarity() -> float:
             return cosine_similarity(emb1, emb2)
 
         result = benchmark(calculate_similarity)
@@ -73,7 +73,7 @@ class TestEmbeddingPerformance:
             emb = emb / np.linalg.norm(emb)
             embeddings.append(emb.tolist())
 
-        def batch_similarity():
+        def batch_similarity() -> list:
             similarities = []
             query_list = query_embedding.tolist()
             for emb in embeddings:
@@ -91,7 +91,7 @@ class TestEmbeddingPerformance:
         emb2 = np.random.randn(768).tolist()
         emb3 = np.random.randn(768).tolist()
 
-        def combine_test():
+        def combine_test() -> list:
             return combine_embeddings(emb1, emb2, emb3)
 
         result = benchmark(combine_test)
@@ -110,7 +110,7 @@ class TestBiologicalMemoryPerformance:
     def test_working_memory_capacity_performance(self, benchmark):
         """Benchmark working memory selection performance"""
 
-        def select_working_memory():
+        def select_working_memory() -> list:
             # Simulate 100 memories with priorities
             memories = []
             for i in range(100):
@@ -133,7 +133,7 @@ class TestBiologicalMemoryPerformance:
     def test_hebbian_learning_performance(self, benchmark):
         """Benchmark Hebbian learning calculations"""
 
-        def calculate_hebbian_strength():
+        def calculate_hebbian_strength() -> list:
             results = []
             for _ in range(1000):
                 activation = np.random.random()
@@ -151,7 +151,7 @@ class TestBiologicalMemoryPerformance:
     def test_forgetting_curve_performance(self, benchmark):
         """Benchmark forgetting curve calculations"""
 
-        def apply_forgetting():
+        def apply_forgetting() -> list:
             results = []
             for _ in range(1000):
                 initial_strength = np.random.random()
@@ -175,7 +175,7 @@ class TestSemanticNetworkPerformance:
     def test_semantic_clustering_performance(self, benchmark):
         """Benchmark semantic clustering of memories"""
 
-        def cluster_memories():
+        def cluster_memories() -> dict:
             # Generate 500 normalized embeddings
             embeddings = []
             for _ in range(500):
@@ -201,7 +201,7 @@ class TestSemanticNetworkPerformance:
     def test_association_strength_calculation(self, benchmark):
         """Benchmark association strength calculations"""
 
-        def calculate_associations():
+        def calculate_associations() -> list:
             results = []
             for _ in range(100):
                 # Generate two similar embeddings
@@ -245,7 +245,7 @@ class TestScalabilityBenchmarks:
         query = query / np.linalg.norm(query)
         query_list = query.tolist()
 
-        def similarity_search():
+        def similarity_search() -> list:
             similarities = []
             for emb in embeddings:
                 sim = cosine_similarity(query_list, emb)
@@ -265,7 +265,7 @@ class TestScalabilityBenchmarks:
         emb1 = np.random.randn(embedding_dim).tolist()
         emb2 = np.random.randn(embedding_dim).tolist()
 
-        def dimension_similarity():
+        def dimension_similarity() -> float:
             return cosine_similarity(emb1, emb2)
 
         result = benchmark(dimension_similarity)
@@ -306,7 +306,7 @@ class TestRealTimeBenchmarks:
     def test_working_memory_update_speed(self, benchmark):
         """Test working memory can update in real-time (<100ms)"""
 
-        def update_working_memory():
+        def update_working_memory() -> list:
             # Simulate real-time working memory update
             memories = []
             for i in range(50):
@@ -347,7 +347,7 @@ class TestRealTimeBenchmarks:
         query_list = query.tolist()
         threshold = 0.7
 
-        def threshold_filtering():
+        def threshold_filtering() -> list:
             similar_memories = []
             for emb in embeddings:
                 sim = cosine_similarity(query_list, emb)

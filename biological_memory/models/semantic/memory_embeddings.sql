@@ -15,9 +15,6 @@
     pre_hook=[
         "SET threads TO 4",
         "SET memory_limit TO '2GB'"
-    ],
-    post_hook=[
-        "ANALYZE {{ this }}"
     ]
 ) }}
 
@@ -79,24 +76,9 @@ embeddings_generated AS (
             FROM generate_series(1, 768)
         )::FLOAT[768] as context_embedding,
 
-        -- Tag embedding generation (real Ollama integration when UDF available)
-        -- Falls back to mathematical approximation based on tag content hash
-        CASE
-            WHEN tags IS NOT NULL AND ARRAY_LENGTH(tags, 1) > 0 THEN
-                -- Try to use real Ollama UDF first (will be NULL if UDF not available)
-                COALESCE(
-                    TRY(ollama_tag_embedding(tags, '{{ var("embedding_model") }}')),
-                    -- Fallback to mathematical approximation based on tag hash
-                    ARRAY(
-                        SELECT
-                            (SIN(generate_series * 0.07 + HASH(ARRAY_TO_STRING(tags, '|')) * 0.0015) *
-                             COS(generate_series * 0.11 + ARRAY_LENGTH(tags, 1) * 0.03) +
-                             SIN(generate_series * 0.04 + HASH(ARRAY_TO_STRING(ARRAY_SORT(tags), '|')) * 0.0008))::FLOAT
-                        FROM generate_series(1, 768)
-                    )::FLOAT[768]
-                )
-            ELSE NULL
-        END as tag_embedding,
+        -- Tag embeddings are generated separately in PostgreSQL to avoid DuckDB limitations
+        -- This field will be populated by the generate_tag_embeddings_postgres.py script
+        NULL::FLOAT[768] as tag_embedding,
 
         -- Model metadata
         '{{ var("embedding_model") }}' as embedding_model,
@@ -163,17 +145,9 @@ SELECT
     is_processed,
     has_error,
 
-    -- Tag embedding metadata
-    CASE
-        WHEN tag_embedding IS NOT NULL THEN created_at
-        ELSE NULL
-    END as tag_embedding_updated,
-
-    CASE
-        WHEN tags IS NOT NULL AND ARRAY_LENGTH(tags, 1) > 0 AND tag_embedding IS NOT NULL THEN TRUE
-        WHEN tags IS NULL OR ARRAY_LENGTH(tags, 1) = 0 THEN NULL  -- No tags to embed
-        ELSE FALSE  -- Tags present but embedding failed
-    END as has_tag_embedding,
+    -- Tag embedding metadata (handled separately in PostgreSQL)
+    NULL::TIMESTAMP as tag_embedding_updated,
+    FALSE as has_tag_embedding,
 
     -- Biological factors for consolidation
     importance_score * emotional_valence as consolidation_priority,

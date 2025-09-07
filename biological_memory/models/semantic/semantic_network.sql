@@ -14,14 +14,13 @@
         {'columns': ['association_type'], 'unique': false}
     ],
     post_hook=[
-        "DELETE FROM {{ this }} WHERE association_strength < {{ var('forgetting_rate', 0.05) }}",
-        "ANALYZE {{ this }}"
+        "DELETE FROM {{ this }} WHERE association_strength < {{ var('forgetting_rate', 0.05) }}"
     ]
 ) }}
 
 -- OPTIMIZED: Replace O(n²) CROSS JOIN with efficient LATERAL JOIN + vector index
 WITH memory_pairs AS (
-    SELECT 
+    SELECT
         m1.memory_id as memory_id_1,
         similar.memory_id as memory_id_2,
         m1.final_embedding as embedding_1,
@@ -42,7 +41,7 @@ WITH memory_pairs AS (
     FROM {{ ref('memory_embeddings') }} m1
     CROSS JOIN LATERAL (
         -- Use HNSW index for fast k-nearest neighbor search
-        SELECT 
+        SELECT
             memory_id,
             final_embedding,
             content,
@@ -52,7 +51,7 @@ WITH memory_pairs AS (
             consolidation_priority,
             created_at
         FROM {{ ref('memory_embeddings') }} m2
-        WHERE m2.final_embedding IS NOT NULL 
+        WHERE m2.final_embedding IS NOT NULL
           AND m2.memory_id != m1.memory_id
           -- Use vector distance for initial filtering (leverages HNSW index)
           AND (1 - (m1.final_embedding <-> m2.final_embedding)) >= {{ var('consolidation_threshold', 0.5) }}
@@ -67,40 +66,40 @@ WITH memory_pairs AS (
 ),
 
 similarity_calculations AS (
-    SELECT 
+    SELECT
         *,
-        
+
         -- Use pre-calculated similarity from pgvector for performance
         semantic_similarity_fast as semantic_similarity,
-        
+
         -- Calculate temporal proximity (memories close in time)
         EXP(-ABS(EXTRACT(EPOCH FROM (
             (SELECT timestamp FROM {{ ref('raw_memories') }} WHERE id = memory_id_1) -
             (SELECT timestamp FROM {{ ref('raw_memories') }} WHERE id = memory_id_2)
         )) / 3600.0)) as temporal_proximity,
-        
+
         -- Check if memories are in same semantic cluster
-        CASE 
+        CASE
             WHEN cluster_1 = cluster_2 THEN 1.0
             ELSE 0.0
         END as cluster_coherence,
-        
+
         -- Emotional congruence (similar emotional valence)
         1.0 - ABS(valence_1 - valence_2) as emotional_congruence
-        
+
     FROM memory_pairs
 ),
 
 hebbian_associations AS (
-    SELECT 
+    SELECT
         *,
-        
+
         -- Generate unique connection ID
         MD5(LEAST(memory_id_1, memory_id_2) || '|' || GREATEST(memory_id_1, memory_id_2)) as connection_id,
-        
+
         -- Hebbian strength calculation with multiple factors
         {{ hebbian_learning_with_embeddings('embedding_1', 'embedding_2', 'valence_1', 'valence_2') }} as hebbian_strength,
-        
+
         -- Calculate association strength using biological principles
         GREATEST(
             semantic_similarity * {{ var('synaptic_scaling_factor', 1.5) }},
@@ -111,7 +110,7 @@ hebbian_associations AS (
             -- Importance weighting
             (importance_1 + importance_2) / 2.0
         ) as raw_association_strength,
-        
+
         -- Determine association type
         CASE
             WHEN semantic_similarity > {{ var('strong_connection_threshold', 0.8) }} THEN 'semantic_strong'
@@ -121,7 +120,7 @@ hebbian_associations AS (
             WHEN emotional_congruence > 0.8 THEN 'emotional'
             ELSE 'weak'
         END as association_type
-        
+
     FROM similarity_calculations
     WHERE semantic_similarity > {{ var('consolidation_threshold', 0.5) }}
        OR temporal_proximity > 0.7
@@ -129,11 +128,11 @@ hebbian_associations AS (
 ),
 
 synaptic_plasticity AS (
-    SELECT 
+    SELECT
         connection_id,
         LEAST(memory_id_1, memory_id_2) as memory_id_1,
         GREATEST(memory_id_1, memory_id_2) as memory_id_2,
-        
+
         -- Apply STDP (Spike-Timing Dependent Plasticity)
         CASE
             WHEN raw_association_strength > {{ var('ltp_threshold', 0.6) }} THEN
@@ -146,34 +145,34 @@ synaptic_plasticity AS (
                 -- Maintain current strength
                 raw_association_strength
         END as association_strength,
-        
+
         association_type,
         semantic_similarity,
         temporal_proximity,
         cluster_coherence,
         emotional_congruence,
         hebbian_strength,
-        
+
         -- Track co-activation
         1 as co_activation_count,
-        
+
         -- Metadata
         latest_timestamp as last_activated,
         CURRENT_TIMESTAMP as created_at,
         CURRENT_TIMESTAMP as updated_at
-        
+
     FROM hebbian_associations
 ),
 
 existing_connections AS (
     {% if is_incremental() %}
-        SELECT 
+        SELECT
             connection_id,
             association_strength as existing_strength,
             co_activation_count as existing_count
         FROM {{ this }}
     {% else %}
-        SELECT 
+        SELECT
             NULL::VARCHAR as connection_id,
             0.0 as existing_strength,
             0 as existing_count
@@ -182,67 +181,67 @@ existing_connections AS (
 ),
 
 merged_connections AS (
-    SELECT 
+    SELECT
         sp.*,
-        
+
         -- Merge with existing connections (incremental updates)
         COALESCE(ec.existing_strength, 0.0) as previous_strength,
         COALESCE(ec.existing_count, 0) as previous_count,
-        
+
         -- Update association strength with history
         CASE
             WHEN ec.connection_id IS NOT NULL THEN
                 -- Weighted average of new and existing strength
-                (sp.association_strength * 0.3 + ec.existing_strength * 0.7) * 
+                (sp.association_strength * 0.3 + ec.existing_strength * 0.7) *
                 -- Apply forgetting curve
                 {{ apply_forgetting_curve('1.0', 'EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - sp.last_activated))') }}
             ELSE
                 sp.association_strength
         END as final_association_strength,
-        
+
         -- Increment co-activation count
         sp.co_activation_count + COALESCE(ec.existing_count, 0) as total_co_activation_count
-        
+
     FROM synaptic_plasticity sp
     LEFT JOIN existing_connections ec ON sp.connection_id = ec.connection_id
 )
 
-SELECT 
+SELECT
     connection_id,
     memory_id_1,
     memory_id_2,
     final_association_strength as association_strength,
     association_type,
-    
+
     -- Similarity metrics
     semantic_similarity,
     temporal_proximity,
     cluster_coherence,
     emotional_congruence,
-    
+
     -- Hebbian learning metrics
     hebbian_strength,
     total_co_activation_count as co_activation_count,
-    
+
     -- Categorize connection strength
     CASE
         WHEN final_association_strength > {{ var('strong_connection_threshold', 0.8) }} THEN 'strong'
         WHEN final_association_strength > {{ var('medium_quality_threshold', 0.5) }} THEN 'medium'
         ELSE 'weak'
     END as connection_strength,
-    
+
     -- Metadata
     last_activated,
     created_at,
     updated_at,
-    
+
     -- Synaptic health indicator
     CASE
         WHEN final_association_strength > previous_strength THEN 'potentiating'
         WHEN final_association_strength < previous_strength THEN 'depressing'
         ELSE 'stable'
     END as synaptic_state
-    
+
 FROM merged_connections
 WHERE final_association_strength >= {{ var('forgetting_rate', 0.05) }}
 ORDER BY association_strength DESC

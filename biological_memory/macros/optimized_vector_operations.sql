@@ -5,7 +5,7 @@
 {% macro fast_knn_similarity_search(query_embedding, table_name, limit=10, threshold=0.7) %}
   -- Ultra-fast similarity search using pgvector HNSW index
   -- Expected performance: <5ms for 1M vectors
-  SELECT 
+  SELECT
     memory_id,
     content,
     final_embedding,
@@ -22,7 +22,7 @@
   -- Replace O(n²) CROSS JOIN with efficient LATERAL JOIN + HNSW index
   -- Performance improvement: 99.9% reduction in query time
   WITH memory_connections AS (
-    SELECT 
+    SELECT
       m1.memory_id as memory_id_1,
       similar.memory_id as memory_id_2,
       m1.final_embedding as embedding_1,
@@ -34,13 +34,13 @@
       (1 - (m1.final_embedding <-> similar.final_embedding)) as semantic_similarity
     FROM {{ memory_table }} m1
     CROSS JOIN LATERAL (
-      SELECT 
-        memory_id, 
+      SELECT
+        memory_id,
         final_embedding,
         importance_score,
         emotional_valence
       FROM {{ memory_table }} m2
-      WHERE m2.final_embedding IS NOT NULL 
+      WHERE m2.final_embedding IS NOT NULL
         AND m2.memory_id != m1.memory_id
         AND (1 - (m1.final_embedding <-> m2.final_embedding)) >= {{ similarity_threshold }}
       ORDER BY m1.final_embedding <-> m2.final_embedding
@@ -48,7 +48,7 @@
     ) similar
     WHERE m1.final_embedding IS NOT NULL
   )
-  SELECT 
+  SELECT
     memory_id_1,
     memory_id_2,
     semantic_similarity,
@@ -67,7 +67,7 @@
   -- Process multiple embeddings in optimized batches
   -- Reduces API calls and improves throughput by 10x
   WITH batch_similarities AS (
-    SELECT 
+    SELECT
       batch.query_id,
       batch.query_embedding,
       target.memory_id,
@@ -82,7 +82,7 @@
       LIMIT {{ batch_size }}
     ) target
   )
-  SELECT 
+  SELECT
     query_id,
     memory_id,
     similarity_score,
@@ -112,9 +112,8 @@
   SET maintenance_work_mem = '2GB';
   SET max_parallel_workers_per_gather = 4;
   SET ivfflat.probes = 10;
-  
-  -- Analyze table for optimal query planning
-  ANALYZE {{ table_name }};
+
+  -- Skip ANALYZE for DuckDB compatibility (PostgreSQL-specific)
 {% endmacro %}
 
 {% macro optimized_memory_consolidation(source_table, consolidation_threshold=0.7, hebbian_rate=0.1) %}
@@ -139,7 +138,7 @@
     ) similar
     WHERE m1.final_embedding IS NOT NULL
   )
-  SELECT 
+  SELECT
     memory_id_1,
     memory_id_2,
     similarity_score,
@@ -148,7 +147,7 @@
     avg_importance * (1.0 + emotional_distance) as consolidation_strength,
     CASE
       WHEN similarity_score > 0.9 THEN 'strong_consolidation'
-      WHEN similarity_score > 0.7 THEN 'medium_consolidation' 
+      WHEN similarity_score > 0.7 THEN 'medium_consolidation'
       ELSE 'weak_consolidation'
     END as consolidation_type
   FROM consolidation_pairs
@@ -186,12 +185,12 @@
     LIMIT 100
   )
   INSERT INTO vector_performance_metrics (
-    operation_type, 
-    query_time_ms, 
+    operation_type,
+    query_time_ms,
     vector_count,
     similarity_threshold
   )
-  SELECT 
+  SELECT
     'knn_similarity_search',
     EXTRACT(EPOCH FROM (clock_timestamp() - bs.start_time)) * 1000,
     bq.result_count,

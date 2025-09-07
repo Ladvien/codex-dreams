@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 DUCKDB_PATH = os.getenv("DUCKDB_PATH", "/tmp/memory.duckdb")
 POSTGRES_URL = os.getenv(
     "POSTGRES_DB_URL",
-    "postgresql://codex_user:MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a@192.168.1.104:5432/codex_db",
+    os.getenv("POSTGRES_DB_URL"),
 )
 
 # Performance settings
@@ -40,7 +40,9 @@ def connect_postgres() -> psycopg2.extensions.connection:
     return psycopg2.connect(POSTGRES_URL)
 
 
-def get_missing_embeddings(pg_conn: psycopg2.extensions.connection) -> Tuple[List[str], List[str]]:
+def get_missing_embeddings(
+    pg_conn: psycopg2.extensions.connection,
+) -> Tuple[List[str], List[str]]:
     """Get list of memory IDs that don't have content or tag embeddings in PostgreSQL"""
     cursor = pg_conn.cursor()
 
@@ -165,7 +167,7 @@ def transfer_embeddings_batch(
     # Process in batches
     for i in range(0, total_records, BATCH_SIZE):
         batch = embeddings_data[i : i + BATCH_SIZE]
-        batch_size = len(batch)
+        len(batch)
 
         # Separate batches for content and tag updates
         content_batch = []
@@ -231,7 +233,11 @@ def transfer_embeddings_batch(
             """
 
             execute_values(
-                cursor, content_query, content_batch, template="(%s, %s, %s, %s, %s)", page_size=100
+                cursor,
+                content_query,
+                content_batch,
+                template="(%s, %s, %s, %s, %s)",
+                page_size=100,
             )
             content_updated += len(content_batch)
 
@@ -276,7 +282,7 @@ def transfer_embeddings_batch(
     return content_updated, tag_updated
 
 
-def check_tag_embedding_health(pg_conn: psycopg2.extensions.connection):
+def check_tag_embedding_health(pg_conn: psycopg2.extensions.connection) -> None:
     """Check and report tag embedding health"""
     cursor = pg_conn.cursor()
 

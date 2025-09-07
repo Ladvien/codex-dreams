@@ -24,11 +24,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configuration with production defaults
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://192.168.1.110:11434")
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
 EMBEDDING_DIMENSIONS = 768
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
-POSTGRES_URL = os.getenv("POSTGRES_DB_URL", "postgresql://user:pass@192.168.1.104:5432/db")
+POSTGRES_URL = os.getenv("POSTGRES_DB_URL")
+if not POSTGRES_URL:
+    raise ValueError("POSTGRES_DB_URL environment variable is required")
 
 # Performance tuning parameters
 BATCH_SIZE = int(os.getenv("EMBEDDING_BATCH_SIZE", "50"))

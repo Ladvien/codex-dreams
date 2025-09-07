@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configuration
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://192.168.1.110:11434")
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
 EMBEDDING_DIMENSIONS = 768
 CACHE_DIR = Path(os.getenv("EMBEDDING_CACHE_DIR", "./embedding_cache"))
@@ -70,7 +70,7 @@ class EmbeddingCache:
 
         return None
 
-    def set(self, text: str, model: str, embedding: List[float]):
+    def set(self, text: str, model: str, embedding: List[float]) -> None:
         """Store embedding in cache"""
         try:
             # Validate input
@@ -357,7 +357,7 @@ def cosine_similarity(emb1: List[float], emb2: List[float]) -> float:
     return dot_product / (norm1 * norm2)
 
 
-def register_duckdb_functions(conn: duckdb.DuckDBPyConnection):
+def register_duckdb_functions(conn: duckdb.DuckDBPyConnection) -> bool:
     """
     Register UDFs with DuckDB for use in SQL queries
 
@@ -387,9 +387,11 @@ def register_duckdb_functions(conn: duckdb.DuckDBPyConnection):
         )
 
         print("✓ Ollama embedding UDFs registered with DuckDB (including tag embeddings)")
+        return True
     except Exception as e:
         print(f"Warning: Could not register UDFs with DuckDB: {e}")
         # Fall back to SQL-based placeholders
+        return False
 
 
 def test_embedding_generation():

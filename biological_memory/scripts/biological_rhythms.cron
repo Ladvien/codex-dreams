@@ -1,0 +1,36 @@
+# Biological Memory System Cron Schedule
+# Implements human cognitive rhythms for memory consolidation
+#
+# Installation:
+#   crontab -l > current_cron
+#   cat biological_rhythms.cron >> current_cron
+#   crontab current_cron
+#   rm current_cron
+#
+# Or directly:
+#   crontab -l | { cat; cat biological_rhythms.cron; } | crontab -
+
+# Working Memory Updates (every 5 minutes)
+# Processes recent memories within 5-minute attention window
+*/5 * * * * /Users/ladvien/codex-dreams/biological_memory/scripts/run_pipeline.sh continuous >> /Users/ladvien/codex-dreams/biological_memory/logs/cron.log 2>&1
+
+# Short-Term Memory Consolidation (every 30 minutes)
+# Builds hierarchical episodes and extracts patterns
+*/30 * * * * /Users/ladvien/codex-dreams/biological_memory/scripts/run_pipeline.sh rapid >> /Users/ladvien/codex-dreams/biological_memory/logs/cron.log 2>&1
+
+# Hourly Memory Consolidation
+# Simulates hippocampal replay and pattern strengthening
+0 * * * * /Users/ladvien/codex-dreams/biological_memory/scripts/run_pipeline.sh hourly >> /Users/ladvien/codex-dreams/biological_memory/logs/cron.log 2>&1
+
+# Deep Sleep Consolidation (3 AM daily)
+# Major memory consolidation and transfer to long-term storage
+0 3 * * * /Users/ladvien/codex-dreams/biological_memory/scripts/run_pipeline.sh deep_sleep >> /Users/ladvien/codex-dreams/biological_memory/logs/cron.log 2>&1
+
+# REM Sleep Creative Associations (90-minute cycles, 2-6 AM)
+# Forms creative connections between memories
+0 2,4,6 * * * /Users/ladvien/codex-dreams/biological_memory/scripts/run_pipeline.sh rem_sleep >> /Users/ladvien/codex-dreams/biological_memory/logs/cron.log 2>&1
+30 3,5 * * * /Users/ladvien/codex-dreams/biological_memory/scripts/run_pipeline.sh rem_sleep >> /Users/ladvien/codex-dreams/biological_memory/logs/cron.log 2>&1
+
+# Weekly Synaptic Homeostasis (Sunday 3 AM)
+# Full system refresh, cleanup, and optimization
+0 3 * * 0 /Users/ladvien/codex-dreams/biological_memory/scripts/run_pipeline.sh weekly >> /Users/ladvien/codex-dreams/biological_memory/logs/cron.log 2>&1

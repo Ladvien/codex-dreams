@@ -19,9 +19,7 @@ logger = logging.getLogger(__name__)
 
 # Database configurations
 DUCKDB_PATH = os.getenv("DUCKDB_PATH", "/tmp/memory.duckdb")
-POSTGRES_URL = (
-    "postgresql://codex_user:MZSfXiLr5uR3QYbRwv2vTzi22SvFkj4a@192.168.1.104:5432/codex_db"
-)
+POSTGRES_URL = os.getenv("POSTGRES_DB_URL")
 
 # Performance settings
 BATCH_SIZE = 500  # Process 500 records at a time
@@ -43,8 +41,8 @@ def get_missing_embeddings(pg_conn: psycopg2.extensions.connection) -> List[str]
     cursor = pg_conn.cursor()
     cursor.execute(
         """
-        SELECT id::text 
-        FROM memories 
+        SELECT id::text
+        FROM memories
         WHERE embedding_vector IS NULL
     """
     )
@@ -62,23 +60,23 @@ def fetch_embeddings_batch(
         # Convert list to SQL IN clause
         ids_str = ",".join(f"'{id}'" for id in memory_ids)
         query = f"""
-        SELECT 
+        SELECT
             memory_id,
             final_embedding,
             semantic_cluster,
             embedding_magnitude
-        FROM main.memory_embeddings 
+        FROM main.memory_embeddings
         WHERE memory_id::text IN ({ids_str})
           AND final_embedding IS NOT NULL
         """
     else:
         query = """
-        SELECT 
+        SELECT
             memory_id,
             final_embedding,
             semantic_cluster,
             embedding_magnitude
-        FROM main.memory_embeddings 
+        FROM main.memory_embeddings
         WHERE final_embedding IS NOT NULL
         ORDER BY created_at DESC
         """
@@ -126,7 +124,7 @@ def transfer_embeddings_batch(
     # Process in batches
     for i in range(0, total_records, BATCH_SIZE):
         batch = embeddings_data[i : i + BATCH_SIZE]
-        batch_size = len(batch)
+        len(batch)
 
         # Prepare batch data for execute_values
         batch_data = []
@@ -159,8 +157,8 @@ def transfer_embeddings_batch(
         if batch_data:
             # Use execute_values for batch update
             update_query = """
-            UPDATE memories 
-            SET 
+            UPDATE memories
+            SET
                 embedding_vector = data.embedding_vector::vector(768),
                 embedding_reduced = data.embedding_reduced::vector(256),
                 vector_magnitude = data.vector_magnitude,
@@ -171,7 +169,11 @@ def transfer_embeddings_batch(
             """
 
             execute_values(
-                cursor, update_query, batch_data, template="(%s, %s, %s, %s, %s)", page_size=100
+                cursor,
+                update_query,
+                batch_data,
+                template="(%s, %s, %s, %s, %s)",
+                page_size=100,
             )
 
             transferred_count += len(batch_data)

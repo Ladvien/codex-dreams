@@ -3,7 +3,7 @@
 -- Run this AFTER memory_embeddings has completed on DuckDB
 
 {{ config(
-    materialized='table',
+    materialized='incremental',
     unique_key='memory_id'
 ) }}
 
